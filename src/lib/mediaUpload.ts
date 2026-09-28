@@ -69,6 +69,7 @@ export async function prepareMediaUpload(
 export async function uploadMediaResumable(
   file: File,
   plan: MediaUploadPlan,
+  digest: string,
   onProgress?: (progress: MediaUploadProgress) => void,
 ): Promise<void> {
   const sb = requireSupabase();
@@ -123,7 +124,7 @@ export async function uploadMediaResumable(
 
   const { error: finalizeError } = await sb.rpc('finalize_media_upload', {
     _upload: plan.uploadId,
-    _reported_sha256: plan.assetId ? (await sha256(file)) : '',
+    _reported_sha256: digest,
     _file_size: file.size,
   });
 
