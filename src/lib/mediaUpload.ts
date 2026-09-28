@@ -18,15 +18,6 @@ export type MediaUploadProgress = {
 const TUS_ENDPOINT = `https://${supabaseProjectRef}.storage.supabase.co/storage/v1/upload/resumable`;
 const CHUNK_SIZE = 6 * 1024 * 1024;
 
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-export async function sha256(file: File): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-  return toHex(new Uint8Array(digest));
-}
-
 function kindForMime(mimeType: string): 'image' | 'video' | 'audio' {
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';
@@ -41,35 +32,33 @@ export function mediaKind(file: File) {
 export async function prepareMediaUpload(
   postId: string,
   file: File,
-): Promise<{ plan: MediaUploadPlan; sha256: string }> {
+): Promise<MediaUploadPlan> {
   const sb = requireSupabase();
-  const digest = await sha256(file);
   const { data, error } = await sb.rpc('create_media_upload', {
     _post: postId,
     _kind: kindForMime(file.type),
     _mime_type: file.type,
     _file_size: file.size,
-    _sha256: digest,
+    _sha256: null,
     _original_filename: file.name,
   });
-  if (error || !data) throw new Error(error?.message ?? 'media_upload_prepare_failed');
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'media_upload_prepare_failed');
+  }
 
   return {
-    plan: {
-      uploadId: String(data.uploadId),
-      assetId: String(data.assetId),
-      path: String(data.path),
-      bucket: 'prively-private',
-      expiresAt: String(data.expiresAt),
-    },
-    sha256: digest,
+    uploadId: String(data.uploadId),
+    assetId: String(data.assetId),
+    path: String(data.path),
+    bucket: 'prively-private',
+    expiresAt: String(data.expiresAt),
   };
 }
 
 export async function uploadMediaResumable(
   file: File,
   plan: MediaUploadPlan,
-  digest: string,
   onProgress?: (progress: MediaUploadProgress) => void,
 ): Promise<void> {
   const sb = requireSupabase();
@@ -103,7 +92,7 @@ export async function uploadMediaResumable(
         contentType: file.type,
         cacheControl: '3600',
       },
-      onError: (error) => reject(error),
+      onError: (uploadError) => reject(uploadError),
       onProgress: (bytesUploaded, bytesTotal) => {
         onProgress?.({
           uploadedBytes: bytesUploaded,
@@ -116,7 +105,9 @@ export async function uploadMediaResumable(
 
     void upload.findPreviousUploads()
       .then((previousUploads) => {
-        if (previousUploads.length > 0) upload.resumeFromPreviousUpload(previousUploads[0]);
+        if (previousUploads.length > 0) {
+          upload.resumeFromPreviousUpload(previousUploads[0]);
+        }
         upload.start();
       })
       .catch(reject);
@@ -124,9 +115,11 @@ export async function uploadMediaResumable(
 
   const { error: finalizeError } = await sb.rpc('finalize_media_upload', {
     _upload: plan.uploadId,
-    _reported_sha256: digest,
+    _reported_sha256: null,
     _file_size: file.size,
   });
 
-  if (finalizeError) throw new Error(finalizeError.message);
+  if (finalizeError) {
+    throw new Error(finalizeError.message);
+  }
 }
