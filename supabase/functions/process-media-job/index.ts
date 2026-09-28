@@ -79,6 +79,30 @@ async function sha256Stream(blob: Blob): Promise<string> {
   return hasher.digest();
 }
 
+type WorkerContext = {
+  admin: ReturnType<typeof serviceClient>;
+  client: ReturnType<typeof serviceClient> | null;
+  userId: string | null;
+  internal: boolean;
+};
+
+async function executionContext(request: Request): Promise<WorkerContext> {
+  const admin = serviceClient();
+  const workerToken = request.headers.get("x-prively-worker-token");
+
+  if (workerToken) {
+    const { data, error } = await admin.rpc("is_valid_media_worker_token", {
+      _token: workerToken,
+    });
+    if (!error && data === true) {
+      return { admin, client: null, userId: null, internal: true };
+    }
+  }
+
+  const { client, user } = await requireUser(request);
+  return { admin, client, userId: user.id, internal: false };
+}
+
 async function executeProviderJob(
   admin: ReturnType<typeof serviceClient>,
   job: Record<string, unknown>,
@@ -322,6 +346,10 @@ Deno.serve(async (request) => {
     if (processingError) throw new Error("media_job_claim_failed");
 
     try {
+      if (job.job_type !== "integrity" && asset.integrity_status !== "verified") {
+        throw new Error("archive_waiting_for_integrity");
+      }
+
       if (job.job_type === "integrity") {
         await auditProcessingRead(admin, String(asset.id), "integrity");
 
@@ -523,18 +551,17 @@ Deno.serve(async (request) => {
       const message = error instanceof Error ? error.message : "media_job_failed";
       const waitingForIntegrity = message === "archive_waiting_for_integrity";
       const blocked = message === "processor_not_configured";
-      const terminal = blocked || attempts >= Number(job.max_attempts ?? 5);
+      const terminal = !waitingForIntegrity && (blocked || attempts >= Number(job.max_attempts ?? 5));
 
       await admin
         .from("media_processing_jobs")
         .update({
-          status: blocked ? "blocked" : terminal ? "failed" : "queued",
+          status: waitingForIntegrity ? "queued" : blocked ? "blocked" : terminal ? "failed" : "queued",
+          attempts: waitingForIntegrity ? Math.max(attempts - 1, 0) : attempts,
           error_code: waitingForIntegrity ? null : blocked ? "processor_not_configured" : message,
           error_message: waitingForIntegrity ? null : message,
           finished_at: terminal ? new Date().toISOString() : null,
-          available_at: terminal
-            ? new Date().toISOString()
-            : new Date(Date.now() + Math.min(attempts * 60000, 900000)).toISOString(),
+          available_at: new Date(Date.now() + Math.min((waitingForIntegrity ? 1 : attempts) * 60000, 900000)).toISOString(),
         })
         .eq("id", job.id);
 
