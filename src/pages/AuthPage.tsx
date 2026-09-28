@@ -19,7 +19,9 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const role = searchParams.get('role') === 'creator' ? 'creator' : portal;
+  const requestedPortal = searchParams.get('portal');
+  const effectivePortal: Portal = requestedPortal === 'creator' ? 'creator' : portal;
+  const role = searchParams.get('role') === 'creator' ? 'creator' : effectivePortal;
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -68,25 +70,25 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
 
         const roleSet = new Set((roles ?? []).map((item) => item.role));
 
-        if (portal === 'admin' && !roleSet.has('admin')) {
+        if (effectivePortal === 'admin' && !roleSet.has('admin')) {
           await sb.auth.signOut();
           setError(t('auth.adminRequired'));
           return;
         }
 
-        if (portal === 'client' && roleSet.has('admin')) {
+        if (effectivePortal === 'client' && roleSet.has('admin')) {
           await sb.auth.signOut();
           setError(t('auth.adminUsePortal'));
           return;
         }
 
-        if (portal === 'creator' && !roleSet.has('creator')) {
+        if (effectivePortal === 'creator' && !roleSet.has('creator')) {
           await sb.auth.signOut();
           setError(t('auth.creatorRequired'));
           return;
         }
 
-        navigate(portal === 'admin' ? '/admin' : portal === 'creator' ? '/estudio' : '/descobrir', { replace: true });
+        navigate(effectivePortal === 'admin' ? '/admin' : effectivePortal === 'creator' ? '/estudio' : '/descobrir', { replace: true });
         return;
       }
 
@@ -128,12 +130,12 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   };
 
   const title = mode === 'signIn'
-    ? portal === 'admin'
+    ? effectivePortal === 'admin'
       ? t('auth.adminTitle')
-      : portal === 'creator'
+      : effectivePortal === 'creator'
         ? t('auth.creatorSignInTitle')
         : t('auth.signInTitle')
-    : portal === 'creator' || role === 'creator'
+    : effectivePortal === 'creator' || role === 'creator'
       ? t('auth.creatorSignUpTitle')
       : t('auth.signUpTitle');
 
@@ -143,8 +145,8 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
     <Ficha variant="focus" className="w-full p-7 md:p-10">
       <div className="mb-8">
         <p className="mb-2 flex items-center gap-2 text-sm text-bone-500">
-          {portal === 'admin' ? <ShieldCheck size={17} weight="duotone" /> : null}
-          {portal === 'admin' ? t('auth.adminEyebrow') : t('brand.tagline')}
+          {effectivePortal === 'admin' ? <ShieldCheck size={17} weight="duotone" /> : null}
+          {effectivePortal === 'admin' ? t('auth.adminEyebrow') : t('brand.tagline')}
         </p>
         <h1 className="font-display text-5xl leading-[.92] text-bone-50">{title}</h1>
       </div>
@@ -185,8 +187,8 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       <div className="mt-7"><Escudo text={t('privacy.notice')} /></div>
       <p className="mt-7 text-sm text-bone-300">
         {mode === 'signIn'
-          ? <>{t('auth.noAccount')} <Link to={portal === 'creator' ? '/idade?role=creator' : portal === 'admin' ? '/admin' : '/registo'} className="text-bone-50 underline decoration-bone-50/20 underline-offset-4">{t('auth.createNow')}</Link></>
-          : <>{t('auth.haveAccount')} <Link to={portal === 'creator' ? '/se-criadora' : '/entrar'} className="text-bone-50 underline decoration-bone-50/20 underline-offset-4">{t('auth.signInNow')}</Link></>
+          ? <>{t('auth.noAccount')} <Link to={effectivePortal === 'creator' ? '/idade?role=creator' : effectivePortal === 'admin' ? '/admin' : '/registo'} className="text-bone-50 underline decoration-bone-50/20 underline-offset-4">{t('auth.createNow')}</Link></>
+          : <>{t('auth.haveAccount')} <Link to={effectivePortal === 'creator' ? '/se-criadora' : '/entrar'} className="text-bone-50 underline decoration-bone-50/20 underline-offset-4">{t('auth.signInNow')}</Link></>
         }
       </p>
     </Ficha>
