@@ -98,11 +98,11 @@ export function CreatorContentPage() {
     ]);
     setLoading(false);
     if (channelResult.error) {
-      setError(channelResult.error.message);
+      setError(contentErrorMessage(t, channelResult.error));
       return;
     }
     if (contentResult.error) {
-      setError(contentResult.error.message);
+      setError(contentErrorMessage(t, contentResult.error));
       return;
     }
     const found = (channelResult.data ?? null) as Channel | null;
