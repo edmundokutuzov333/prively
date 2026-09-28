@@ -1,5 +1,6 @@
 import { CalendarDots, ChartBar, ChartLineUp, ChatCircle, Compass, FilmStrip, GearSix, Gavel, Keyhole, LockKey, Money, NotePencil, ShieldCheck, ShoppingBagOpen, Storefront, UsersThree, VideoCamera, Wallet } from '@phosphor-icons/react';
 import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
@@ -7,6 +8,7 @@ import { Escudo } from '@/design/Escudo';
 import { Selo } from '@/design/Selo';
 import { useAuth } from '@/app/session';
 import { PageFrame } from '@/pages/PageFrame';
+import { requireSupabase } from '@/lib/supabase';
 
 function DevSessionNote() {
   const { t } = useTranslation();
@@ -29,13 +31,139 @@ export function ClientProfilePage() {
   return <><DevSessionNote /><PageFrame icon={UsersThree} title={title} intro={t('experience.pages.profile.intro')} detail={t('experience.pages.profile.detail')} /></>;
 }
 
+type PostDetail = {
+  id: string;
+  caption: string | null;
+  visibility: string;
+  price: number | null;
+  status: string;
+  publish_at: string | null;
+  expires_at: string | null;
+  is_story: boolean;
+  blurhash: string | null;
+};
+
+type PostMedia = {
+  id: string;
+  kind: 'image' | 'video' | 'audio';
+  thumb_blur_path: string | null;
+  watermark_enabled: boolean;
+  watermark_text: string | null;
+};
+
+type SignedMedia = {
+  assetId: string;
+  kind: 'image' | 'video' | 'audio';
+  url: string;
+  thumbnailUrl: string | null;
+  watermark: { enabled: boolean; text: string | null };
+};
+
 export function ClientPostPage() {
   const { id } = useParams();
   const { t } = useTranslation();
-  const title = id ? `Post ${id.slice(0, 8)}` : t('experience.pages.post.title');
-  return <><DevSessionNote /><PageFrame icon={LockKey} title={title} intro={t('experience.pages.post.intro')} detail={t('experience.pages.post.detail')} /></>;
-}
+  const [post, setPost] = useState<PostDetail | null>(null);
+  const [media, setMedia] = useState<SignedMedia[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<'notFound' | 'forbidden' | 'load'>('load');
 
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!id) {
+        setError('notFound');
+        setLoading(false);
+        return;
+      }
+
+      const sb = requireSupabase();
+      const postResult = await sb
+        .from('posts')
+        .select('id,caption,visibility,price,status,publish_at,expires_at,is_story,blurhash')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (!active) return;
+      if (postResult.error || !postResult.data) {
+        setError(postResult.error ? 'forbidden' : 'notFound');
+        setLoading(false);
+        return;
+      }
+
+      const mediaResult = await sb
+        .from('media_assets')
+        .select('id,kind,thumb_blur_path,watermark_enabled,watermark_text')
+        .eq('post_id', id)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true });
+
+      if (!active) return;
+      if (mediaResult.error) {
+        setError('load');
+        setLoading(false);
+        return;
+      }
+
+      const signedResults = await Promise.all(
+        (mediaResult.data as PostMedia[]).map(async (asset) => {
+          const result = await sb.functions.invoke('get-media-url', { body: { assetId: asset.id } });
+          if (result.error || !result.data?.url) return null;
+          return result.data as SignedMedia;
+        }),
+      );
+
+      if (!active) return;
+      const signedMedia = signedResults.filter((item): item is SignedMedia => item !== null);
+      if (mediaResult.data.length > 0 && signedMedia.length === 0) {
+        setError('forbidden');
+      } else {
+        setPost(postResult.data as PostDetail);
+        setMedia(signedMedia);
+        setError('load');
+      }
+      setLoading(false);
+    };
+
+    void load();
+    return () => { active = false; };
+  }, [id]);
+
+  if (loading) {
+    return <section className="mx-auto max-w-5xl px-5 py-12 md:px-8"><p className="text-sm text-bone-500">{t('common.loading')}</p></section>;
+  }
+
+  if (!post) {
+    return <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-5 py-12 md:px-8">
+      <Ficha variant="focus" className="w-full p-8 text-center">
+        <ShieldCheck size={32} className="mx-auto text-crimson-400"/>
+        <h1 className="mt-5 font-display text-4xl text-bone-50">{error === 'forbidden' ? t('post.accessDeniedTitle') : t('post.notFoundTitle')}</h1>
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-bone-300">{error === 'forbidden' ? t('post.accessDeniedBody') : t('post.notFoundBody')}</p>
+        <Link to="/feed" className="mt-6 inline-flex min-h-11 items-center rounded-md border border-bone-50/15 px-4 text-sm font-semibold text-bone-50 no-underline">{t('post.backToFeed')}</Link>
+      </Ficha>
+    </section>;
+  }
+
+  return <section className="mx-auto max-w-5xl space-y-6 px-5 py-10 md:px-8 md:py-14">
+    <div>
+      <p className="flex items-center gap-2 text-sm text-bone-500"><LockKey size={18} weight="duotone"/>{t('post.eyebrow')}</p>
+      <h1 className="mt-4 font-display text-5xl leading-none text-bone-50">{post.caption || t('post.untitled')}</h1>
+      <p className="mt-3 text-sm text-bone-500">{t('post.visibilityValues.' + post.visibility)} · {post.is_story ? t('post.story') : t('post.publication')}</p>
+    </div>
+
+    <Ficha variant="focus" className="overflow-hidden p-2 md:p-4">
+      {media.length ? <div className="grid gap-4">
+        {media.map((asset) => <figure key={asset.assetId} className="relative overflow-hidden rounded-md border border-bone-50/8 bg-black">
+          {asset.kind === 'image' ? <img src={asset.url} alt={post.caption || t('post.mediaAlt')} className="max-h-[72vh] w-full object-contain" loading="eager" /> : null}
+          {asset.kind === 'video' ? <video src={asset.url} poster={asset.thumbnailUrl ?? undefined} controls playsInline preload="metadata" className="max-h-[72vh] w-full bg-black" /> : null}
+          {asset.kind === 'audio' ? <div className="flex min-h-48 items-center justify-center p-8"><audio src={asset.url} controls className="w-full" /></div> : null}
+          {asset.watermark.enabled && asset.watermark.text ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+            <span className="rotate-[-18deg] select-none text-xl font-semibold tracking-[0.2em] text-white">{asset.watermark.text}</span>
+          </div> : null}
+        </figure>)}
+      </div> : <div className="p-10 text-center text-sm text-bone-500">{t('post.noMedia')}</div>}
+    </Ficha>
+  </section>;
+}
 export function ClientMessagesPage() { const { t } = useTranslation(); return <><DevSessionNote /><PageFrame icon={ChatCircle} title={t('experience.pages.messages.title')} intro={t('experience.pages.messages.intro')} detail={t('experience.pages.messages.detail')} /></>; }
 
 export function ClientMessagePage() {
