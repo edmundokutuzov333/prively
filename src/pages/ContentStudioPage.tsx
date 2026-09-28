@@ -63,7 +63,7 @@ function contentErrorMessage(t: (key: string, options?: Record<string, unknown>)
   return known.has(code) ? t(`content.errors.${code}`) : t('content.errors.generic');
 }
 
-export function CreatorContentPage() {
+export function ContentStudioPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [channel, setChannel] = useState<Channel | null>(null);
