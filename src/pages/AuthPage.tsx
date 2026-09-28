@@ -13,7 +13,7 @@ import { requireSupabase } from '@/lib/supabase';
 type Mode = 'signIn' | 'signUp';
 type Portal = 'client' | 'creator' | 'admin';
 type AuthPageProps = { mode: Mode; portal?: Portal };
-type Values = { email: string; password: string; handle?: string };
+type Values = { email: string; password: string; handle?: string; ageConfirmed?: boolean; termsAccepted?: boolean; privacyAccepted?: boolean };
 
 export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const { t } = useTranslation();
@@ -28,11 +28,17 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const schema = z.object({
     email: z.string().email(),
     password: z.string().min(8),
-    handle: z.string().optional()
+    handle: z.string().optional(),
+    ageConfirmed: z.boolean().optional(),
+    termsAccepted: z.boolean().optional(),
+    privacyAccepted: z.boolean().optional()
   }).superRefine((values, ctx) => {
     if (mode === 'signUp' && !values.handle?.match(/^[a-z0-9_]{3,24}$/)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['handle'], message: 'invalid_handle' });
     }
+    if (mode === 'signUp' && !values.ageConfirmed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ageConfirmed'], message: 'age_required' });
+    if (mode === 'signUp' && !values.termsAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['termsAccepted'], message: 'terms_required' });
+    if (mode === 'signUp' && !values.privacyAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['privacyAccepted'], message: 'privacy_required' });
   });
 
   const { register, handleSubmit, formState: { isSubmitting, errors } } = useForm<Values>({
@@ -122,6 +128,15 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
         }
       }
 
+      const consent = await sb.rpc('record_consent', { _consent_type: 'age_gate', _version: '1.0' });
+      const terms = await sb.rpc('record_legal_acceptance', { _document_type: 'terms', _version: '1.0' });
+      const privacy = await sb.rpc('record_legal_acceptance', { _document_type: 'privacy', _version: '1.0' });
+      if (consent.error || terms.error || privacy.error) {
+        await sb.auth.signOut({ scope: 'local' });
+        setError(consent.error?.message ?? terms.error?.message ?? privacy.error?.message ?? t('auth.legalAcceptanceError'));
+        return;
+      }
+
       setMessage(t(signupRole === 'creator' ? 'auth.creatorRegistered' : 'auth.clientRegistered'));
       navigate(signupRole === 'creator' ? '/estudio' : '/descobrir', { replace: true });
     } catch (submissionError) {
@@ -169,6 +184,13 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
           </span>
           {errors.email ? <span className="mt-2 block text-xs text-danger">{t('auth.invalidCredentials')}</span> : null}
         </label>
+
+        {mode === 'signUp' ? <div className="space-y-3 rounded-md border border-bone-50/8 bg-ink-850 p-4">
+          <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('ageConfirmed')} className="mt-1 accent-crimson-500"/><span>{t('auth.ageConfirmed')}</span></label>
+          <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('termsAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.termsAccepted')}</span></label>
+          <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('privacyAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.privacyAccepted')}</span></label>
+          {errors.ageConfirmed || errors.termsAccepted || errors.privacyAccepted ? <p className="text-xs text-danger">{t('auth.acceptanceRequired')}</p> : null}
+        </div> : null}
 
         <label className="block">
           <span className="mb-2 block text-sm text-bone-300">{t('auth.password')}</span>
