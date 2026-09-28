@@ -188,11 +188,15 @@ select ok(
   'client can view a fully approved published post'
 );
 
+with access as (
+  select public.get_media_access(current_setting('app.phase5_asset_id')::uuid) as value
+)
 select ok(
-  (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'processing_status')='ready'
-  and (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'watermark_enabled')::boolean,
+  (access.value->>'processing_status')='ready'
+  and (access.value->>'watermark_enabled')::boolean,
   'media access returns ready processing state and watermark policy'
-);
+)
+from access;
 
 select is(
   (select count(*) from public.media_access_logs where user_id=auth.uid() and granted),
