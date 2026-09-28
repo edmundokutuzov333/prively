@@ -25,6 +25,8 @@ Deno.serve(async (request) => {
       kind?: unknown;
       watermark_enabled?: unknown;
       watermark_text?: unknown;
+      watermark_path?: unknown;
+      processing_status?: unknown;
       expires_in?: unknown;
     };
 
@@ -35,9 +37,13 @@ Deno.serve(async (request) => {
     const admin = serviceClient();
     const storage = admin.storage.from("prively-private");
 
-    const primaryPath = typeof access.hls_path === "string" && access.kind === "video"
-      ? access.hls_path
-      : access.path;
+    const watermarkPath = typeof access.watermark_path === "string" ? access.watermark_path : null;
+    const useWatermark = access.watermark_enabled === true && Boolean(watermarkPath);
+    const primaryPath = useWatermark
+      ? watermarkPath!
+      : typeof access.hls_path === "string" && access.kind === "video"
+        ? access.hls_path
+        : access.path;
 
     const signed = await storage.createSignedUrl(primaryPath, 60);
     if (signed.error || !signed.data?.signedUrl) {
@@ -55,10 +61,16 @@ Deno.serve(async (request) => {
       kind: access.kind ?? null,
       url: signed.data.signedUrl,
       thumbnailUrl,
-      source: primaryPath === access.path ? "original" : "hls",
+      source: useWatermark
+        ? "watermark"
+        : primaryPath === access.path
+          ? "original"
+          : "hls",
       expiresIn: typeof access.expires_in === "number" ? access.expires_in : 60,
+      processingStatus: typeof access.processing_status === "string" ? access.processing_status : null,
       watermark: {
         enabled: access.watermark_enabled === true,
+        applied: useWatermark,
         text: typeof access.watermark_text === "string" ? access.watermark_text : null,
       },
     });
