@@ -106,5 +106,5 @@ export function CreatorSettingsPage() { return <CreatorPage page="settings" />; 
 
 export function SeCriadoraPage() {
   const { t } = useTranslation();
-  return <section className="mx-auto max-w-5xl px-5 py-12 md:px-8 md:py-16"><PageFrame icon={Keyhole} title={t('experience.pages.seCreator.title')} intro={t('experience.pages.seCreator.intro')} detail={t('experience.pages.seCreator.detail')} actionHref="/registo" actionLabel={t('experience.pages.seCreator.action')} /></section>;
+  return <section className="mx-auto max-w-5xl px-5 py-12 md:px-8 md:py-16"><PageFrame icon={Keyhole} title={t('experience.pages.seCreator.title')} intro={t('experience.pages.seCreator.intro')} detail={t('experience.pages.seCreator.detail')} actionHref="/registo?role=creator" actionLabel={t('experience.pages.seCreator.action')} /></section>;
 }
