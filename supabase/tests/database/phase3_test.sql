@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(17);
 
 select ok(to_regclass('public.profiles') is not null,'profiles exists');
 select ok(to_regclass('public.ledger_entries') is not null,'ledger exists');
