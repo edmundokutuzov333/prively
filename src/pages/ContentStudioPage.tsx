@@ -55,6 +55,9 @@ function contentErrorMessage(t: (key: string, options?: Record<string, unknown>)
     'sha256_mismatch',
     'media_forbidden',
     'media_not_ready',
+    'media_integrity_failed',
+    'media_archive_failed',
+    'media_finalize_failed',
     'ppv_price_required',
     'tier_required',
     'price_visibility_mismatch'
@@ -178,7 +181,7 @@ export function ContentStudioPage() {
         setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, state: 'preparing' } : item));
 
         const plan = await prepareMediaUpload(String(postId), file);
-        await uploadMediaResumable(file, plan, (progress) => {
+        const finalized = await uploadMediaResumable(file, plan, (progress) => {
           setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
             ...item,
             state: 'uploading',
@@ -186,7 +189,43 @@ export function ContentStudioPage() {
           } : item));
         });
 
-        setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, state: 'queued', progress: 100 } : item));
+        const sb = requireSupabase();
+        const integrityJobId = finalized.jobs.integrity;
+
+        if (integrityJobId) {
+          const integrityResult = await sb.functions.invoke('process-media-job', {
+            body: { jobId: integrityJobId },
+          });
+
+          if (integrityResult.error || integrityResult.data?.status !== 'succeeded') {
+            throw new Error(
+              typeof integrityResult.data?.code === 'string'
+                ? integrityResult.data.code
+                : integrityResult.error?.message ?? 'media_integrity_failed',
+            );
+          }
+        }
+
+        const archiveJobId = finalized.jobs.archive;
+        if (archiveJobId) {
+          const archiveResult = await sb.functions.invoke('process-media-job', {
+            body: { jobId: archiveJobId },
+          });
+
+          if (archiveResult.error || archiveResult.data?.status !== 'succeeded') {
+            throw new Error(
+              typeof archiveResult.data?.code === 'string'
+                ? archiveResult.data.code
+                : archiveResult.error?.message ?? 'media_archive_failed',
+            );
+          }
+        }
+
+        setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
+          ...item,
+          state: 'queued',
+          progress: 100,
+        } : item));
       }
 
       setCaption('');
