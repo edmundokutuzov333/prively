@@ -261,9 +261,11 @@ create index if not exists reactions_post_idx
 
 alter table public.comments enable row level security;
 alter table public.reactions enable row level security;
+drop policy if exists admin_read_all on public.comments;
+drop policy if exists admin_manage_all on public.comments;
+drop policy if exists admin_read_all on public.reactions;
+drop policy if exists admin_manage_all on public.reactions;
 
-revoke all on public.comments,public.reactions from anon,authenticated;
-grant select on public.comments,public.reactions to authenticated;
 
 drop policy if exists comments_read_allowed on public.comments;
 create policy comments_read_allowed
@@ -534,8 +536,6 @@ alter table public.message_unlocks enable row level security;
 alter table public.message_attachments enable row level security;
 alter table public.message_translations enable row level security;
 
-revoke all on public.message_locked_content,public.message_unlocks,public.message_attachments,public.message_translations from anon,authenticated;
-grant select on public.message_unlocks,public.message_attachments,public.message_translations to authenticated;
 
 drop policy if exists locked_content_member_read on public.message_locked_content;
 create policy locked_content_member_read
@@ -592,12 +592,20 @@ using (
 );
 
 -- Prevent direct browser writes to chat records.
-revoke all on public.messages from anon,authenticated;
-grant select on public.messages to authenticated;
-revoke all on public.conversation_members from anon,authenticated;
-grant select on public.conversation_members to authenticated;
-revoke all on public.conversations from anon,authenticated;
-grant select on public.conversations to authenticated;
+
+-- Private communication and social relationship metadata are not exposed to platform admins through ordinary RLS.
+drop policy if exists admin_read_all on public.conversations;
+drop policy if exists admin_manage_all on public.conversations;
+drop policy if exists admin_read_all on public.conversation_members;
+drop policy if exists admin_manage_all on public.conversation_members;
+drop policy if exists admin_read_all on public.follows;
+drop policy if exists admin_manage_all on public.follows;
+drop policy if exists admin_read_all on public.blocks;
+drop policy if exists admin_manage_all on public.blocks;
+drop policy if exists admin_read_all on public.hidden_from;
+drop policy if exists admin_manage_all on public.hidden_from;
+drop policy if exists admin_read_all on public.notifications;
+drop policy if exists admin_manage_all on public.notifications;
 
 -- Fix the pre-existing tautological RLS condition.
 drop policy if exists messages_member on public.messages;
@@ -964,16 +972,12 @@ create table if not exists public.push_subscriptions (
 alter table public.notifications enable row level security;
 alter table public.push_subscriptions enable row level security;
 
-revoke all on public.notifications from anon,authenticated;
-grant select on public.notifications to authenticated;
 
 drop policy if exists notifications_own on public.notifications;
 create policy notifications_own
 on public.notifications for select to authenticated
 using(user_id=auth.uid());
 
-revoke all on public.push_subscriptions from anon,authenticated;
-grant select on public.push_subscriptions to authenticated;
 
 drop policy if exists push_subscriptions_own on public.push_subscriptions;
 create policy push_subscriptions_own
@@ -1742,8 +1746,6 @@ alter table public.conversations enable row level security;
 alter table public.conversation_members enable row level security;
 alter table public.messages enable row level security;
 
-revoke insert,update,delete on public.follows,public.blocks,public.hidden_from from anon,authenticated;
-revoke insert,update,delete on public.messages,public.conversations,public.conversation_members from anon,authenticated;
 
 -- Do not expose block lists or hidden lists to arbitrary users.
 drop policy if exists blocks_own on public.blocks;
