@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { featureFlags } from '@/config/featureFlags';
 import { SessionProvider } from '@/app/session';
+import { AdminGuard } from '@/app/AdminGuard';
 import { WorkspaceLayout } from '@/app/WorkspaceLayout';
 import { ExperienceGuard } from '@/app/ExperienceGuards';
 import { HomePage } from '@/pages/HomePage';
+import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
@@ -68,8 +70,8 @@ import {
   CreatorSchedulePage
 } from '@/pages/Phase3AdvancedPages';
 
-const phase2RoutesEnabled = import.meta.env.DEV || featureFlags.phase2Experience;
-const phase3RoutesEnabled = import.meta.env.DEV || featureFlags.phase3Monetization;
+const phase2RoutesEnabled = featureFlags.phase2Experience || import.meta.env.DEV;
+const phase3RoutesEnabled = featureFlags.phase3Monetization || import.meta.env.DEV;
 const clientSurfaceRoutes = [
   '/verificacao',
   '/onboarding',
@@ -200,8 +202,9 @@ export function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/idade" element={<AgeGatePage />} />
-        <Route path="/entrar" element={<AuthPage mode="signIn" />} />
-        <Route path="/registo" element={<AuthPage mode="signUp" />} />
+        <Route path="/entrar" element={<AuthPage mode="signIn" portal="client" />} />
+        <Route path="/registo" element={<AuthPage mode="signUp" portal="client" />} />
+        <Route path="/admin/entrar" element={<AuthPage mode="signIn" portal="admin" />} />
 
         {phase2RoutesEnabled ? <Route element={<ExperienceGuard />}>
           <Route element={<WorkspaceLayout variant="client" />}>
@@ -256,7 +259,10 @@ export function App() {
           </Route>
         </Route> : null}
 
-        {phase3RoutesEnabled ? adminSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />) : null}
+        <Route element={<AdminGuard />}>
+          <Route path="/admin" element={<AdminDashboardPage />} />
+          {adminSurfaceRoutes.filter((path) => path !== '/admin').map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+        </Route>
 
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/ajuda" element={<InfoPage />} /> : null}
