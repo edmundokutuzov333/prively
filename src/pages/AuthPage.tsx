@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { Botao } from '@/design/Botao';
 import { Escudo } from '@/design/Escudo';
-import { requireSupabase, supabaseConfigured } from '@/lib/supabase';
+import { requireSupabase } from '@/lib/supabase';
 
 type Mode = 'signIn' | 'signUp';
 type AuthPageProps = { mode: Mode };
@@ -33,12 +33,23 @@ export function AuthPage({ mode }: AuthPageProps) {
   const onSubmit = async (values: Values) => {
     setError(null);
     setMessage(null);
-    if (!supabaseConfigured) { setError(t('auth.configError')); return; }
     try {
       const sb = requireSupabase();
       if (mode === 'signIn') {
-        const { error: signInError } = await sb.auth.signInWithPassword({ email: values.email, password: values.password });
-        if (signInError) { setError(t('auth.invalidCredentials')); return; }
+        const { error: signInError } = await sb.auth.signInWithPassword({
+          email: values.email.trim().toLowerCase(),
+          password: values.password
+        });
+        if (signInError) {
+          if (signInError.status === 400 || signInError.status === 401) {
+            setError(t('auth.invalidCredentials'));
+          } else if (signInError.message.toLowerCase().includes('email not confirmed')) {
+            setError(t('auth.invalidCredentials'));
+          } else {
+            setError(signInError.message);
+          }
+          return;
+        }
         navigate('/');
         return;
       }
