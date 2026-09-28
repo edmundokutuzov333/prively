@@ -30,8 +30,6 @@ import {
   ClientDiscreetPage,
   ClientFeedPage,
   ClientLimitsPage,
-  ClientMessagePage,
-  ClientMessagesPage,
   ClientPostPage,
   ClientPrivacyPage,
   ClientProfilePage,
