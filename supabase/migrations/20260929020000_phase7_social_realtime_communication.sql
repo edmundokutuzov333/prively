@@ -108,7 +108,7 @@ create or replace function public.notify_user(
 )
 returns uuid
 language plpgsql security definer set search_path=public
-as $
+as $phase7$
 declare n uuid:=gen_random_uuid();
 begin
   if _user is null then return null; end if;
@@ -116,7 +116,7 @@ begin
   values(n,_user,_kind,coalesce(_payload,'{}'::jsonb));
   return n;
 end;
-$;
+$phase7$;
 
 revoke all on function public.notify_user(uuid,text,jsonb) from public,anon,authenticated;
 
