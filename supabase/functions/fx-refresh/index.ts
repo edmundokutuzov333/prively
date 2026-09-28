@@ -56,7 +56,7 @@ Deno.serve(async (request) => {
 
     const {data:apiKey}=await admin.rpc("financial_secret",{_name:"prively_fx_api_key"});
     const headers:Record<string,string>={"Accept":"application/json"};
-    if(typeof apiKey==="string" && apiKey) headers.Authorization=\`Bearer \${apiKey}\`;
+    if(typeof apiKey==="string" && apiKey) headers.Authorization="Bearer " + apiKey;
 
     const response=await fetch(url,{headers});
     if(!response.ok) return jsonResponse({code:\`fx_provider_http_\${response.status}\`},502);
