@@ -20,15 +20,6 @@ function normalizeStatus(value: string | null): "paid" | "failed" | "pending" | 
   return null;
 }
 
-function methodFromBody(body: Record<string, unknown>): string | null {
-  return nestedString(body, [
-    "method",
-    "provider",
-    "data.method",
-    "data.provider",
-  ]);
-}
-
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return optionsResponse();
   if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
