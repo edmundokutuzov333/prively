@@ -2,6 +2,7 @@ export const featureFlags = {
   designSystem: true,
   ageGate: true,
   auth: true,
+  phase2Experience: false,
   creatorStudio: false,
   wallet: false,
   payments: false,

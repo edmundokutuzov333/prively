@@ -9,6 +9,53 @@ const common = {
   common: { primary: 'Acção principal', secondary: 'Acção secundária', loading: 'A carregar', error: 'Erro', empty: 'Vazio', success: 'Concluído', close: 'Fechar', language: 'Idioma' },
   privacy: { notice: 'As tuas conversas são privadas. Ficam protegidas com cifragem em trânsito e em repouso, e no dia-a-dia só as pessoas na conversa as vêem.', learnMore: 'Saber mais' },
   curtain: { unlock: 'Desbloquear por {{price}}', protected: 'Protegido por Cortina', unlocked: 'Conteúdo desbloqueado', pin: 'PIN', delete: 'Apagar', confirm: 'OK' },
-  errors: { ageRequired: 'É necessário confirmar a idade para continuar.' }
+  errors: { ageRequired: 'É necessário confirmar a idade para continuar.' },
+  experience: {
+    workspace: { client: 'Privê do cliente', creator: 'Estúdio da criadora' },
+    nav: { discover: 'Descobrir', feed: 'Feed', wallet: 'Carteira', messages: 'Mensagens', account: 'Eu', studio: 'Estúdio', content: 'Conteúdo', create: 'Criar', settings: 'Definições' },
+    session: { connected: 'Ligação disponível', unconfigured: 'Supabase não configurado', active: 'Sessão activa', account: 'Conta autenticada', preview: 'Sem sessão', devOnly: 'pré-visualização de desenvolvimento' },
+    pages: {
+      emptyAction: 'Os dados reais desta área serão ligados através do backend da respectiva funcionalidade.',
+      discover: { title: 'Descobrir', intro: 'Explorar criadoras', detail: 'A descoberta será alimentada por perfis, localização aproximada, filtros e disponibilidade reais. Nesta fase não existem resultados inventados.' },
+      feed: { title: 'Feed', intro: 'Conteúdo', detail: 'O feed vertical será ligado ao catálogo real e às regras de visibilidade do servidor. Nenhum conteúdo fictício é apresentado.' },
+      profile: { title: 'Perfil', intro: 'Canal', detail: 'O perfil será carregado pelo handle através do backend. A autorização de conteúdo continuará a ser decidida no servidor.' },
+      post: { title: 'Publicação', intro: 'Conteúdo', detail: 'A publicação será carregada pelo identificador real e só exibirá media quando a autorização correspondente existir.' },
+      messages: { title: 'Mensagens', intro: 'Conversas privadas', detail: 'A caixa de entrada será ligada ao Realtime e às regras de bloqueio, visibilidade e mensagens pagas no backend.' },
+      message: { title: 'Conversa', intro: 'Mensagens privadas', detail: 'A conversa só será carregada quando existir uma relação de membros autorizada.' },
+      wallet: { title: 'Carteira', intro: 'Saldo interno', balanceUnavailable: 'Saldo ainda não ligado', notice: 'Os movimentos financeiros serão sempre calculados no servidor e registados no livro-razão.', empty: 'Sem movimentos financeiros para apresentar', detail: 'A carteira permanece sem dados até existir a fonte financeira real.' },
+      purchases: { title: 'Compras', intro: 'Histórico', detail: 'O histórico será derivado das transacções reais do utilizador. Não são criadas compras de demonstração.' },
+      wishlist: { title: 'Lista de desejos', intro: 'Guardar para depois', detail: 'Os itens serão persistidos na base de dados e carregados apenas para o utilizador autenticado.' },
+      account: { title: 'Conta', intro: 'Identidade da conta', detail: 'Esta área trata dados de conta não sensíveis. A identidade social continua separada da identidade legal.' },
+      privacy: { title: 'Privacidade', intro: 'Controlo e discrição', detail: 'As regras de privacidade serão persistidas e aplicadas no servidor quando o respectivo backend estiver activo.' },
+      limits: { title: 'Limites de gasto', intro: 'Controlo financeiro', detail: 'Os limites terão efeito no servidor através de regras de gasto. A interface não pode substituir essa autoridade.' },
+      discreet: { title: 'Modo discreto', intro: 'Protecção no dispositivo', detail: 'A superfície desta área está definida; a persistência segura e o comportamento completo serão ligados com o backend de privacidade.' },
+      creator: {
+        studio: { title: 'Estúdio', intro: 'Operação da criadora', detail: 'O painel de estúdio será alimentado por ganhos, conteúdo, fãs e actividade reais, sem métricas inventadas.' },
+        content: { title: 'Conteúdo', intro: 'Publicação e catálogo', detail: 'Esta área será ligada ao pipeline de upload, consentimento, moderação e publicação do backend.' },
+        store: { title: 'Loja', intro: 'Produtos e packs', detail: 'Produtos, packs e encomendas serão lidos da base de dados e processados com as regras financeiras reais.' },
+        agenda: { title: 'Agenda', intro: 'Disponibilidade social', detail: 'A agenda será baseada em janelas reais e locais públicos aprovados pela equipa.' },
+        fans: { title: 'Fãs', intro: 'Relações e gestão', detail: 'A gestão de fãs será derivada de relações reais e identificada por pseudónimo quando aplicável.' },
+        earnings: { title: 'Ganhos', intro: 'Financeiro da criadora', detail: 'Ganhos pendentes e disponíveis só aparecem a partir do ledger e das regras reais de libertação.' },
+        analytics: { title: 'Analítica', intro: 'Resultados', detail: 'Os gráficos desta área só serão preenchidos quando existirem agregações reais.' },
+        requests: { title: 'Pedidos', intro: 'Pedidos personalizados', detail: 'Pedidos e escrow serão ligados ao motor financeiro quando essa camada estiver implementada.' },
+        auctions: { title: 'Leilões', intro: 'Conteúdo em leilão', detail: 'Os leilões dependerão de bloqueios de concorrência e escrow no servidor.' },
+        lives: { title: 'Lives e chamadas', intro: 'Ao vivo', detail: 'As salas e a cobrança por minuto serão criadas somente através do backend e do fornecedor real.' },
+        settings: { title: 'Definições do estúdio', intro: 'Configuração', detail: 'As configurações serão ligadas a dados persistidos e permissões reais da criadora.' }
+      },
+      seCreator: { title: 'Sê criadora', intro: 'Entrada para criadoras', detail: 'O processo de entrada parte do registo e segue para verificação de identidade antes de qualquer publicação.', action: 'Criar conta' },
+      about: { title: 'Sobre a Prively', intro: 'A plataforma', detail: 'Informação institucional e de produto da Prively.' },
+      help: { title: 'Ajuda', intro: 'Centro de ajuda', detail: 'Orientação sobre conta, privacidade, segurança e uso da plataforma.' },
+      legal: {
+        termos: { title: 'Termos', intro: 'Documento legal', detail: 'A versão publicada dos termos deverá ser ligada ao conteúdo legal aprovado antes do lançamento.' },
+        privacidade: { title: 'Privacidade', intro: 'Documento legal', detail: 'A política publicada deverá reflectir os dados efectivamente tratados pela plataforma.' },
+        'conteudo-proibido': { title: 'Conteúdo proibido', intro: 'Documento legal', detail: 'As regras publicadas devem corresponder aos mecanismos de moderação efectivamente activos.' },
+        reembolsos: { title: 'Reembolsos', intro: 'Documento legal', detail: 'A política deve corresponder às regras reais de pagamentos, disputas e reembolsos.' },
+        cookies: { title: 'Cookies', intro: 'Documento legal', detail: 'A política deve corresponder aos mecanismos reais de armazenamento e análise.' },
+        dmca: { title: 'Remoção de conteúdo', intro: 'Documento legal', detail: 'O processo de remoção será ligado à fila real de conformidade e moderação.' }
+      },
+      info: { note: 'Conteúdo legal e institucional só deve ser publicado depois de validado e versionado.' }
+    }
+  }
 } as const;
+
 export default common;
