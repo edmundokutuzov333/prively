@@ -40,7 +40,6 @@ import {
   CreatorAgendaPage,
   CreatorAnalyticsPage,
   CreatorAuctionsPage,
-  CreatorContentPage,
   CreatorEarningsPage,
   CreatorFansPage,
   CreatorLivesPage,
