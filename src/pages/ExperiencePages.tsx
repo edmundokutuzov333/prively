@@ -9,6 +9,7 @@ import { Cortina } from '@/design/Cortina';
 import { Selo } from '@/design/Selo';
 import { useAuth } from '@/app/session';
 import { PageFrame } from '@/pages/PageFrame';
+import { SocialPostActions } from '@/features/social/SocialPostActions';
 import { requireSupabase } from '@/lib/supabase';
 import { formatMznFromCents } from '@/lib/money';
 
@@ -186,6 +187,7 @@ export function ClientPostPage() {
         </figure>)}
       </div> : <div className="p-10 text-center text-sm text-bone-500">{t('post.noMedia')}</div>}
     </Ficha>
+    <SocialPostActions postId={post.id} />
   </section>;
 }
 export function ClientMessagesPage() { const { t } = useTranslation(); return <><DevSessionNote /><PageFrame icon={ChatCircle} title={t('experience.pages.messages.title')} intro={t('experience.pages.messages.intro')} detail={t('experience.pages.messages.detail')} /></>; }
