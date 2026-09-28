@@ -69,3 +69,30 @@ PostgREST execution of SECURITY DEFINER routines is revoked by default from PUBL
 
 ### 2026-09-28: Deployment observability limitation
 The Vercel deployment integration currently reports failed deployments for the Prively project, but the connected Vercel tool does not expose the corresponding build logs/project to this session. Phase 4 therefore is not marked production-deploy-verified until that external deployment failure can be inspected.
+
+
+## Phase 5
+
+### 2026-09-28: Content is server-authorized
+Posts are only visible through RLS and `can_view_post()`. The visibility gate also requires every attached media asset to have verified integrity and a clean moderation/scan state before a client can access the post.
+
+### 2026-09-28: Uploads are private and resumable
+Creator uploads use Supabase Storage resumable TUS uploads with signed upload URLs. The browser never receives a public storage URL. Upload metadata, expected SHA-256, size and expiry are stored server-side before bytes are accepted.
+
+### 2026-09-28: Integrity is verified from the stored object
+A media job re-reads the private object and computes SHA-256 server-side. A mismatch marks the asset as failed and flagged, preventing publication.
+
+### 2026-09-28: Media processing uses explicit adapters
+Thumbnail generation, HLS transcoding, watermark baking and provider-backed moderation are represented as durable media jobs. External processing is only executed when the corresponding endpoint and credentials are configured. No fake provider or simulated clean result is used.
+
+### 2026-09-28: BlurHash is generated before upload
+Image posts calculate a compact BlurHash placeholder from the selected image before the post is created. The hash is persisted with the post and can be used by future feed/detail surfaces for progressive rendering.
+
+### 2026-09-28: Access is audited
+Every signed-media authorization attempt is persisted in `media_access_logs`. Compliance/archive events preserve post and asset context without making the private media bucket public.
+
+### 2026-09-28: Moderation stays fail-closed
+A post cannot become client-visible while its attached media is pending, mismatched, flagged, under review or otherwise not clean. Processing jobs can remain blocked when a real processor has not been configured.
+
+### 2026-09-28: Deployment caveat remains explicit
+Supabase production migrations and the Phase 5 Edge Functions are deployed and active. GitHub Actions is running the main CI pipeline, but the Vercel integration continues to report an external deployment/build-rate-limit failure and is not treated as a successful production verification.
