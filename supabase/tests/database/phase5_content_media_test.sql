@@ -60,6 +60,8 @@ begin
   );
 
   v_asset_id:=(asset->>'assetId')::uuid;
+  perform set_config('app.phase5_asset_id',v_asset_id::text,true);
+  perform set_config('app.phase5_post_id',post_id::text,true);
   if not exists(select 1 from public.media_uploads where id=(asset->>'uploadId')::uuid and user_id=creator) then
     raise exception 'media upload session missing';
   end if;
@@ -118,7 +120,7 @@ select ok(
 );
 
 select ok(
-  (public.get_media_access((select id from public.media_assets where original_filename='test.png')) ->> 'watermark_enabled')::boolean,
+  (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'watermark_enabled')::boolean,
   'media access returns watermark policy'
 );
 
