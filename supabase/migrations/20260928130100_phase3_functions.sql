@@ -1,5 +1,5 @@
 create or replace function public.protect_profile_security_fields()
-returns trigger language plpgsql security definer set search_path=public as $$$
+returns trigger language plpgsql security definer set search_path=public as $$
 begin
   if current_setting('app.internal_write',true)='on' then return new; end if;
   if coalesce(old.age_verified_at::text,'')<>coalesce(new.age_verified_at::text,'')
@@ -15,7 +15,7 @@ create trigger trg_profiles_protected_fields before update on public.profiles
 for each row execute function public.protect_profile_security_fields();
 
 create or replace function public.approve_kyc(_kyc uuid,_approved boolean,_reason text default null)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare k public.kyc_verifications;
 begin
   if not (public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'compliance')) then raise exception 'forbidden'; end if;
@@ -36,7 +36,7 @@ begin
 end $$;
 
 create or replace function public.get_kyc_status()
-returns text language sql stable security definer set search_path=public as $$$
+returns text language sql stable security definer set search_path=public as $$
 select status from public.kyc_verifications where user_id=auth.uid() order by created_at desc limit 1;
 $$;
 
@@ -58,7 +58,7 @@ create trigger trg_ledger_apply after insert on public.ledger_entries
 for each row execute function public.ledger_apply();
 
 create or replace function public.ledger_immutable()
-returns trigger language plpgsql set search_path=public as $$$
+returns trigger language plpgsql set search_path=public as $$
 begin raise exception 'ledger_is_append_only'; end $$;
 
 create trigger trg_ledger_no_update
@@ -66,7 +66,7 @@ before update or delete on public.ledger_entries
 for each row execute function public.ledger_immutable();
 
 create or replace function public.assert_ledger_txn_balanced()
-returns trigger language plpgsql set search_path=public as $$$
+returns trigger language plpgsql set search_path=public as $$
 begin
   if exists(select 1 from public.ledger_entries where txn_id=new.txn_id group by txn_id having sum(amount)<>0) then
     raise exception 'unbalanced_ledger_transaction:%',new.txn_id;
@@ -80,7 +80,7 @@ deferrable initially deferred
 for each row execute function public.assert_ledger_txn_balanced();
 
 create or replace function public.commission_rate(_channel uuid,_kind text)
-returns numeric language plpgsql stable security definer set search_path=public as $$$
+returns numeric language plpgsql stable security definer set search_path=public as $$
 declare j jsonb; d numeric; k numeric;
 begin
   select value into j from public.platform_settings where key='commission.by_kind';
@@ -90,7 +90,7 @@ begin
 end $$;
 
 create or replace function public.assert_spend_limit(_uid uuid,_amount bigint)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare l public.spend_limits; d bigint; w bigint; m bigint;
 begin
   select * into l from public.spend_limits where user_id=_uid;
@@ -108,7 +108,7 @@ begin
 end $$;
 
 create or replace function public.referral_reward(_creator uuid,_fee bigint)
-returns bigint language plpgsql security definer set search_path=public as $$$
+returns bigint language plpgsql security definer set search_path=public as $$
 declare enabled boolean:=false; share numeric:=0; days integer:=0;
 begin
   select coalesce((value#>>'{}')::boolean,false) into enabled from public.platform_settings where key='referral.enabled';
@@ -122,7 +122,7 @@ end $$;
 create or replace function public._spend_on_channel(
   _buyer uuid,_channel uuid,_amount bigint,_kind text,_ref_type text,_ref_id uuid,_idem text
 )
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare creator uuid; bal bigint; rate numeric; fee bigint; net bigint; rr bigint; txn uuid;
 begin
   if _amount<=0 then raise exception 'invalid_amount'; end if;
@@ -159,12 +159,12 @@ begin
 end $$;
 
 create or replace function public.spend_on_channel(_channel uuid,_amount bigint,_kind text,_ref_type text,_ref_id uuid,_idem text)
-returns uuid language sql security definer set search_path=public as $$$
+returns uuid language sql security definer set search_path=public as $$
 select public._spend_on_channel(auth.uid(),_channel,_amount,_kind,_ref_type,_ref_id,_idem);
 $$;
 
 create or replace function public.send_tip(_channel uuid,_amount bigint,_message text,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid(); txn uuid;
 begin
   txn:=public._spend_on_channel(auth.uid(),_channel,_amount,'tip','tip',id,'tip:'||id::text||':'||_idem);
@@ -173,7 +173,7 @@ begin
 end $$;
 
 create or replace function public.send_gift(_channel uuid,_gift uuid,_quantity integer,_message text,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare g public.gifts_catalog; id uuid:=gen_random_uuid(); txn uuid;
 begin
   select * into g from public.gifts_catalog where id=_gift and active=true;
@@ -186,7 +186,7 @@ begin
 end $$;
 
 create or replace function public._hold_escrow(_buyer uuid,_beneficiary uuid,_amount bigint,_source text,_source_id uuid,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare txn uuid; eid uuid:=gen_random_uuid(); bal bigint;
 begin
   if _amount<=0 or _buyer=_beneficiary then raise exception 'invalid_escrow'; end if;
@@ -208,7 +208,7 @@ begin
 end $$;
 
 create or replace function public._release_escrow(_eid uuid,_source text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare e public.escrow_records; ch uuid; rate numeric; fee bigint; net bigint; rr bigint; txn uuid:=gen_random_uuid();
 begin
   select * into e from public.escrow_records where id=_eid for update;
@@ -232,7 +232,7 @@ begin
 end $$;
 
 create or replace function public._refund_escrow(_eid uuid)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare e public.escrow_records; txn uuid:=gen_random_uuid();
 begin
   select * into e from public.escrow_records where id=_eid for update;
@@ -246,7 +246,7 @@ begin
 end $$;
 
 create or replace function public.create_custom_request(_channel uuid,_brief text,_budget bigint,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare rid uuid; creator uuid; escrow uuid;
 begin
   select id into rid from public.custom_requests where client_id=auth.uid() and idempotency_key=_idem;
@@ -261,7 +261,7 @@ begin
 end $$;
 
 create or replace function public.update_custom_request(_request uuid,_status text)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare r public.custom_requests;
 begin
   select * into r from public.custom_requests where id=_request for update;
@@ -272,7 +272,7 @@ begin
 end $$;
 
 create or replace function public.release_custom_request(_request uuid)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare r public.custom_requests;
 begin
   select * into r from public.custom_requests where id=_request for update;
@@ -282,7 +282,7 @@ begin
 end $$;
 
 create or replace function public.create_auction(_channel uuid,_title text,_description text,_minimum bigint,_starts timestamptz,_ends timestamptz,_post uuid default null)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid();
 begin
   if not public.is_creator_of_channel(auth.uid(),_channel) then raise exception 'forbidden'; end if;
@@ -293,7 +293,7 @@ begin
 end $$;
 
 create or replace function public.place_bid(_auction uuid,_amount bigint,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare a public.auctions; high public.bids; eid uuid; bid uuid:=gen_random_uuid(); old_txn uuid; 
 begin
   select * into a from public.auctions where id=_auction for update;
@@ -317,7 +317,7 @@ begin
 end $$;
 
 create or replace function public.close_auction(_auction uuid)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare a public.auctions; w public.bids; b public.bids;
 begin
   select * into a from public.auctions where id=_auction for update;
@@ -337,7 +337,7 @@ begin
 end $$;
 
 create or replace function public.create_bundle(_channel uuid,_name text,_description text,_price bigint,_post_ids uuid[])
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid();
 begin
   if not public.is_creator_of_channel(auth.uid(),_channel) or coalesce(array_length(_post_ids,1),0)=0 or _price<=0 then raise exception 'invalid_bundle'; end if;
@@ -348,7 +348,7 @@ begin
 end $$;
 
 create or replace function public.can_view_post(_post_id uuid,_uid uuid)
-returns boolean language plpgsql stable security definer set search_path=public as $$$
+returns boolean language plpgsql stable security definer set search_path=public as $$
 declare p public.posts; c public.channels;
 begin
   select * into p from public.posts where id=_post_id and status='published' and (publish_at is null or publish_at<=now()) and (expires_at is null or expires_at>now());
@@ -369,7 +369,7 @@ begin
 end $$;
 
 create or replace function public.buy_bundle(_bundle uuid,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare b public.bundles; id uuid; txn uuid;
 begin
   select * into b from public.bundles where id=_bundle for update;
@@ -383,7 +383,7 @@ begin
 end $$;
 
 create or replace function public.create_order(_items jsonb,_shipping jsonb,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare row_item jsonb; p public.products; oid uuid; channel uuid; total bigint:=0; qty int; eid uuid;
 begin
   select id into oid from public.orders where buyer_id=auth.uid() and idempotency_key=_idem;
@@ -413,7 +413,7 @@ begin
 end $$;
 
 create or replace function public.update_order(_order uuid,_status text)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare o public.orders;
 begin
   select * into o from public.orders where id=_order for update;
@@ -422,7 +422,7 @@ begin
 end $$;
 
 create or replace function public.confirm_order(_order uuid)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare o public.orders;
 begin
   select * into o from public.orders where id=_order for update;
@@ -432,7 +432,7 @@ begin
 end $$;
 
 create or replace function public.create_live_session(_channel uuid,_mode text,_title text,_description text,_price bigint,_scheduled_at timestamptz)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid();
 begin
   if not public.is_creator_of_channel(auth.uid(),_channel) then raise exception 'forbidden'; end if;
@@ -443,7 +443,7 @@ begin
 end $$;
 
 create or replace function public.buy_live_ticket(_session uuid,_idem text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare s public.live_sessions; id uuid; txn uuid;
 begin
   select * into s from public.live_sessions where id=_session for update;
@@ -457,14 +457,14 @@ begin
 end $$;
 
 create or replace function public.update_call_rates(_channel uuid,_audio bigint,_video bigint)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 begin
   if not public.is_creator_of_channel(auth.uid(),_channel) or (_audio is not null and _audio<=0) or (_video is not null and _video<=0) then raise exception 'invalid_call_rates'; end if;
   update public.channels set call_audio_price=_audio,call_video_price=_video where id=_channel;
 end $$;
 
 create or replace function public.create_call_session(_channel uuid,_kind text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid(); owner uuid; rate bigint;
 begin
   if not public.is_age_verified(auth.uid()) or _kind not in('audio','video') then raise exception 'forbidden'; end if;
@@ -476,7 +476,7 @@ begin
 end $$;
 
 create or replace function public.issue_live_access(_session uuid)
-returns jsonb language plpgsql security definer set search_path=public as $$$
+returns jsonb language plpgsql security definer set search_path=public as $$
 declare s public.live_sessions; c public.call_sessions; uid uuid:=auth.uid();
 begin
   if not public.is_age_verified(uid) then raise exception 'age_not_verified'; end if;
@@ -501,7 +501,7 @@ begin
 end $$;
 
 create or replace function public.bill_active_calls()
-returns integer language plpgsql security definer set search_path=public as $$$
+returns integer language plpgsql security definer set search_path=public as $$
 declare c public.call_sessions; minutes int; m int; billed int:=0;
 begin
   for c in select * from public.call_sessions where status='active' and started_at is not null for update
@@ -522,7 +522,7 @@ begin
 end $$;
 
 create or replace function public.enter_giveaway(_giveaway uuid)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare g public.giveaways;
 begin
   select * into g from public.giveaways where id=_giveaway for update;
@@ -533,7 +533,7 @@ begin
 end $$;
 
 create or replace function public.create_giveaway(_channel uuid,_title text,_description text,_starts timestamptz,_ends timestamptz,_winner_count smallint,_requires_subscription boolean)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid();
 begin
   if not public.is_creator_of_channel(auth.uid(),_channel) or _ends<=_starts or _winner_count<1 then raise exception 'invalid_giveaway'; end if;
@@ -543,7 +543,7 @@ begin
 end $$;
 
 create or replace function public.draw_giveaway(_giveaway uuid)
-returns setof uuid language plpgsql security definer set search_path=public as $$$
+returns setof uuid language plpgsql security definer set search_path=public as $$
 declare g public.giveaways;
 begin
   select * into g from public.giveaways where id=_giveaway for update;
@@ -557,7 +557,7 @@ begin
 end $$;
 
 create or replace function public.create_poll(_channel uuid,_question text,_closes timestamptz,_options text[])
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid(); o text; n int:=0;
 begin
   if not public.is_creator_of_channel(auth.uid(),_channel) or coalesce(array_length(_options,1),0)<2 then raise exception 'invalid_poll'; end if;
@@ -569,7 +569,7 @@ begin
 end $$;
 
 create or replace function public.cast_poll_vote(_poll uuid,_option uuid)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare p public.polls;
 begin
   select * into p from public.polls where id=_poll for update;
@@ -579,7 +579,7 @@ begin
 end $$;
 
 create or replace function public.award_configured_points(_uid uuid,_kind text,_ref_type text default null,_ref_id uuid default null)
-returns bigint language plpgsql security definer set search_path=public as $$$
+returns bigint language plpgsql security definer set search_path=public as $$
 declare pts bigint; configured boolean:=false;
 begin
   select coalesce((value#>>'{}')::boolean,false) into configured from public.platform_settings where key='loyalty.configured';
@@ -593,7 +593,7 @@ begin
 end $$;
 
 create or replace function public.record_login()
-returns jsonb language plpgsql security definer set search_path=public as $$$
+returns jsonb language plpgsql security definer set search_path=public as $$
 declare s public.streaks; today date:=current_date;
 begin
   select * into s from public.streaks where user_id=auth.uid() for update;
@@ -610,7 +610,7 @@ begin
 end $$;
 
 create or replace function public.get_loyalty_status()
-returns jsonb language plpgsql stable security definer set search_path=public as $$$
+returns jsonb language plpgsql stable security definer set search_path=public as $$
 declare levels jsonb; pts bigint:=coalesce((select lifetime_points from public.loyalty_points where user_id=auth.uid()),0); level_name text:=null;
 begin
   select value into levels from public.platform_settings where key='loyalty.levels';
@@ -623,7 +623,7 @@ begin
 end $$;
 
 create or replace function public.award_badges()
-returns integer language plpgsql security definer set search_path=public as $$$
+returns integer language plpgsql security definer set search_path=public as $$
 declare u record; b record; n int:=0;
 begin
   for b in select * from public.badges where active and points_threshold is not null loop
@@ -636,7 +636,7 @@ begin
 end $$;
 
 create or replace function public.refresh_rankings()
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 declare w date:=date_trunc('week',current_date)::date;
 begin
   delete from public.creator_rankings_weekly where week_start=w;
@@ -654,7 +654,7 @@ begin
 end $$;
 
 create or replace function public.record_analytics_event(_event text,_properties jsonb,_channel uuid default null)
-returns bigint language plpgsql security definer set search_path=public as $$$
+returns bigint language plpgsql security definer set search_path=public as $$
 declare id bigint;
 begin
   if length(trim(_event))<1 or length(trim(_event))>100 then raise exception 'invalid_event'; end if;
@@ -665,7 +665,7 @@ begin
 end $$;
 
 create or replace function public.refresh_creator_analytics()
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 begin
   insert into public.creator_analytics_daily(channel_id,day,views,unique_viewers,messages,sales,gross_amount,tips,live_minutes)
   select c.id,current_date,
@@ -683,7 +683,7 @@ begin
 end $$;
 
 create or replace function public.get_creator_goal_progress(_goal uuid)
-returns jsonb language plpgsql stable security definer set search_path=public as $$$
+returns jsonb language plpgsql stable security definer set search_path=public as $$
 declare g public.creator_goals; earned bigint;
 begin
   select * into g from public.creator_goals where id=_goal;
@@ -695,7 +695,7 @@ begin
 end $$;
 
 create or replace function public.create_referral_code(_code text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare id uuid:=gen_random_uuid();
 begin
   if not public.has_role(auth.uid(),'creator') or trim(_code) !~ '^[a-z0-9_]{4,24}$' then raise exception 'invalid_referral_code'; end if;
@@ -704,7 +704,7 @@ begin
 end $$;
 
 create or replace function public.redeem_referral(_code text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare r public.referral_codes; id uuid:=gen_random_uuid();
 begin
   if not public.has_role(auth.uid(),'creator') then raise exception 'creator_required'; end if;
@@ -716,7 +716,7 @@ begin
 end $$;
 
 create or replace function public.create_conversation(_channel uuid)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare owner uuid; id uuid;
 begin
   if not public.is_age_verified(auth.uid()) then raise exception 'age_not_verified'; end if;
@@ -730,7 +730,7 @@ begin
 end $$;
 
 create or replace function public.send_message(_conversation uuid,_body text)
-returns uuid language plpgsql security definer set search_path=public as $$$
+returns uuid language plpgsql security definer set search_path=public as $$
 declare c public.conversations; id uuid:=gen_random_uuid(); reply text;
 begin
   select * into c from public.conversations where id=_conversation;
@@ -747,7 +747,7 @@ begin
 end $$;
 
 create or replace function public.get_wallet_summary()
-returns jsonb language sql stable security definer set search_path=public as $$$
+returns jsonb language sql stable security definer set search_path=public as $$
 select jsonb_build_object(
  'wallet',coalesce((select balance from public.balances where owner_id=auth.uid() and account='wallet'),0),
  'pending',coalesce((select balance from public.balances where owner_id=auth.uid() and account='creator_pending'),0),
@@ -756,7 +756,7 @@ select jsonb_build_object(
 $$;
 
 create or replace function public.get_creator_dashboard()
-returns jsonb language plpgsql stable security definer set search_path=public as $$$
+returns jsonb language plpgsql stable security definer set search_path=public as $$
 declare ids uuid[];
 begin
   if not public.has_role(auth.uid(),'creator') then raise exception 'creator_required'; end if;
@@ -771,7 +771,7 @@ begin
 end $$;
 
 create or replace function public.get_media_access(_asset uuid)
-returns jsonb language plpgsql stable security definer set search_path=public as $$$
+returns jsonb language plpgsql stable security definer set search_path=public as $$
 declare a public.media_assets;
 begin
   select * into a from public.media_assets where id=_asset;
@@ -781,7 +781,7 @@ begin
 end $$;
 
 create or replace function public.set_spend_limits(_daily bigint,_weekly bigint,_monthly bigint)
-returns void language plpgsql security definer set search_path=public as $$$
+returns void language plpgsql security definer set search_path=public as $$
 begin
   if _daily is not null and _daily<0 or _weekly is not null and _weekly<0 or _monthly is not null and _monthly<0 then raise exception 'invalid_limits'; end if;
   insert into public.spend_limits(user_id,daily,weekly,monthly) values(auth.uid(),_daily,_weekly,_monthly)
@@ -789,7 +789,7 @@ begin
 end $$;
 
 create or replace function public.release_due_earnings()
-returns integer language plpgsql security definer set search_path=public as $$$
+returns integer language plpgsql security definer set search_path=public as $$
 declare e public.ledger_entries; txn uuid; moved int:=0;
 begin
   for e in
@@ -809,7 +809,7 @@ begin
 end $$;
 
 create or replace function public.publish_scheduled_posts()
-returns integer language plpgsql security definer set search_path=public as $$$
+returns integer language plpgsql security definer set search_path=public as $$
 declare n int;
 begin
   update public.posts set status='published' where status='scheduled' and publish_at is not null and publish_at<=now();
@@ -818,7 +818,7 @@ begin
 end $$;
 
 create or replace function public.open_due_lives()
-returns integer language plpgsql security definer set search_path=public as $$$
+returns integer language plpgsql security definer set search_path=public as $$
 declare n int;
 begin
   update public.live_sessions set status='live' where status='scheduled' and scheduled_at is not null and scheduled_at<=now();
@@ -826,7 +826,7 @@ begin
 end $$;
 
 create or replace function public.close_due_auctions()
-returns integer language plpgsql security definer set search_path=public as $$$
+returns integer language plpgsql security definer set search_path=public as $$
 declare a public.auctions; n int:=0;
 begin
   for a in select * from public.auctions where status in('scheduled','live') and ends_at<=now() loop
@@ -836,7 +836,7 @@ begin
 end $$;
 
 create or replace function public.reconcile_ledger()
-returns bigint language sql stable security definer set search_path=public as $$$
+returns bigint language sql stable security definer set search_path=public as $$
 with s as(select owner_id,account,sum(amount) total from public.ledger_entries group by owner_id,account)
 select count(*) from(
  select coalesce(s.owner_id,b.owner_id) owner_id,coalesce(s.account,b.account) account,coalesce(s.total,0) a,coalesce(b.balance,0) b
