@@ -241,6 +241,7 @@ export function App() {
             <Route path="/definicoes/limites" element={<ClientLimitsPage />} />
             <Route path="/definicoes/discreto" element={<ClientDiscreetPage />} />
             <Route path="/definicoes/seguranca" element={<SecuritySettingsPage />} />
+            <Route path="/verificacao" element={<VerificationPage />} />
             {clientSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
