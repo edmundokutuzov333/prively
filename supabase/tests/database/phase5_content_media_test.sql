@@ -23,7 +23,7 @@ declare
   channel_id uuid;
   post_id uuid;
   asset jsonb;
-  asset_id uuid;
+  v_asset_id uuid;
 begin
   insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data)
   values
@@ -59,12 +59,12 @@ begin
     repeat('a',64),'test.png'
   );
 
-  asset_id:=(asset->>'assetId')::uuid;
+  v_asset_id:=(asset->>'assetId')::uuid;
   if not exists(select 1 from public.media_uploads where id=(asset->>'uploadId')::uuid and user_id=creator) then
     raise exception 'media upload session missing';
   end if;
 
-  if not exists(select 1 from public.media_consents where asset_id=asset_id and consent_type='rights') then
+  if not exists(select 1 from public.media_consents where media_consents.asset_id=v_asset_id and consent_type='rights') then
     raise exception 'media rights consent missing';
   end if;
 
