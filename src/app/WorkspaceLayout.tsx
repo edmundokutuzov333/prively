@@ -53,7 +53,7 @@ export function WorkspaceLayout({ variant }: { variant: WorkspaceVariant }) {
 
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-bone-50/7 bg-ink-950/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
           <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 py-2">
-            {nav.map((item) => { const { key, path, icon: Icon } = item; const central = 'central' in item && item.central; <Link key={key} to={path} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${activePath(location.pathname, path) ? 'text-bone-50' : central ? 'text-crimson-400' : 'text-bone-500'}`}><span className={`flex h-8 w-8 items-center justify-center rounded-full ${central ? 'border border-crimson-400/40 bg-wine-900' : ''}`}><Icon size={central ? 19 : 20} weight="duotone" /></span>{t(`experience.nav.${key}`)}</Link>; })}
+            {nav.map((item) => { const { key, path, icon: Icon } = item; const central = 'central' in item && item.central; return <Link key={key} to={path} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${activePath(location.pathname, path) ? 'text-bone-50' : central ? 'text-crimson-400' : 'text-bone-500'}`}><span className={`flex h-8 w-8 items-center justify-center rounded-full ${central ? 'border border-crimson-400/40 bg-wine-900' : ''}`}><Icon size={central ? 19 : 20} weight="duotone" /></span>{t(`experience.nav.${key}`)}</Link>; })}
           </div>
         </nav>
       </div>
