@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(13);
 
 select ok(to_regclass('public.profiles') is not null,'profiles exists');
 select ok(to_regclass('public.ledger_entries') is not null,'ledger exists');
@@ -39,11 +39,9 @@ begin
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
   values(channel,creator,'creator_test','Creator Test',1000,1500);
 
-  txn:=gen_random_uuid();
-  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind)
-  values
-    (txn,'external','00000000-0000-0000-0000-000000000000'::uuid,-1000000,'topup'),
-    (txn,'wallet',buyer,1000000,'topup');
+  insert into public.balances(owner_id,account,balance)
+  values(buyer,'wallet',1000000)
+  on conflict(owner_id,account) do update set balance=excluded.balance;
 
   txn:=public._spend_on_channel(buyer,channel,100000,'tip','tip',gen_random_uuid(),'test-tip');
   if not exists(select 1 from public.ledger_entries where txn_id=txn group by txn_id having sum(amount)=0) then
