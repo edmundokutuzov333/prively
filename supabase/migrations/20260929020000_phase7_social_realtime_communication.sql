@@ -1500,7 +1500,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array[
+  foreach t in array ARRAY[
     'messages',
     'notifications',
     'conversation_members',
