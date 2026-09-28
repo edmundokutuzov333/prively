@@ -147,7 +147,7 @@ export function CreatorContentPage() {
         setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, state: 'preparing' } : item));
 
         const planResult = await prepareMediaUpload(String(postId), file);
-        await uploadMediaResumable(file, planResult.plan, (progress) => {
+        await uploadMediaResumable(file, planResult.plan, planResult.sha256, (progress) => {
           setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
             ...item,
             state: 'uploading',
@@ -231,7 +231,7 @@ export function CreatorContentPage() {
 
           <label className="flex items-start gap-3 rounded-md border border-bone-50/8 p-4 text-sm leading-6 text-bone-300"><input type="checkbox" checked={rightsConfirmed} onChange={(event)=>setRightsConfirmed(event.target.checked)} className="mt-1 accent-crimson-500"/><span>{t('content.rights')}</span></label>
 
-          {uploads.length ? <div className="space-y-2">{uploads.map((upload)=><div key={upload.fileName} className="rounded-md border border-bone-50/8 bg-ink-850 p-3"><div className="flex items-center justify-between gap-4 text-xs text-bone-300"><span className="truncate">{upload.fileName}</span><span>{upload.state==='uploading'?Math.round(upload.progress)+'%':upload.state}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded bg-ink-700"><div className="h-full bg-crimson-500 transition-[width]" style={{width:`${upload.progress}%`}} /></div></div>)}</div> : null}
+          {uploads.length ? <div className="space-y-2">{uploads.map((upload)=><div key={upload.fileName} className="rounded-md border border-bone-50/8 bg-ink-850 p-3"><div className="flex items-center justify-between gap-4 text-xs text-bone-300"><span className="truncate">{upload.fileName}</span><span>{upload.state==='uploading'?Math.round(upload.progress)+'%':t('content.uploadStates.'+upload.state)}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded bg-ink-700"><div className="h-full bg-crimson-500 transition-[width]" style={{width:`${upload.progress}%`}} /></div></div>)}</div> : null}
 
           <div className="flex flex-wrap gap-3">
             <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
@@ -244,8 +244,8 @@ export function CreatorContentPage() {
         <div className="flex items-center justify-between gap-3"><h2 className="text-xl font-semibold text-bone-50">{t('content.library')}</h2><span className="text-xs text-bone-500">{contents.length}</span></div>
         <div className="mt-5 space-y-3">
           {contents.map((item)=><article key={item.id} className="rounded-md border border-bone-50/8 bg-ink-850 p-4">
-            <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-bone-50">{item.caption || t('content.untitled')}</p><p className="mt-1 text-xs text-bone-500">{item.visibility} · {item.media_count} media · {item.ready_media_count}/{item.media_count} ready</p></div><span className="rounded-full border border-bone-50/10 px-2 py-1 text-[11px] text-bone-400">{item.status}</span></div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">{item.moderation_status==='pending'?<span className="text-bone-500">{t('content.awaitingModeration')}</span>:item.moderation_status==='clean'?<span className="text-ok">{t('content.clean')}</span>:<span className="text-danger">{t('content.reviewRequired')}</span>}</div>
+            <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-bone-50">{item.caption || t('content.untitled')}</p><p className="mt-1 text-xs text-bone-500">{t('content.visibilityValues.'+item.visibility)} · {item.media_count} {t('content.mediaLabel')} · {item.ready_media_count}/{item.media_count} {t('content.readyLabel')}</p></div><span className="rounded-full border border-bone-50/10 px-2 py-1 text-[11px] text-bone-400">{t('content.statusValues.'+item.status)}</span></div>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">{item.moderation_status==='pending'?<span className="text-bone-500">{t('content.moderationValues.pending')}</span>:item.moderation_status==='clean'?<span className="text-ok">{t('content.moderationValues.clean')}</span>:<span className="text-danger">{t('content.moderationValues.'+item.moderation_status)}</span>}</div>
             {item.status==='draft' && item.media_count>0 ? <Botao variant="outline" className="mt-4 w-full" onClick={()=>void publish(item.id)} loading={publishing===item.id}>{t('content.publish')}</Botao> : null}
           </article>)}
           {!contents.length ? <div className="rounded-md border border-dashed border-bone-50/10 p-5 text-sm text-bone-500">{t('content.empty')}</div> : null}
