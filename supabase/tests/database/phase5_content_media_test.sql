@@ -71,7 +71,7 @@ begin
   perform set_config('app.internal_write','on',true);
   update public.media_assets
   set integrity_status='pending',moderation_status='pending',scan_status='pending'
-  where id=asset_id;
+  where public.media_assets.id=v_asset_id;
   update public.posts set status='published',publish_at=now() where id=post_id;
 end $$;
 
@@ -94,19 +94,19 @@ select ok(
 
 do $$
 declare
-  asset_id uuid;
-  post_id uuid;
+  v_asset_id uuid;
+  v_post_id uuid;
 begin
-  select id,post_id into asset_id,post_id
-  from public.media_assets
-  where original_filename='test.png'
+  select a.id,a.post_id into v_asset_id,v_post_id
+  from public.media_assets a
+  where a.original_filename='test.png'
   limit 1;
 
   perform set_config('app.internal_write','on',true);
   update public.media_assets
   set integrity_status='verified',moderation_status='clean',scan_status='clean',ready_at=now()
-  where id=asset_id;
-  update public.posts set moderation_status='clean' where id=post_id;
+  where public.media_assets.id=v_asset_id;
+  update public.posts set moderation_status='clean' where public.posts.id=v_post_id;
 end $$;
 
 select ok(
