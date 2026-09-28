@@ -81,6 +81,64 @@ Não foram introduzidos criadores, clientes, media ou métricas fictícias na ba
 
 A especificação proíbe explicitamente dados fictícios, contadores fabricados, criadoras fictícias e funcionalidades fingidas em produção. fileciteturn0file0L737-L750
 
+## Fase 6, Wallet, Ledger & Payments Core
+
+A Fase 6 está implementada no núcleo financeiro real, sem saldos simulados.
+
+- ledger append-only com partidas dobradas e trigger diferido que exige pelo menos duas linhas e soma zero;
+- balances derivadas do ledger e sem permissões de escrita directa para cliente;
+- idempotência nas intenções financeiras e no fluxo de pagamentos;
+- comissão configurável por platform_settings;
+- creator_pending e creator_available com retenção configurável;
+- top-ups com estados pending, processing, paid, failed, cancelled, expired e reversed;
+- eventos de webhook com HMAC e deduplicação por provider + event_id;
+- payouts com destino cifrado, estados, aprovação financeira e reversão;
+- refunds por lançamentos compensatórios, nunca por alteração histórica;
+- escrow real com hold, release e refund;
+- renewals de subscrições por pg_cron;
+- spend limits diário, semanal e mensal aplicados no servidor no fuso Africa/Maputo;
+- reconciliação de ledger com alerta de divergência e histórico da execução;
+- FX em MZN como moeda contabilística, com tabela de taxas e worker horário configurável;
+- invoices e receipts financeiros;
+- exportação privada de histórico CSV e recibo PDF;
+- Finance Guard separado do Admin Guard, com MFA/AAL2 obrigatório;
+- interface real para carteira do cliente, ganhos da criadora, limites de gasto e Control Room financeiro.
+
+As funções financeiras críticas estão protegidas por SECURITY DEFINER, e os caminhos internos de top-up, payout e reconciliação não ficam expostos ao papel anon. O browser não escreve balances nem ledger_entries.
+
+### Provider de pagamentos
+
+A arquitectura está pronta para o adapter Paysuite para M-Pesa, e-Mola, mKesh, Ponto24 e cartão. O código usa URLs, chaves e formato de assinatura configuráveis por secrets. Não existem credenciais no cliente.
+
+A integração não é declarada como operacional até existirem as credenciais e os endpoints oficiais da conta de produção. Enquanto isso, a UI apresenta os estados reais de configuração e não cria pagamentos fictícios.
+
+### Estado dos pagamentos
+
+O núcleo financeiro executa o fluxo de top-up e payout através de Edge Functions, mas saldo só é criado ou retirado quando o estado financeiro correspondente é confirmado pelo backend ou provider. Um provider indisponível não cria saldo.
+
+O cartão está desactivado pela configuração de produção até existir PSP aprovado e integração validada.
+
+### Segurança financeira
+
+Acesso a destinos de payout exige AAL2 e fica registado no financial audit log. Aprovação, rejeição e reconciliação financeira também exigem AAL2.
+
+A retenção do arquivo de conformidade da Fase 5 continua configurável separadamente.
+
+### Estado de produção da Fase 6
+
+Implementado e aplicado no Supabase:
+- schema financeiro;
+- RPCs financeiras;
+- cron jobs;
+- Edge Functions payments-create-topup, payments-webhook, payout-process, financial-export e fx-refresh;
+- UI de carteira, ganhos, limites e financeiro;
+- testes SQL financeiros.
+
+Ainda dependem de configuração externa real:
+- credenciais e endpoints do provider de pagamentos;
+- origem oficial de FX;
+- OTP telefónico específico para levantamentos, que não existia nas fases anteriores e não foi fingido como implementado.
+
 ## Próxima fase
 
 A Fase 6 começa no núcleo financeiro real: wallet, ledger append-only, partidas dobradas, idempotência, subscriptions, refunds, escrow, payouts, FX e os adaptadores reais de pagamento previstos pela especificação. O trabalho financeiro não deve começar a partir de saldos simulados.
