@@ -204,6 +204,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
         {error ? <p role="alert" className="border border-danger/35 bg-danger/5 p-3 text-sm leading-6 text-bone-50">{error}</p> : null}
         {message ? <p role="status" className="border border-ok/30 bg-ok/5 p-3 text-sm leading-6 text-bone-50">{message}</p> : null}
         <Botao type="submit" loading={isSubmitting} className="w-full">{submit}</Botao>
+        {mode === 'signIn' && effectivePortal !== 'admin' ? <Link to="/recuperar" className="block text-center text-sm text-bone-500 underline decoration-bone-50/20 underline-offset-4">{t('auth.recoverAccount')}</Link> : null}
       </form>
 
       <div className="mt-7"><Escudo text={t('privacy.notice')} /></div>
