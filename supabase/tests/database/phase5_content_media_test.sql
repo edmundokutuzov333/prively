@@ -150,6 +150,16 @@ begin
       ready_at=null
   where id=asset_id;
 
+  begin
+    perform public.publish_post(post_id);
+    raise exception 'publish_post accepted incomplete media';
+  exception
+    when others then
+      if sqlerrm<>'media_not_ready' then
+        raise;
+      end if;
+  end;
+
   perform set_config('app.internal_write','on',true);
   update public.posts
   set status='published',publish_at=now(),moderation_status='clean'
