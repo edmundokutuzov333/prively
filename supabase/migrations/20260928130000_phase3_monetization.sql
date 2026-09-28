@@ -809,7 +809,6 @@ create policy notifications_own on public.notifications for select to authentica
 create policy receipts_own on public.receipts for select to authenticated using(user_id=auth.uid());
 create policy kyc_no_direct_read on public.kyc_verifications for select to authenticated using(false);
 
-alter table storage.objects enable row level security;
 insert into storage.buckets(id,name,public) values('prively-private','prively-private',false) on conflict(id) do nothing;
 create policy prively_private_owner_read on storage.objects for select to authenticated using(bucket_id='prively-private' and (storage.foldername(name))[1]=auth.uid()::text);
 create policy prively_private_owner_write on storage.objects for insert to authenticated with check(bucket_id='prively-private' and (storage.foldername(name))[1]=auth.uid()::text);
