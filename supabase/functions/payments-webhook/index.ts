@@ -1,0 +1,213 @@
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
+import { serviceClient } from "../_shared/auth.ts";
+import {
+  amountToCentavos,
+  nestedString,
+  parseProviderJson,
+  requiredEnv,
+  verifyHmac,
+} from "../_shared/payments.ts";
+
+function normalizeStatus(value: string | null): "paid" | "failed" | "pending" | "processing" | "cancelled" | "expired" | "reversed" | null {
+  const normalized = (value ?? "").toLowerCase();
+  if (["paid", "successful", "success", "completed", "payment.succeeded"].includes(normalized)) return "paid";
+  if (["failed", "failure", "declined", "payment.failed"].includes(normalized)) return "failed";
+  if (["cancelled", "canceled"].includes(normalized)) return "cancelled";
+  if (["expired", "timeout"].includes(normalized)) return "expired";
+  if (["processing", "in_progress"].includes(normalized)) return "processing";
+  if (["reversed", "reversal"].includes(normalized)) return "reversed";
+  if (["pending", "created"].includes(normalized)) return "pending";
+  return null;
+}
+
+function methodFromBody(body: Record<string, unknown>): string | null {
+  return nestedString(body, [
+    "method",
+    "provider",
+    "data.method",
+    "data.provider",
+  ]);
+}
+
+Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") return optionsResponse();
+  if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
+
+  const rawBody = await request.text();
+  const signatureHeader = Deno.env.get("PAYSUITE_SIGNATURE_HEADER") ?? "x-signature";
+  const eventHeader = Deno.env.get("PAYSUITE_EVENT_ID_HEADER") ?? "x-event-id";
+  const eventTypeHeader = Deno.env.get("PAYSUITE_EVENT_HEADER") ?? "x-event";
+  const signature = request.headers.get(signatureHeader) ?? request.headers.get(signatureHeader.toLowerCase()) ?? "";
+  const eventId =
+    request.headers.get(eventHeader) ??
+    request.headers.get(eventHeader.toLowerCase()) ??
+    request.headers.get("x-paysuite-event-id") ??
+    crypto.randomUUID();
+  const headerEvent =
+    request.headers.get(eventTypeHeader) ??
+    request.headers.get(eventTypeHeader.toLowerCase());
+
+  const secret = requiredEnv("PAYSUITE_WEBHOOK_SECRET");
+  const mode = (Deno.env.get("PAYSUITE_HMAC_MODE") ?? "raw") as "raw" | "timestamp.raw";
+
+  const signatureValid = await verifyHmac(rawBody, signature, secret, mode);
+  if (!signatureValid) {
+    return jsonResponse({ code: "invalid_signature" }, 401);
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    payload = parseProviderJson(JSON.parse(rawBody));
+  } catch {
+    return jsonResponse({ code: "invalid_json" }, 400);
+  }
+
+  const eventType =
+    headerEvent ??
+    nestedString(payload, ["event", "type", "data.event", "data.type"]) ??
+    "unknown";
+
+  const admin = serviceClient();
+
+  const { data: existingEvent, error: existingEventError } = await admin
+    .from("payment_webhook_events")
+    .select("id,status")
+    .eq("provider", "paysuite")
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  if (existingEventError) return jsonResponse({ code: "webhook_event_lookup_failed" }, 500);
+  if (existingEvent?.status === "processed") return jsonResponse({ ok: true, duplicate: true });
+
+  if (!existingEvent) {
+    const { error: insertError } = await admin
+      .from("payment_webhook_events")
+      .insert({
+        provider: "paysuite",
+        event_id: eventId,
+        event_type: eventType,
+        signature_valid: true,
+        provider_ref: nestedString(payload, [
+          "reference",
+          "transaction_reference",
+          "data.reference",
+          "data.transaction_reference",
+          "data.id",
+        ]),
+        raw_body: rawBody,
+        payload,
+        status: "received",
+      });
+
+    if (insertError && !insertError.message.toLowerCase().includes("duplicate")) {
+      return jsonResponse({ code: "webhook_event_store_failed" }, 500);
+    }
+  }
+
+  const eventLower = eventType.toLowerCase();
+  const data =
+    payload.data && typeof payload.data === "object"
+      ? payload.data as Record<string, unknown>
+      : payload;
+
+  const providerRef = nestedString(payload, [
+    "reference",
+    "transaction_reference",
+    "provider_ref",
+    "data.reference",
+    "data.transaction_reference",
+    "data.provider_ref",
+  ]);
+
+  const providerTransactionId = nestedString(payload, [
+    "provider_transaction_id",
+    "transaction_id",
+    "data.provider_transaction_id",
+    "data.transaction_id",
+  ]);
+
+  const status = normalizeStatus(
+    nestedString(payload, ["status", "state", "data.status", "data.state"]) ??
+      (eventLower.includes("succeeded") ? "paid" : eventLower.includes("failed") ? "failed" : null),
+  );
+
+  try {
+    if (eventLower.includes("payout")) {
+      if (!providerRef) throw new Error("payout_reference_missing");
+
+      const { data: payout, error: payoutError } = await admin
+        .from("payouts")
+        .select("id,amount,status")
+        .eq("provider_ref", providerRef)
+        .maybeSingle();
+
+      if (payoutError) throw new Error("payout_lookup_failed");
+      if (!payout) throw new Error("payout_not_found");
+
+      const payoutStatus = status === "paid" ? "paid" : status === "failed" ? "failed" : null;
+      if (!payoutStatus) {
+        await admin
+          .from("payment_webhook_events")
+          .update({ status: "processed", processed_at: new Date().toISOString() })
+          .eq("provider", "paysuite")
+          .eq("event_id", eventId);
+        return jsonResponse({ ok: true, ignored: true });
+      }
+
+      const { error: rpcError } = payoutStatus === "paid"
+        ? await admin.rpc("finalize_payout_paid", {
+            _payout: payout.id,
+            _provider_ref: providerRef,
+            _provider_transaction_id: providerTransactionId,
+          })
+        : await admin.rpc("finalize_payout_failed", {
+            _payout: payout.id,
+            _reason: nestedString(payload, ["failure_reason", "message", "data.failure_reason", "data.message"]) ?? "provider_failed",
+          });
+
+      if (rpcError) throw new Error(rpcError.message);
+
+      await admin
+        .from("payment_webhook_events")
+        .update({ status: "processed", processed_at: new Date().toISOString() })
+        .eq("provider", "paysuite")
+        .eq("event_id", eventId);
+
+      return jsonResponse({ ok: true });
+    }
+
+    if (!providerRef) throw new Error("topup_reference_missing");
+    const amount = amountToCentavos(
+      data.amount ?? data.value ?? payload.amount ?? payload.value,
+    );
+    if (amount === null) throw new Error("topup_amount_missing");
+    if (!status) throw new Error("topup_status_unknown");
+
+    const { error: rpcError } = await admin.rpc("credit_topup", {
+      _provider_ref: providerRef,
+      _status: status,
+      _amount: amount,
+      _provider_transaction_id: providerTransactionId,
+    });
+
+    if (rpcError) throw new Error(rpcError.message);
+
+    await admin
+      .from("payment_webhook_events")
+      .update({ status: "processed", processed_at: new Date().toISOString() })
+      .eq("provider", "paysuite")
+      .eq("event_id", eventId);
+
+    return jsonResponse({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "webhook_processing_failed";
+
+    await admin
+      .from("payment_webhook_events")
+      .update({ status: "failed", error_message: message })
+      .eq("provider", "paysuite")
+      .eq("event_id", eventId);
+
+    return jsonResponse({ code: message }, 500);
+  }
+});
