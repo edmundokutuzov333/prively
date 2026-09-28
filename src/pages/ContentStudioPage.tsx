@@ -5,7 +5,8 @@ import { Ficha } from '@/design/Ficha';
 import { Botao } from '@/design/Botao';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuth } from '@/app/session';
-import { sha256, mediaKind, prepareMediaUpload, uploadMediaResumable, type MediaUploadPlan } from '@/lib/mediaUpload';
+import { mediaKind, prepareMediaUpload, uploadMediaResumable } from '@/lib/mediaUpload';
+import { createBlurhash } from '@/lib/blurhash';
 
 type Channel = { id: string; handle: string; display_name: string; bio: string | null };
 type ContentRow = {
@@ -131,7 +132,10 @@ export function CreatorContentPage() {
     try {
       await ensureContentTerms();
 
-      const { data: postId, error: postError } = await requireSupabase().rpc('create_post', {
+      const blurSource = files.find((file) => file.type.startsWith('image/'));
+      const blurhash = blurSource ? await createBlurhash(blurSource) : null;
+
+      const { data: postId, error: postError } = await requireSupabase().rpc('create_post_with_blurhash', {
         _channel: channel.id,
         _caption: caption || null,
         _visibility: visibility,
@@ -139,6 +143,7 @@ export function CreatorContentPage() {
         _price: visibility === 'ppv' ? Math.round(Number(price) * 100) : null,
         _is_story: isStory,
         _expires_at: null,
+        _blurhash: blurhash,
       });
       if (postError || !postId) throw new Error(postError?.message ?? 'post_create_failed');
 
