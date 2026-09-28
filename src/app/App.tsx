@@ -78,6 +78,7 @@ import {
   CreatorEngagementPage,
   CreatorSchedulePage
 } from '@/pages/Phase3AdvancedPages';
+import { Phase7MessagePage, Phase7MessagesPage, Phase7NotificationsPage } from '@/pages/Phase7CommunicationPages';
 import {
   Phase6ClientWalletPage,
   Phase6CreatorEarningsPage,
@@ -228,8 +229,9 @@ export function App() {
             <Route path="/feed" element={<ClientFeedPage />} />
             <Route path="/c/:handle" element={<ClientProfilePage />} />
             <Route path="/post/:id" element={<ClientPostPage />} />
-            <Route path="/mensagens" element={<ClientMessagesPage />} />
-            <Route path="/mensagens/:id" element={<ClientMessagePage />} />
+            <Route path="/mensagens" element={<Phase7MessagesPage />} />
+            <Route path="/mensagens/:id" element={<Phase7MessagePage />} />
+            <Route path="/notificacoes" element={<Phase7NotificationsPage />} />
             <Route path="/carteira" element={featureFlags.phase6Financials ? <Phase6ClientWalletPage /> : phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
             <Route path="/compras" element={<ClientPurchasesPage />} />
             <Route path="/desejos" element={<ClientWishlistPage />} />
@@ -259,6 +261,8 @@ export function App() {
             <Route path="/estudio/loja" element={phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
             <Route path="/estudio/agenda" element={<CreatorAgendaPage />} />
             <Route path="/estudio/fas" element={phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
+            <Route path="/estudio/mensagens" element={<Phase7MessagesPage />} />
+            <Route path="/estudio/mensagens/:id" element={<Phase7MessagePage />} />
             <Route path="/estudio/ganhos" element={featureFlags.phase6Financials ? <Phase6CreatorEarningsPage /> : <CreatorEarningsPage />} />
             <Route path="/estudio/analitica" element={phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
             <Route path="/estudio/pedidos" element={phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
