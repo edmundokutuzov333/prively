@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(17);
 
 select ok(to_regclass('public.media_uploads') is not null,'media uploads exists');
 select ok(to_regclass('public.media_processing_jobs') is not null,'media jobs exists');
@@ -13,6 +13,8 @@ select ok((select relrowsecurity from pg_class where oid='public.media_processin
 select ok(not has_function_privilege('anon','public.create_post(uuid,text,public.visibility,smallint,bigint,boolean,timestamptz)','EXECUTE'),'anon cannot create posts');
 select ok(not has_function_privilege('anon','public.create_media_upload(uuid,text,text,bigint,text,text)','EXECUTE'),'anon cannot create media uploads');
 select ok(not has_function_privilege('anon','public.publish_post(uuid,timestamptz)','EXECUTE'),'anon cannot publish posts');
+select ok(to_regprocedure('public.create_post_with_blurhash(uuid,text,public.visibility,smallint,bigint,boolean,timestamptz,text)') is not null,'blurhash post creator exists');
+select ok(not has_function_privilege('anon','public.create_post_with_blurhash(uuid,text,public.visibility,smallint,bigint,boolean,timestamptz,text)','EXECUTE'),'anon cannot create blurhash posts');
 
 do $$
 declare
