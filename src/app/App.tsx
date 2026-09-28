@@ -8,6 +8,7 @@ import { AdminGuard } from '@/app/AdminGuard';
 import { WorkspaceLayout } from '@/app/WorkspaceLayout';
 import { ExperienceGuard } from '@/app/ExperienceGuards';
 import { HomePage } from '@/pages/HomePage';
+import { ContentStudioPage } from '@/pages/ContentStudioPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { RecoveryPage } from '@/pages/RecoveryPage';
 import { VerificationPage } from '@/pages/VerificationPage';
@@ -246,7 +247,7 @@ export function App() {
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
             <Route path="/estudio" element={<CreatorStudioPage />} />
-            <Route path="/estudio/conteudo" element={<CreatorContentPage />} />
+            <Route path="/estudio/conteudo" element={<ContentStudioPage />} />
             <Route path="/estudio/loja" element={phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
             <Route path="/estudio/agenda" element={<CreatorAgendaPage />} />
             <Route path="/estudio/fas" element={phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
