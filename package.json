@@ -28,7 +28,8 @@
     "react-i18next": "^15.7.3",
     "react-router-dom": "^7.9.1",
     "zod": "^4.1.5",
-    "livekit-client": "^2.22.3"
+    "livekit-client": "^2.22.3",
+    "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
