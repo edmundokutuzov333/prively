@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Bank, Cardholder, CheckCircle, Clock, FilePdf, LockKey, Money, Receipt, ShieldCheck, Wallet, XCircle } from '@phosphor-icons/react';
-import { useTranslation } from 'react-i18next';
 import { Botao } from '@/design/Botao';
 import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
@@ -75,7 +74,7 @@ function phase6Error(error: unknown): string {
     provider_charge_failed: 'O fornecedor de pagamentos recusou a cobrança.',
     provider_payout_failed: 'O fornecedor de pagamentos recusou o levantamento.',
     financial_secret_not_configured: 'O processamento financeiro ainda não foi configurado no ambiente de produção.',
-    missing_env:PAYSUITE_CREATE_CHARGE_URL: 'O fornecedor de pagamentos ainda não está configurado.',
+    missing_env: 'O fornecedor de pagamentos ainda não está configurado.',
     provider_invalid_response: 'O fornecedor de pagamentos devolveu uma resposta inválida.',
     provider_amount_mismatch: 'O valor confirmado pelo fornecedor não corresponde ao valor solicitado.',
     unsupported_payment_method: 'Este método de pagamento não está disponível.',
@@ -91,8 +90,7 @@ async function invokeEdge<T>(name: string, body: Record<string, unknown>): Promi
 }
 
 export function Phase6ClientWalletPage() {
-  const { t } = useTranslation();
-  const [summary, setSummary] = useState<WalletSummary | null>(null);
+    const [summary, setSummary] = useState<WalletSummary | null>(null);
   const [settings, setSettings] = useState<FinanceSettings | null>(null);
   const [topups, setTopups] = useState<Topup[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
