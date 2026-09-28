@@ -39,8 +39,36 @@ import {
   SeCriadoraPage
 } from '@/pages/ExperiencePages';
 import i18n, { supportedLanguages } from '@/lib/i18n';
+import {
+  ClientAuctionPage,
+  ClientCustomRequestPage,
+  ClientLiveListPage,
+  ClientLiveRoomPage,
+  ClientRewardsPage,
+  ClientStorePage,
+  ClientWalletRealPage,
+  CreatorAnalyticsAdvancedPage,
+  CreatorAuctionsAdvancedPage,
+  CreatorAutoRepliesPage,
+  CreatorFansAdvancedPage,
+  CreatorGoalsPage,
+  CreatorLiveStudioPage,
+  CreatorReferralPage,
+  CreatorRequestsAdvancedPage,
+  CreatorStoreAdvancedPage
+} from '@/pages/Phase3Pages';
+import {
+  ClientSupportCreatorPage,
+  ClientBundlesPage,
+  ClientEngagementPage,
+  ClientRankingsPage,
+  CreatorBundlesPage,
+  CreatorEngagementPage,
+  CreatorSchedulePage
+} from '@/pages/Phase3AdvancedPages';
 
 const phase2RoutesEnabled = import.meta.env.DEV || featureFlags.phase2Experience;
+const phase3RoutesEnabled = import.meta.env.DEV || featureFlags.phase3Monetization;
 
 function Header() {
   const { t } = useTranslation();
@@ -88,9 +116,21 @@ export function App() {
             <Route path="/post/:id" element={<ClientPostPage />} />
             <Route path="/mensagens" element={<ClientMessagesPage />} />
             <Route path="/mensagens/:id" element={<ClientMessagePage />} />
-            <Route path="/carteira" element={<ClientWalletPage />} />
+            <Route path="/carteira" element={phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
             <Route path="/compras" element={<ClientPurchasesPage />} />
             <Route path="/desejos" element={<ClientWishlistPage />} />
+            {phase3RoutesEnabled ? <>
+              <Route path="/lives" element={<ClientLiveListPage />} />
+              <Route path="/live/:sessionId" element={<ClientLiveRoomPage />} />
+              <Route path="/pedidos" element={<ClientCustomRequestPage />} />
+              <Route path="/leilao/:auctionId" element={<ClientAuctionPage />} />
+              <Route path="/loja" element={<ClientStorePage />} />
+              <Route path="/recompensas" element={<ClientRewardsPage />} />
+              <Route path="/apoio" element={<ClientSupportCreatorPage />} />
+              <Route path="/bundles" element={<ClientBundlesPage />} />
+              <Route path="/actividades" element={<ClientEngagementPage />} />
+              <Route path="/rankings" element={<ClientRankingsPage />} />
+            </> : null}
             <Route path="/definicoes/conta" element={<ClientAccountPage />} />
             <Route path="/definicoes/privacidade" element={<ClientPrivacyPage />} />
             <Route path="/definicoes/limites" element={<ClientLimitsPage />} />
@@ -99,14 +139,22 @@ export function App() {
           <Route element={<WorkspaceLayout variant="creator" />}>
             <Route path="/estudio" element={<CreatorStudioPage />} />
             <Route path="/estudio/conteudo" element={<CreatorContentPage />} />
-            <Route path="/estudio/loja" element={<CreatorStorePage />} />
+            <Route path="/estudio/loja" element={phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
             <Route path="/estudio/agenda" element={<CreatorAgendaPage />} />
-            <Route path="/estudio/fas" element={<CreatorFansPage />} />
+            <Route path="/estudio/fas" element={phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
             <Route path="/estudio/ganhos" element={<CreatorEarningsPage />} />
-            <Route path="/estudio/analitica" element={<CreatorAnalyticsPage />} />
-            <Route path="/estudio/pedidos" element={<CreatorRequestsPage />} />
-            <Route path="/estudio/leiloes" element={<CreatorAuctionsPage />} />
-            <Route path="/estudio/lives" element={<CreatorLivesPage />} />
+            <Route path="/estudio/analitica" element={phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
+            <Route path="/estudio/pedidos" element={phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
+            <Route path="/estudio/leiloes" element={phase3RoutesEnabled ? <CreatorAuctionsAdvancedPage /> : <CreatorAuctionsPage />} />
+            <Route path="/estudio/lives" element={phase3RoutesEnabled ? <CreatorLiveStudioPage /> : <CreatorLivesPage />} />
+            {phase3RoutesEnabled ? <>
+              <Route path="/estudio/metas" element={<CreatorGoalsPage />} />
+              <Route path="/estudio/referral" element={<CreatorReferralPage />} />
+              <Route path="/estudio/respostas" element={<CreatorAutoRepliesPage />} />
+              <Route path="/estudio/bundles" element={<CreatorBundlesPage />} />
+              <Route path="/estudio/actividades" element={<CreatorEngagementPage />} />
+              <Route path="/estudio/agenda-avancada" element={<CreatorSchedulePage />} />
+            </> : null}
             <Route path="/estudio/definicoes" element={<CreatorSettingsPage />} />
           </Route>
         </Route> : null}

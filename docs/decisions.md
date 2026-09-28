@@ -25,3 +25,26 @@ The Phase 2 experience routes are enabled in development, but the feature flag r
 
 ### 2026-09-28: Financial surfaces never display fabricated balances
 Wallet and earnings surfaces show an explicit unavailable state rather than a zero or sample amount until the real ledger-backed data source is connected.
+
+## Phase 3
+
+### 2026-09-28: Server is the financial authority
+All monetized actions are routed through PostgreSQL functions with idempotency, spend limits, escrow where applicable, commission calculation and append-only ledger records. Browser state never decides the final amount or beneficiary.
+
+### 2026-09-28: Ledger is append-only
+Ledger rows cannot be updated or deleted. Releases and refunds are represented by new balanced transactions, with deferred transaction-balance enforcement and a daily reconciliation job.
+
+### 2026-09-28: Escrow before delivery-dependent release
+Custom requests, auctions and products use escrow records. Funds are released only through server-controlled transitions, while refunds create compensating ledger records.
+
+### 2026-09-28: Private media is not publicly addressable
+Media metadata lives in PostgreSQL while binary content remains in a private Supabase Storage bucket. Access is authorized by a database function and delivered as a short-lived signed URL by an Edge Function.
+
+### 2026-09-28: LiveKit credentials are server-issued
+LiveKit room access is granted by an authenticated Edge Function after the database authorization function approves the session. API credentials and signing secrets never enter the browser.
+
+### 2026-09-28: Engagement rewards remain configurable
+Points, missions, levels and badges have persistent schema and server functions, but no reward schedule is enabled by default. This prevents an unreviewed monetary or behavioural incentive policy from silently becoming active.
+
+### 2026-09-28: Referral payout is disabled until configured
+Referral code infrastructure exists, but referral percentage and activation window are zero and disabled by default. The financial engine therefore cannot accidentally distribute an unapproved commission share.

@@ -1,4 +1,4 @@
-import { CalendarDots, ChartBar, ChartLineUp, ChatCircle, Compass, FilmStrip, GearSix, House, NotePencil, Storefront, UserCircle, UsersThree, VideoCamera, Wallet } from '@phosphor-icons/react';
+import { ChartLineUp, ChatCircle, Compass, FilmStrip, GearSix, House, NotePencil, UserCircle, Wallet } from '@phosphor-icons/react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/app/session';
@@ -38,7 +38,7 @@ export function WorkspaceLayout({ variant }: { variant: WorkspaceVariant }) {
     <div className="mx-auto grid max-w-[1440px] md:grid-cols-[76px_1fr]">
       <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] border-r border-bone-50/6 md:flex md:flex-col md:items-center md:gap-3 md:px-3 md:py-5">
         <Link to="/" className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-crimson-400/30 bg-wine-900 font-display text-lg text-bone-50" aria-label={t('brand.name')}>P</Link>
-        {nav.map(({ key, path, icon: Icon, central }) => <Link key={key} to={path} title={t(`experience.nav.${key}`)} className={`group flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${activePath(location.pathname, path) ? 'border-crimson-400/30 bg-wine-900 text-bone-50' : central ? 'border-bone-50/10 bg-ink-900 text-crimson-400 hover:border-crimson-400/30' : 'border-transparent text-bone-500 hover:bg-ink-900 hover:text-bone-50'}`}><Icon size={20} weight="duotone" /></Link>)}
+        {nav.map((item) => { const { key, path, icon: Icon } = item; const central = 'central' in item && item.central; return <Link key={key} to={path} title={t(`experience.nav.${key}`)} className={`group flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${activePath(location.pathname, path) ? 'border-crimson-400/30 bg-wine-900 text-bone-50' : central ? 'border-bone-50/10 bg-ink-900 text-crimson-400 hover:border-crimson-400/30' : 'border-transparent text-bone-500 hover:bg-ink-900 hover:text-bone-50'}`}><Icon size={20} weight="duotone" /></Link>; })}
       </aside>
 
       <div className="min-w-0">
@@ -53,7 +53,7 @@ export function WorkspaceLayout({ variant }: { variant: WorkspaceVariant }) {
 
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-bone-50/7 bg-ink-950/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
           <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 py-2">
-            {nav.map(({ key, path, icon: Icon, central }) => <Link key={key} to={path} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${activePath(location.pathname, path) ? 'text-bone-50' : central ? 'text-crimson-400' : 'text-bone-500'}`}><span className={`flex h-8 w-8 items-center justify-center rounded-full ${central ? 'border border-crimson-400/40 bg-wine-900' : ''}`}><Icon size={central ? 19 : 20} weight="duotone" /></span>{t(`experience.nav.${key}`)}</Link>)}
+            {nav.map((item) => { const { key, path, icon: Icon } = item; const central = 'central' in item && item.central; return <Link key={key} to={path} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${activePath(location.pathname, path) ? 'text-bone-50' : central ? 'text-crimson-400' : 'text-bone-500'}`}><span className={`flex h-8 w-8 items-center justify-center rounded-full ${central ? 'border border-crimson-400/40 bg-wine-900' : ''}`}><Icon size={central ? 19 : 20} weight="duotone" /></span>{t(`experience.nav.${key}`)}</Link>; })}
           </div>
         </nav>
       </div>
