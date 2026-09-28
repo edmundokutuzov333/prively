@@ -70,7 +70,7 @@ import {
 
 const phase2RoutesEnabled = import.meta.env.DEV || featureFlags.phase2Experience;
 const phase3RoutesEnabled = import.meta.env.DEV || featureFlags.phase3Monetization;
-\nconst clientSurfaceRoutes = [
+const clientSurfaceRoutes = [
   '/verificacao',
   '/onboarding',
   '/recuperar',
