@@ -106,5 +106,18 @@ export function CreatorSettingsPage() { return <CreatorPage page="settings" />; 
 
 export function SeCriadoraPage() {
   const { t } = useTranslation();
-  return <section className="mx-auto max-w-5xl px-5 py-12 md:px-8 md:py-16"><PageFrame icon={Keyhole} title={t('experience.pages.seCreator.title')} intro={t('experience.pages.seCreator.intro')} detail={t('experience.pages.seCreator.detail')} actionHref="/registo?role=creator" actionLabel={t('experience.pages.seCreator.action')} /></section>;
+  return <section className="mx-auto max-w-5xl px-5 py-12 md:px-8 md:py-16">
+    <PageFrame
+      icon={Keyhole}
+      title={t('experience.pages.seCreator.title')}
+      intro={t('experience.pages.seCreator.intro')}
+      detail={t('experience.pages.seCreator.detail')}
+      actionHref="/registo?role=creator"
+      actionLabel={t('experience.pages.seCreator.action')}
+    />
+    <div className="mx-auto mt-4 max-w-6xl rounded-xl border border-bone-50/8 bg-ink-900/50 p-5 text-sm text-bone-300">
+      <span>{t('auth.haveAccount')} </span>
+      <a href="/entrar?portal=creator" className="text-bone-50 underline underline-offset-4">{t('auth.creatorSignInTitle')}</a>
+    </div>
+  </section>;
 }
