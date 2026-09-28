@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(17);
 
 select ok(to_regclass('public.media_uploads') is not null,'media uploads exists');
 select ok(to_regclass('public.media_processing_jobs') is not null,'media jobs exists');
@@ -188,15 +188,10 @@ select ok(
   'client can view a fully approved published post'
 );
 
-select is(
-  (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'processing_status'),
-  'ready',
-  'media access exposes ready processing state'
-);
-
 select ok(
-  (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'watermark_enabled')::boolean,
-  'media access returns watermark policy'
+  (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'processing_status')='ready'
+  and (public.get_media_access(current_setting('app.phase5_asset_id')::uuid) ->> 'watermark_enabled')::boolean,
+  'media access returns ready processing state and watermark policy'
 );
 
 select is(
