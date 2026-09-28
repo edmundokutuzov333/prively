@@ -17,8 +17,8 @@ export function HomePage() {
           <motion.h1 initial={{ opacity: 0, y: reduced ? 0 : 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0.12 : 0.55 }} className="max-w-5xl font-display text-[clamp(4.2rem,11vw,10rem)] leading-[0.86] tracking-[-0.04em] text-bone-50">{t('hero.title')}</motion.h1>
           <p className="mt-8 max-w-xl text-base leading-7 text-bone-300">{t('hero.body')}</p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link to="/idade" className="no-underline"><Botao><Keyhole size={19} weight="duotone" />{t('hero.clientAction')}</Botao></Link>
-            <Link to="/idade" className="no-underline"><Botao variant="outline"><Sparkle size={19} weight="duotone" />{t('hero.creatorAction')}</Botao></Link>
+            <Link to="/idade?role=client" className="no-underline"><Botao><Keyhole size={19} weight="duotone" />{t('hero.clientAction')}</Botao></Link>
+            <Link to="/idade?role=creator" className="no-underline"><Botao variant="outline"><Sparkle size={19} weight="duotone" />{t('hero.creatorAction')}</Botao></Link>
           </div>
         </div>
         <div className="relative hidden min-h-[460px] md:block">
