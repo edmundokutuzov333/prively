@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(18);
 
 select ok(to_regclass('public.media_uploads') is not null,'media uploads exists');
 select ok(to_regclass('public.media_processing_jobs') is not null,'media jobs exists');
@@ -145,6 +145,11 @@ begin
     raise exception 'asset did not reach ready processing state';
   end if;
 
+  update public.media_assets
+  set processing_status='processing',
+      ready_at=null
+  where id=asset_id;
+
   perform set_config('app.internal_write','on',true);
   update public.posts
   set status='published',publish_at=now(),moderation_status='clean'
@@ -159,6 +164,21 @@ select set_config('request.jwt.claims',json_build_object(
   'sub','50000000-0000-0000-0000-000000000002',
   'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
 )::text,true);
+
+select ok(
+  not public.can_view_post(
+    current_setting('app.phase5_post_id')::uuid,
+    auth.uid()
+  ),
+  'client cannot view while media processing is incomplete'
+);
+
+set local role postgres;
+update public.media_assets
+set processing_status='ready',
+    ready_at=now()
+where id=current_setting('app.phase5_asset_id')::uuid;
+set local role authenticated;
 
 select ok(
   public.can_view_post(
@@ -183,16 +203,6 @@ select is(
   (select count(*) from public.media_access_logs where user_id=auth.uid() and granted),
   1::bigint,
   'media access is audited'
-);
-
-select set_config('app.internal_write','on',true);
-update public.media_assets
-set processing_status='processing'
-where id=current_setting('app.phase5_asset_id')::uuid;
-
-select ok(
-  not public.can_view_post(current_setting('app.phase5_post_id')::uuid,auth.uid()),
-  'client cannot view while media processing is incomplete'
 );
 
 reset role;
