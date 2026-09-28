@@ -99,9 +99,9 @@ begin
 
   if not exists(
     select 1
-    from public.media_consents
-    where public.media_consents.asset_id=asset_id
-      and consent_type='rights'
+    from public.media_consents mc
+    where mc.asset_id=asset_id
+      and mc.consent_type='rights'
   ) then
     raise exception 'media rights consent missing';
   end if;
