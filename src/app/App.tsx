@@ -11,6 +11,7 @@ import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
 import { InfoPage } from '@/pages/InfoPage';
+import { SurfacePage, SurfaceStatePage } from '@/pages/SurfacePages';
 import {
   ClientAccountPage,
   ClientDiscoverPage,
@@ -69,6 +70,100 @@ import {
 
 const phase2RoutesEnabled = import.meta.env.DEV || featureFlags.phase2Experience;
 const phase3RoutesEnabled = import.meta.env.DEV || featureFlags.phase3Monetization;
+\nconst clientSurfaceRoutes = [
+  '/verificacao',
+  '/onboarding',
+  '/recuperar',
+  '/pesquisa',
+  '/subscricoes',
+  '/tiers',
+  '/ppv',
+  '/comentarios',
+  '/reaccoes',
+  '/sorteios',
+  '/enquetes',
+  '/ranking-fas',
+  '/notificacoes',
+  '/denuncias',
+  '/mensagens/bloqueadas',
+  '/live-privada',
+  '/chamadas',
+  '/recarga',
+  '/historico-carteira',
+  '/recibos',
+  '/moeda',
+  '/pausa',
+  '/auto-exclusao',
+  '/modo-neutro'
+] as const;
+
+const creatorSurfaceRoutes = [
+  '/estudio/onboarding',
+  '/estudio/vip',
+  '/estudio/mural',
+  '/estudio/stories',
+  '/estudio/ppv',
+  '/estudio/promocoes',
+  '/estudio/mensagens',
+  '/estudio/mensagens-pagas',
+  '/estudio/sorteios',
+  '/estudio/chamadas',
+  '/estudio/encontros',
+  '/estudio/seguranca',
+  '/estudio/check-in',
+  '/estudio/panico',
+  '/estudio/bloqueios',
+  '/estudio/silenciados',
+  '/estudio/nao-mostrar',
+  '/estudio/levantamentos',
+  '/estudio/recibos',
+  '/estudio/suporte'
+] as const;
+
+const adminSurfaceRoutes = [
+  '/admin',
+  '/admin/utilizadores',
+  '/admin/kyc',
+  '/admin/moderacao',
+  '/admin/financeiro',
+  '/admin/conformidade',
+  '/admin/auditoria',
+  '/admin/arquivo',
+  '/admin/legal-holds',
+  '/admin/config',
+  '/admin/feature-flags',
+  '/admin/comissoes',
+  '/admin/selos',
+  '/admin/presentes',
+  '/admin/locais-seguros',
+  '/admin/suporte',
+  '/admin/tickets',
+  '/admin/emergencias',
+  '/admin/relatorios'
+] as const;
+
+const stateSurfaceRoutes = [
+  '/estado/403',
+  '/estado/404',
+  '/estado/offline',
+  '/estado/erro',
+  '/estado/acesso-negado',
+  '/estado/suspensa',
+  '/estado/banida',
+  '/estado/kyc-rejeitado',
+  '/estado/kyc-pendente',
+  '/estado/pagamento-falhou',
+  '/estado/pagamento-pendente',
+  '/estado/saldo-insuficiente',
+  '/estado/utilizador-bloqueado',
+  '/estado/conteudo-removido',
+  '/estado/denuncia-submetida',
+  '/estado/disputa',
+  '/estado/reembolso',
+  '/estado/levantamento-falhou',
+  '/estado/levantamento-pendente'
+] as const;
+
 
 function Header() {
   const { t } = useTranslation();
@@ -135,6 +230,7 @@ export function App() {
             <Route path="/definicoes/privacidade" element={<ClientPrivacyPage />} />
             <Route path="/definicoes/limites" element={<ClientLimitsPage />} />
             <Route path="/definicoes/discreto" element={<ClientDiscreetPage />} />
+            {clientSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
             <Route path="/estudio" element={<CreatorStudioPage />} />
@@ -156,8 +252,11 @@ export function App() {
               <Route path="/estudio/agenda-avancada" element={<CreatorSchedulePage />} />
             </> : null}
             <Route path="/estudio/definicoes" element={<CreatorSettingsPage />} />
+            {creatorSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
           </Route>
         </Route> : null}
+
+        {phase3RoutesEnabled ? adminSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />) : null}
 
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/ajuda" element={<InfoPage />} /> : null}
@@ -169,8 +268,10 @@ export function App() {
         {phase2RoutesEnabled ? <Route path="/legal/dmca" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/se-criadora" element={<SeCriadoraPage />} /> : <Route path="/se-criadora" element={<Navigate to="/registo" replace />} />}
 
+        <Route path="/404" element={<SurfaceStatePage />} />
+        {stateSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfaceStatePage />} />)}
         {import.meta.env.DEV && featureFlags.designSystem ? <Route path="/system" element={<DesignSystemPage />} /> : null}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </main>
   </BrowserRouter></SessionProvider>;

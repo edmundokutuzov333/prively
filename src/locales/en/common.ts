@@ -56,6 +56,17 @@ const common = {
       info: { note: 'Legal and institutional content should only be published after approval and versioning.' }
     }
   },
+  surface: {
+    title: 'Prively area',
+    intro: 'This surface is already structured in code and follows the platform visual system, routing and state model.',
+    backendGated: 'The corresponding operational capability is only exposed in production when the real backend, permissions and integrations are active.',
+    route: 'Route',
+    stateTitle: 'Operational state',
+    stateIntro: 'Surface prepared for extreme states, failures and access control.',
+    stateDetail: 'The state is represented as a real application surface without simulated data.',
+    state: 'State',
+    stateBackend: 'This state must be connected to the real flow that produced it before it is exposed as a production experience.'
+  },
   phase3Advanced: {support:{eyebrow:"Support",title:"Support this creator",intro:"Subscriptions, tips and gifts charged through server-authorized flows.",missingChannel:"Missing channel",missingChannelBody:"Open this area from a real channel.",tipTitle:"Tip",amount:"Amount in MZN",message:"Optional message",sendTip:"Send tip",giftsTitle:"Gifts",sendGift:"Send",noGifts:"No gifts configured",noGiftsBody:"The gift catalogue has not been configured yet.",subscriptionsTitle:"Subscriptions",months:"{{count}} month(s)",noTiers:"No tiers",noTiersBody:"This channel has no configured subscription tiers."},bundles:{eyebrow:"Bundles",clientTitle:"Content bundles",clientIntro:"Persisted bundles purchased through the ledger.",buy:"Buy bundle",emptyTitle:"No bundles",emptyBody:"There are no real bundles yet.",creatorTitle:"Creator bundles",creatorIntro:"Group real posts into a single-price bundle.",name:"Bundle name",price:"Price in MZN",description:"Description",create:"Create bundle"},engagement:{eyebrow:"Engagement",creatorTitle:"Giveaways and polls",creatorIntro:"Create real community interactions.",clientTitle:"Participation",clientIntro:"Vote and participate in open interactions.",pollTitle:"New poll",question:"Question",optionsHint:"One option per line",createPoll:"Create poll",giveawayTitle:"New giveaway",title:"Title",winnerCountLabel:"Winner count",createGiveaway:"Create giveaway",winnerCount:"{{count}} winner(s)",enter:"Enter",emptyTitle:"No activities",emptyBody:"There are no active polls or giveaways yet."},schedule:{eyebrow:"Schedule",title:"Availability",intro:"Define real availability windows.",area:"Optional public area",create:"Create slot"},rankings:{eyebrow:"Rankings",title:"Weekly rankings",intro:"Rankings calculated by the backend.",creators:"Creators",fans:"Fans"}}
 } as const;
 

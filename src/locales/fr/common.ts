@@ -56,6 +56,17 @@ const common = {
       info: { note: 'Les contenus légaux et institutionnels ne doivent être publiés qu’après validation et versionnage.' }
     }
   },
+  surface: {
+    title: 'Zone Prively',
+    intro: 'Cette surface est déjà structurée dans le code et suit le système visuel, le routage et le modèle d’états de la plateforme.',
+    backendGated: 'La capacité opérationnelle correspondante n’est exposée en production que lorsque le backend réel, les permissions et les intégrations sont actifs.',
+    route: 'Route',
+    stateTitle: 'État opérationnel',
+    stateIntro: 'Surface préparée pour les états extrêmes, les échecs et le contrôle d’accès.',
+    stateDetail: 'L’état est représenté comme une vraie surface de l’application, sans données simulées.',
+    state: 'État',
+    stateBackend: 'Cet état doit être connecté au flux réel qui l’a produit avant d’être exposé en production.'
+  },
   phase3Advanced: {support:{eyebrow:"Soutien",title:"Soutenir la créatrice",intro:"Abonnements, pourboires et cadeaux facturés via le serveur.",missingChannel:"Canal manquant",missingChannelBody:"Ouvre cette zone depuis un canal réel.",tipTitle:"Pourboire",amount:"Montant en MZN",message:"Message optionnel",sendTip:"Envoyer",giftsTitle:"Cadeaux",sendGift:"Envoyer",noGifts:"Aucun cadeau configuré",noGiftsBody:"Le catalogue des cadeaux n’est pas encore configuré.",subscriptionsTitle:"Abonnements",months:"{{count}} mois",noTiers:"Aucun niveau",noTiersBody:"Ce canal n’a pas encore de niveaux d’abonnement configurés."},bundles:{eyebrow:"Packs",clientTitle:"Packs de contenu",clientIntro:"Packs persistés achetés via le ledger.",buy:"Acheter le pack",emptyTitle:"Aucun pack",emptyBody:"Aucun pack réel pour le moment.",creatorTitle:"Packs de la créatrice",creatorIntro:"Regroupe des publications réelles dans un pack à prix unique.",name:"Nom du pack",price:"Prix en MZN",description:"Description",create:"Créer le pack"},engagement:{eyebrow:"Interaction",creatorTitle:"Tirages et sondages",creatorIntro:"Crée des interactions réelles pour la communauté.",clientTitle:"Participation",clientIntro:"Vote et participe aux interactions ouvertes.",pollTitle:"Nouveau sondage",question:"Question",optionsHint:"Une option par ligne",createPoll:"Créer le sondage",giveawayTitle:"Nouveau tirage",title:"Titre",winnerCountLabel:"Nombre de gagnants",createGiveaway:"Créer le tirage",winnerCount:"{{count}} gagnant(s)",enter:"Participer",emptyTitle:"Aucune activité",emptyBody:"Aucun sondage ou tirage actif."},schedule:{eyebrow:"Agenda",title:"Disponibilités",intro:"Définis de vraies plages de disponibilité.",area:"Zone publique facultative",create:"Créer le créneau"},rankings:{eyebrow:"Classements",title:"Classements hebdomadaires",intro:"Classements calculés par le backend.",creators:"Créatrices",fans:"Fans"}}
 } as const;
 
