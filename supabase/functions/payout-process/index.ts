@@ -39,6 +39,16 @@ Deno.serve(async (request) => {
 
     const payoutUrl = assertHttps(requiredEnv("PAYSUITE_PAYOUT_URL"));
     const apiKey = requiredEnv("PAYSUITE_API_KEY");
+
+    const admin = serviceClient();
+    const { error: processingError } = await admin
+      .from("payouts")
+      .update({ status: "processing", updated_at: new Date().toISOString(), failure_reason: null })
+      .eq("id", payout.id)
+      .eq("status", "approved");
+
+    if (processingError) throw new Error("payout_processing_state_failed");
+
     const response = await fetch(payoutUrl, {
       method: "POST",
       headers: {
@@ -95,8 +105,6 @@ Deno.serve(async (request) => {
     ]);
 
     const state = (nestedString(provider, ["status", "state", "data.status", "data.state"]) ?? "processing").toLowerCase();
-    const admin = serviceClient();
-
     if (["paid", "successful", "success", "completed"].includes(state)) {
       const { error } = await admin.rpc("finalize_payout_paid", {
         _payout: payout.id,
