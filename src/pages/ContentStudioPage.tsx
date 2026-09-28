@@ -6,7 +6,6 @@ import { Botao } from '@/design/Botao';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuth } from '@/app/session';
 import { mediaKind, prepareMediaUpload, uploadMediaResumable } from '@/lib/mediaUpload';
-import { createBlurhash } from '@/lib/blurhash';
 
 type Channel = { id: string; handle: string; display_name: string; bio: string | null };
 type ContentRow = {
@@ -163,10 +162,7 @@ export function ContentStudioPage() {
     try {
       await ensureContentTerms();
 
-      const blurSource = files.find((file) => file.type.startsWith('image/'));
-      const blurhash = blurSource ? await createBlurhash(blurSource) : null;
-
-      const { data: postId, error: postError } = await requireSupabase().rpc('create_post_with_blurhash', {
+      const { data: postId, error: postError } = await requireSupabase().rpc('create_post', {
         _channel: channel.id,
         _caption: caption || null,
         _visibility: visibility,
@@ -174,7 +170,6 @@ export function ContentStudioPage() {
         _price: visibility === 'ppv' ? Math.round(Number(price) * 100) : null,
         _is_story: isStory,
         _expires_at: null,
-        _blurhash: blurhash,
       });
       if (postError || !postId) throw new Error(postError?.message ?? 'post_create_failed');
 
@@ -182,8 +177,8 @@ export function ContentStudioPage() {
         const file = files[index];
         setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, state: 'preparing' } : item));
 
-        const planResult = await prepareMediaUpload(String(postId), file);
-        await uploadMediaResumable(file, planResult.plan, planResult.sha256, (progress) => {
+        const plan = await prepareMediaUpload(String(postId), file);
+        await uploadMediaResumable(file, plan, (progress) => {
           setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
             ...item,
             state: 'uploading',
@@ -247,7 +242,7 @@ export function ContentStudioPage() {
       <Botao className="mt-6" onClick={()=>void createChannel()} loading={savingChannel} disabled={!/^[a-z0-9_]{3,24}$/.test(channelHandle)||!channelName.trim()}><Plus size={18}/>{t('content.createChannel')}</Botao>
     </Ficha> : <div className="grid gap-8 lg:grid-cols-[1.2fr_.8fr]">
       <Ficha variant="focus" className="p-6 md:p-8">
-        <div className="flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[.18em] text-bone-500">{t('content.channelEyebrow')}</p><h2 className="mt-2 text-2xl font-semibold text-bone-50">@{channel.handle}</h2><p className="mt-1 text-sm text-bone-500">{channel.display_name}</p></div><Sparkle size={22} className="text-crimson-400"/></div>
+        <div className="flex items-start justify-between gap-4"><div><p className="text-sm text-bone-500">{t('content.channelEyebrow')}</p><h2 className="mt-2 text-2xl font-semibold text-bone-50">@{channel.handle}</h2><p className="mt-1 text-sm text-bone-500">{channel.display_name}</p></div><Sparkle size={22} className="text-crimson-400"/></div>
         <div className="mt-7 space-y-5">
           <label><span className="mb-2 block text-sm text-bone-300">{t('content.caption')}</span><textarea value={caption} onChange={(event)=>setCaption(event.target.value)} rows={5} maxLength={5000} className="w-full rounded-md border border-input bg-ink-850 p-3 text-bone-50 outline-none" placeholder={t('content.captionPlaceholder')} /></label>
           <div className="grid gap-5 md:grid-cols-3">
@@ -270,7 +265,7 @@ export function ContentStudioPage() {
           {uploads.length ? <div className="space-y-2">{uploads.map((upload)=><div key={upload.fileName} className="rounded-md border border-bone-50/8 bg-ink-850 p-3"><div className="flex items-center justify-between gap-4 text-xs text-bone-300"><span className="truncate">{upload.fileName}</span><span>{upload.state==='uploading'?Math.round(upload.progress)+'%':t('content.uploadStates.'+upload.state)}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded bg-ink-700"><div className="h-full bg-crimson-500 transition-[width]" style={{width:`${upload.progress}%`}} /></div></div>)}</div> : null}
 
           <div className="flex flex-wrap gap-3">
-            <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed||(visibility==='ppv'&&!Number.isFinite(Number(price)))||(visibility==='tier'&&(Number(tierRank)<1||Number(tierRank)>4))}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
+            <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed||(visibility==='ppv'&&(!Number.isFinite(Number(price))||Number(price)<=0))||(visibility==='tier'&&(Number(tierRank)<1||Number(tierRank)>4))}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
             {creatingPost ? <span className="self-center text-xs text-bone-500">{t('content.resumableNote')}</span> : null}
           </div>
         </div>
