@@ -20,13 +20,12 @@ do $$
 declare
   creator uuid:='50000000-0000-0000-0000-000000000001';
   client uuid:='50000000-0000-0000-0000-000000000002';
-  channel_id uuid;
-  post_id uuid;
+  v_channel_id uuid;
+  v_post_id uuid;
   first_payload jsonb;
   second_payload jsonb;
-  asset_id uuid;
   v_asset_id uuid;
-  upload_id uuid;
+  v_upload_id uuid;
   ignored text;
 begin
   insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data)
@@ -58,9 +57,9 @@ begin
     'session_id',gen_random_uuid()::text
   )::text,true);
 
-  channel_id:=public.create_creator_channel('phase5_channel','Phase 5 Creator','Content engine test');
-  post_id:=public.create_post_with_blurhash(
-    channel_id,
+  v_channel_id:=public.create_creator_channel('phase5_channel','Phase 5 Creator','Content engine test');
+  v_post_id:=public.create_post_with_blurhash(
+    v_channel_id,
     'Phase 5 draft',
     'public',
     null,
@@ -71,10 +70,10 @@ begin
   );
 
   first_payload:=public.create_media_upload(
-    post_id,'image','image/png',2048,repeat('a',64),'test.png'
+    v_post_id,'image','image/png',2048,repeat('a',64),'test.png'
   );
   second_payload:=public.create_media_upload(
-    post_id,'image','image/png',2048,repeat('a',64),'test-renamed.png'
+    v_post_id,'image','image/png',2048,repeat('a',64),'test-renamed.png'
   );
 
   if (first_payload->>'assetId')<>(second_payload->>'assetId')
@@ -82,17 +81,16 @@ begin
     raise exception 'resumable upload was not reused';
   end if;
 
-  asset_id:=(first_payload->>'assetId')::uuid;
-  v_asset_id:=asset_id;
-  upload_id:=(first_payload->>'uploadId')::uuid;
+  v_asset_id:=(first_payload->>'assetId')::uuid;
+  v_upload_id:=(first_payload->>'uploadId')::uuid;
 
-  perform set_config('app.phase5_asset_id',asset_id::text,false);
-  perform set_config('app.phase5_post_id',post_id::text,false);
+  perform set_config('app.phase5_asset_id',v_asset_id::text,false);
+  perform set_config('app.phase5_post_id',v_post_id::text,false);
 
   if not exists(
     select 1
     from public.media_uploads
-    where id=upload_id
+    where id=v_upload_id
       and user_id=creator
       and status='initiated'
   ) then
@@ -111,7 +109,7 @@ begin
   begin
     ignored:=(
       public.create_media_upload(
-        post_id,'video','video/mp4',104857601,repeat('b',64),'too-large.mp4'
+        v_post_id,'video','video/mp4',104857601,repeat('b',64),'too-large.mp4'
       )
     )::text;
     raise exception 'oversized video was accepted';
@@ -126,10 +124,10 @@ begin
 
   insert into public.media_processing_jobs(asset_id,job_type,status,processor)
   values
-    (asset_id,'integrity','succeeded','test'),
-    (asset_id,'moderation','succeeded','test'),
-    (asset_id,'thumbnail','succeeded','test'),
-    (asset_id,'watermark','succeeded','test')
+    (v_asset_id,'integrity','succeeded','test'),
+    (v_asset_id,'moderation','succeeded','test'),
+    (v_asset_id,'thumbnail','succeeded','test'),
+    (v_asset_id,'watermark','succeeded','test')
   on conflict(asset_id,job_type) do update
   set status='succeeded',processor='test',error_code=null,error_message=null;
 
@@ -138,22 +136,22 @@ begin
       moderation_status='clean',
       scan_status='clean',
       processing_status='processing',
-      thumb_blur_path='50000000-0000-0000-0000-000000000001/media/'||asset_id::text||'/derivatives/thumb.webp',
-      watermark_path='50000000-0000-0000-0000-000000000001/media/'||asset_id::text||'/derivatives/watermark.webp',
+      thumb_blur_path='50000000-0000-0000-0000-000000000001/media/'||v_asset_id::text||'/derivatives/thumb.webp',
+      watermark_path='50000000-0000-0000-0000-000000000001/media/'||v_asset_id::text||'/derivatives/watermark.webp',
       ready_at=null
-  where id=asset_id;
+  where id=v_asset_id;
 
-  if public.refresh_media_processing_status(asset_id)<>'ready' then
+  if public.refresh_media_processing_status(v_asset_id)<>'ready' then
     raise exception 'asset did not reach ready processing state';
   end if;
 
   update public.media_assets
   set processing_status='processing',
       ready_at=null
-  where id=asset_id;
+  where id=v_asset_id;
 
   begin
-    perform public.publish_post(post_id);
+    perform public.publish_post(v_post_id);
     raise exception 'publish_post accepted incomplete media';
   exception
     when others then
@@ -165,7 +163,7 @@ begin
   perform set_config('app.internal_write','on',true);
   update public.posts
   set status='published',publish_at=now(),moderation_status='clean'
-  where id=post_id;
+  where id=v_post_id;
 end $$;
 
 set local role authenticated;
