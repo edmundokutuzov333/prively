@@ -57,6 +57,15 @@ import {
   CreatorRequestsAdvancedPage,
   CreatorStoreAdvancedPage
 } from '@/pages/Phase3Pages';
+import {
+  ClientSupportCreatorPage,
+  ClientBundlesPage,
+  ClientEngagementPage,
+  ClientRankingsPage,
+  CreatorBundlesPage,
+  CreatorEngagementPage,
+  CreatorSchedulePage
+} from '@/pages/Phase3AdvancedPages';
 
 const phase2RoutesEnabled = import.meta.env.DEV || featureFlags.phase2Experience;
 const phase3RoutesEnabled = import.meta.env.DEV || featureFlags.phase3Monetization;
