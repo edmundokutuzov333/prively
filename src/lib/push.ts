@@ -6,11 +6,14 @@ export function getVapidPublicKey(): string {
     : '';
 }
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const normalized = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(normalized);
-  return Uint8Array.from(rawData, (character) => character.charCodeAt(0));
+  const bytes = Uint8Array.from(rawData, (character) => character.charCodeAt(0));
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
 }
 
 export async function registerPushForCurrentUser(): Promise<void> {
@@ -27,7 +30,7 @@ export async function registerPushForCurrentUser(): Promise<void> {
   const existing = await registration.pushManager.getSubscription();
   const subscription = existing ?? await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
+    applicationServerKey: urlBase64ToArrayBuffer(publicKey),
   });
 
   const json = subscription.toJSON();
