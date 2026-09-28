@@ -13,7 +13,7 @@ type DeviceRow={id:string;device_label:string;created_at:string;last_seen_at:str
 export function SecuritySettingsPage() {
  const {t}=useTranslation(); const {user}=useAuth();
  const [overview,setOverview]=useState<Overview|null>(null); const [sessions,setSessions]=useState<SessionRow[]>([]); const [devices,setDevices]=useState<DeviceRow[]>([]);
- const [mfaCode,setMfaCode]=useState(''); const [factorId,setFactorId]=useState<string|null>(null); const [challengeId,setChallengeId]=useState<string|null>(null); const [qr,setQr]=useState<string|null>(null); const [secret,setSecret]=useState<string|null>(null);
+ const [mfaCode,setMfaCode]=useState(''); const [factorId,setFactorId]=useState<string|null>(null); const [qr,setQr]=useState<string|null>(null); const [secret,setSecret]=useState<string|null>(null);
  const [error,setError]=useState<string|null>(null); const [loading,setLoading]=useState(false);
 
  const sb=useMemo(()=>requireSupabase(),[]);
