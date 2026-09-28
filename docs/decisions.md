@@ -48,3 +48,24 @@ Points, missions, levels and badges have persistent schema and server functions,
 
 ### 2026-09-28: Referral payout is disabled until configured
 Referral code infrastructure exists, but referral percentage and activation window are zero and disabled by default. The financial engine therefore cannot accidentally distribute an unapproved commission share.
+
+
+## Phase 4
+
+### 2026-09-28: Server-side permission model
+Roles are mapped to explicit permissions in `public.role_permissions`. Administrative permissions require an AAL2-authenticated session. The frontend never becomes the authority for access decisions.
+
+### 2026-09-28: Authentication and identity records
+Signup records age-gate and legal acceptance through authenticated RPCs. Sessions, trusted devices, account-state transitions, self-exclusion and security events are persisted in PostgreSQL. Recovery uses Supabase Auth OTP rather than a local password reset mechanism.
+
+### 2026-09-28: KYC documents remain private
+Identity documents and selfies are stored in the private `prively-kyc` bucket. Clients can submit their own files, but direct read access is not granted. Authorised KYC administrators receive short-lived signed URLs for review.
+
+### 2026-09-28: Admin Control Room requires MFA
+The /admin control room is not reachable solely by possessing the admin role. A verified TOTP factor and AAL2 session are required before the server-side admin policies allow the sensitive operations.
+
+### 2026-09-28: SECURITY DEFINER execution is allowlisted
+PostgREST execution of SECURITY DEFINER routines is revoked by default from PUBLIC. Only explicitly approved authenticated RPCs and RLS helper functions are granted back to the client role. Internal ledger, reconciliation and helper routines remain unavailable as direct RPCs.
+
+### 2026-09-28: Deployment observability limitation
+The Vercel deployment integration currently reports failed deployments for the Prively project, but the connected Vercel tool does not expose the corresponding build logs/project to this session. Phase 4 therefore is not marked production-deploy-verified until that external deployment failure can be inspected.
