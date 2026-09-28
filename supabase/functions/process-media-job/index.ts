@@ -462,6 +462,14 @@ Deno.serve(async (request) => {
       if (typeof output.height === "number") patch.height = output.height;
       if (typeof output.durationMs === "number") patch.duration_ms = output.durationMs;
 
+      if (typeof output.blurhash === "string" && output.blurhash.length <= 512 && asset.post_id) {
+        const { error: blurhashError } = await admin
+          .from("posts")
+          .update({ blurhash: output.blurhash })
+          .eq("id", asset.post_id);
+        if (blurhashError) throw new Error("post_blurhash_update_failed");
+      }
+
       if (!Object.keys(patch).length) throw new Error("processor_output_missing_derivative");
 
       const { error: patchError } = await admin.from("media_assets").update(patch).eq("id", asset.id);
