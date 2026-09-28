@@ -42,7 +42,6 @@ begin
   insert into public.balances(owner_id,account,balance)
   values(buyer,'wallet',1000000)
   on conflict(owner_id,account) do update set balance=excluded.balance;
-  raise notice 'seed_wallet=%', (select balance from public.balances where owner_id=buyer and account='wallet');
 
   txn:=public._spend_on_channel(buyer,channel,100000,'tip','tip',gen_random_uuid(),'test-tip');
   if not exists(select 1 from public.ledger_entries where txn_id=txn group by txn_id having sum(amount)=0) then
