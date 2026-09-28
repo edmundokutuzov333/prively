@@ -1,0 +1,4 @@
+-- Supabase migration history reconciliation marker.
+-- Remote project already records 20260928143949 (phase5_admin_media_access).
+-- The repository carries the consolidated/local implementation under later migration filenames.
+-- This marker intentionally performs no schema or data mutation.

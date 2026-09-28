@@ -1,0 +1,4 @@
+-- Supabase migration history reconciliation marker.
+-- Remote project already records 20260928220223 (phase5_resumable_session_reuse).
+-- The repository carries the consolidated/local implementation under later migration filenames.
+-- This marker intentionally performs no schema or data mutation.

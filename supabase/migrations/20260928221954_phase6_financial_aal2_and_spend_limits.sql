@@ -1,0 +1,4 @@
+-- Supabase migration history reconciliation marker.
+-- Remote project already records 20260928221954 (phase6_financial_aal2_and_spend_limits).
+-- The repository carries the consolidated/local implementation under later migration filenames.
+-- This marker intentionally performs no schema or data mutation.

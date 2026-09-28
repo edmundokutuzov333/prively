@@ -1,0 +1,4 @@
+-- Supabase migration history reconciliation marker.
+-- Remote project already records 20260928221750 (phase6_wallet_ledger_payments_core_v2).
+-- The repository carries the consolidated/local implementation under later migration filenames.
+-- This marker intentionally performs no schema or data mutation.
