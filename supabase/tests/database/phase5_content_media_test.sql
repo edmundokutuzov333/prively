@@ -25,6 +25,7 @@ declare
   first_payload jsonb;
   second_payload jsonb;
   asset_id uuid;
+  v_asset_id uuid;
   upload_id uuid;
   ignored text;
 begin
@@ -82,6 +83,7 @@ begin
   end if;
 
   asset_id:=(first_payload->>'assetId')::uuid;
+  v_asset_id:=asset_id;
   upload_id:=(first_payload->>'uploadId')::uuid;
 
   perform set_config('app.phase5_asset_id',asset_id::text,false);
@@ -100,7 +102,7 @@ begin
   if not exists(
     select 1
     from public.media_consents mc
-    where mc.asset_id=asset_id
+    where mc.asset_id=v_asset_id
       and mc.consent_type='rights'
   ) then
     raise exception 'media rights consent missing';
