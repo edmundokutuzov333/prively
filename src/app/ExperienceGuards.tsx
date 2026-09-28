@@ -8,29 +8,42 @@ export function ExperienceGuard() {
   const { t } = useTranslation();
   const location = useLocation();
   const { loading, user } = useAuth();
-  const [checkingRole, setCheckingRole] = useState(true);
+  const [checking, setChecking] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
+  const [accountState, setAccountState] = useState<string | null>(null);
+  const [selfExcludedUntil, setSelfExcludedUntil] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    const loadRoles = async () => {
+    const load = async () => {
       if (!user) {
         if (active) {
           setRoles([]);
-          setCheckingRole(false);
+          setAccountState(null);
+          setSelfExcludedUntil(null);
+          setChecking(false);
         }
         return;
       }
-      const { data } = await requireSupabase().from('user_roles').select('role').eq('user_id', user.id);
+      const sb = requireSupabase();
+      const [rolesResult, securityResult] = await Promise.all([
+        sb.from('user_roles').select('role').eq('user_id', user.id),
+        sb.rpc('get_security_overview')
+      ]);
       if (!active) return;
-      setRoles((data ?? []).map((item) => item.role));
-      setCheckingRole(false);
+      setRoles((rolesResult.data ?? []).map((item) => item.role));
+      if (!securityResult.error && securityResult.data) {
+        const state = securityResult.data as { account_status?: string; self_excluded_until?: string | null };
+        setAccountState(state.account_status ?? null);
+        setSelfExcludedUntil(state.self_excluded_until ?? null);
+      }
+      setChecking(false);
     };
-    void loadRoles();
+    void load();
     return () => { active = false; };
   }, [user]);
 
-  if (loading || checkingRole) {
+  if (loading || checking) {
     return <div className="flex min-h-[50vh] items-center justify-center text-sm text-bone-500">{t('common.loading')}</div>;
   }
 
@@ -39,9 +52,10 @@ export function ExperienceGuard() {
     return <Navigate to={creatorEntry ? '/se-criadora' : ('/entrar?next=' + encodeURIComponent(location.pathname))} replace />;
   }
 
-  if (roles.includes('admin')) {
-    return <Navigate to="/admin" replace />;
-  }
+  if (roles.includes('admin')) return <Navigate to="/admin" replace />;
+  if (accountState === 'banned') return <Navigate to="/estado/banida" replace />;
+  if (accountState === 'suspended') return <Navigate to="/estado/suspensa" replace />;
+  if (selfExcludedUntil && new Date(selfExcludedUntil).getTime() > Date.now()) return <Navigate to="/estado/auto-exclusao" replace />;
 
   if (location.pathname.startsWith('/estudio') && !roles.includes('creator')) {
     return <Navigate to="/estado/acesso-negado" replace />;
