@@ -16,6 +16,7 @@ import { SecuritySettingsPage } from '@/pages/SecuritySettingsPage';
 import { AdminMfaPage } from '@/pages/AdminMfaPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AdminKycPage } from '@/pages/AdminKycPage';
+import { AdminMediaQueuePage } from '@/pages/AdminMediaQueuePage';
 import { AdminAuditPage } from '@/pages/AdminAuditPage';
 import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
@@ -132,6 +133,7 @@ const adminSurfaceRoutes = [
   '/admin',
   '/admin/utilizadores',
   '/admin/kyc',
+  '/admin/media',
   '/admin/moderacao',
   '/admin/financeiro',
   '/admin/conformidade',
@@ -275,8 +277,9 @@ export function App() {
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/utilizadores" element={<AdminUsersPage />} />
           <Route path="/admin/kyc" element={<AdminKycPage />} />
+          <Route path="/admin/media" element={<AdminMediaQueuePage />} />
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
-          {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/auditoria'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+          {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
         </Route>
 
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
