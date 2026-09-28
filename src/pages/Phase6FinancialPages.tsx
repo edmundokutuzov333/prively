@@ -86,6 +86,11 @@ function phase6Error(error: unknown): string {
     provider_invalid_response: 'O fornecedor de pagamentos devolveu uma resposta inválida.',
     provider_amount_mismatch: 'O valor confirmado pelo fornecedor não corresponde ao valor solicitado.',
     unsupported_payment_method: 'Este método de pagamento não está disponível.',
+    invalid_phone: 'Introduz um número moçambicano válido para receber o levantamento.',
+    invalid_mfa_code: 'Introduz o código de 6 dígitos recebido por SMS.',
+    phone_confirmation_required: 'Confirma o teu número de telefone antes de pedir um levantamento.',
+    financial_mfa_recent_required: 'Confirma o código de segurança para continuar com o levantamento.',
+    phone_mfa_not_verified: 'Activa a confirmação por SMS antes de pedir um levantamento.',
   };
   return known[code] ?? code;
 }
@@ -147,30 +152,6 @@ export function Phase6ClientWalletPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [mfaPhoneFactorId, setMfaPhoneFactorId] = useState<string | null>(null);
-  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
-  const [mfaCode, setMfaCode] = useState('');
-  const [phoneConfirmed, setPhoneConfirmed] = useState(false);
-  const [financialMfaReady, setFinancialMfaReady] = useState(false);
-  const [mfaBusy, setMfaBusy] = useState(false);
-
-  const loadSecurity = async () => {
-    const sb = requireSupabase();
-    const [{ data: userResult, error: userError }, factorsResult, aalResult] = await Promise.all([
-      sb.auth.getUser(),
-      sb.auth.mfa.listFactors(),
-      sb.auth.mfa.getAuthenticatorAssuranceLevel(),
-    ]);
-    if (userError || !userResult.user) throw new Error('session_required');
-
-    setPhoneConfirmed(Boolean(userResult.user.phone && userResult.user.phone_confirmed_at));
-    const verifiedPhone = !factorsResult.error
-      ? factorsResult.data.phone.find((factor) => factor.status === 'verified')
-      : undefined;
-    setMfaPhoneFactorId(verifiedPhone?.id ?? null);
-    setFinancialMfaReady(Boolean(verifiedPhone && aalResult.data?.currentLevel === 'aal2'));
-  };
-
   const load = async () => {
     if (!supabase) return;
     const [wallet, config, topupRows, receiptRows] = await Promise.all([
@@ -335,6 +316,30 @@ export function Phase6CreatorEarningsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [mfaPhoneFactorId, setMfaPhoneFactorId] = useState<string | null>(null);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [phoneConfirmed, setPhoneConfirmed] = useState(false);
+  const [financialMfaReady, setFinancialMfaReady] = useState(false);
+  const [mfaBusy, setMfaBusy] = useState(false);
+
+  const loadSecurity = async () => {
+    const sb = requireSupabase();
+    const [{ data: userResult, error: userError }, factorsResult, aalResult] = await Promise.all([
+      sb.auth.getUser(),
+      sb.auth.mfa.listFactors(),
+      sb.auth.mfa.getAuthenticatorAssuranceLevel(),
+    ]);
+    if (userError || !userResult.user) throw new Error('session_required');
+
+    setPhoneConfirmed(Boolean(userResult.user.phone && userResult.user.phone_confirmed_at));
+    const verifiedPhone = !factorsResult.error
+      ? factorsResult.data.phone.find((factor) => factor.status === 'verified')
+      : undefined;
+    setMfaPhoneFactorId(verifiedPhone?.id ?? null);
+    setFinancialMfaReady(Boolean(verifiedPhone && aalResult.data?.currentLevel === 'aal2'));
+  };
 
   const load = async () => {
     const sb = requireSupabase();
