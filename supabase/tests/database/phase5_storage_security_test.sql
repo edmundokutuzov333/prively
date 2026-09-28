@@ -1,4 +1,5 @@
 begin;
+select plan(1);
 select ok(
   not exists(
     select 1
