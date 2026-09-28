@@ -1,5 +1,5 @@
 import { CalendarDots, ChartBar, ChartLineUp, ChatCircle, Compass, FilmStrip, GearSix, Gavel, Keyhole, LockKey, Money, NotePencil, ShieldCheck, ShoppingBagOpen, Storefront, UsersThree, VideoCamera, Wallet } from '@phosphor-icons/react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
@@ -64,7 +64,7 @@ export function ClientWishlistPage() { const { t } = useTranslation(); return <>
 export function ClientAccountPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  return <><PageFrame icon={GearSix} title={t('experience.pages.account.title')} intro={t('experience.pages.account.intro')} detail={t('experience.pages.account.detail')} /><div className="mx-auto mt-4 max-w-6xl"><Ficha className="p-6"><p className="text-xs uppercase tracking-[0.18em] text-bone-500">{t('experience.session.active')}</p><p className="mt-2 truncate text-sm text-bone-50">{user?.email ?? t('experience.session.account')}</p></Ficha></div></>;
+  return <><PageFrame icon={GearSix} title={t('experience.pages.account.title')} intro={t('experience.pages.account.intro')} detail={t('experience.pages.account.detail')} /><div className="mx-auto mt-4 max-w-6xl space-y-4"><Ficha className="p-6"><p className="text-xs uppercase tracking-[0.18em] text-bone-500">{t('experience.session.active')}</p><p className="mt-2 truncate text-sm text-bone-50">{user?.email ?? t('experience.session.account')}</p></Ficha><Ficha className="p-6"><Link to="/definicoes/seguranca" className="flex items-center justify-between gap-4 no-underline"><span><p className="text-sm font-semibold text-bone-50">{t('security.account')}</p><p className="mt-1 text-sm text-bone-500">{t('security.body')}</p></span><GearSix size={20} className="text-crimson-400"/></Link></Ficha></div></>;
 }
 export function ClientPrivacyPage() { const { t } = useTranslation(); return <><PageFrame icon={ShieldCheck} title={t('experience.pages.privacy.title')} intro={t('experience.pages.privacy.intro')} detail={t('experience.pages.privacy.detail')} /><div className="mx-auto mt-4 max-w-6xl"><Escudo text={t('privacy.notice')} /></div></>; }
 export function ClientLimitsPage() { const { t } = useTranslation(); return <PageFrame icon={Money} title={t('experience.pages.limits.title')} intro={t('experience.pages.limits.intro')} detail={t('experience.pages.limits.detail')} />; }
@@ -102,7 +102,7 @@ export function CreatorAnalyticsPage() { return <CreatorPage page="analytics" />
 export function CreatorRequestsPage() { return <CreatorPage page="requests" />; }
 export function CreatorAuctionsPage() { return <CreatorPage page="auctions" />; }
 export function CreatorLivesPage() { return <CreatorPage page="lives" />; }
-export function CreatorSettingsPage() { return <CreatorPage page="settings" />; }
+export function CreatorSettingsPage() { const { t } = useTranslation(); return <><CreatorPage page="settings" /><div className="mx-auto mt-4 max-w-6xl"><Ficha className="p-6"><Link to="/estudio/definicoes/seguranca" className="flex items-center justify-between gap-4 no-underline"><span><p className="text-sm font-semibold text-bone-50">{t('security.title')}</p><p className="mt-1 text-sm text-bone-500">{t('security.body')}</p></span><GearSix size={20} className="text-crimson-400"/></Link></Ficha></div></>; }
 
 export function SeCriadoraPage() {
   const { t } = useTranslation();
