@@ -243,6 +243,9 @@ drop policy if exists prively_private_owner_read on storage.objects;
 drop policy if exists prively_private_owner_write on storage.objects;
 drop policy if exists prively_private_owner_delete on storage.objects;
 drop policy if exists prively_private_owner_update on storage.objects;
+drop policy if exists prively_private_media_insert on storage.objects;
+drop policy if exists prively_private_media_read on storage.objects;
+drop policy if exists prively_private_media_delete on storage.objects;
 create policy prively_private_media_insert on storage.objects
 for insert to authenticated
 with check(
