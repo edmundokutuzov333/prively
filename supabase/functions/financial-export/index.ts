@@ -11,7 +11,7 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
 
   try {
-    const { client, user } = await requireUser(request);
+    const { user } = await requireUser(request);
     const body = await request.json() as {
       format?: unknown;
       receiptId?: unknown;
