@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { featureFlags } from '@/config/featureFlags';
 import { SessionProvider } from '@/app/session';
 import { AdminGuard } from '@/app/AdminGuard';
+import { FinanceGuard } from '@/app/FinanceGuard';
 import { WorkspaceLayout } from '@/app/WorkspaceLayout';
 import { ExperienceGuard } from '@/app/ExperienceGuards';
 import { HomePage } from '@/pages/HomePage';
@@ -77,6 +78,12 @@ import {
   CreatorEngagementPage,
   CreatorSchedulePage
 } from '@/pages/Phase3AdvancedPages';
+import {
+  Phase6ClientWalletPage,
+  Phase6CreatorEarningsPage,
+  Phase6FinanceAdminPage,
+  Phase6LimitsPage,
+} from '@/pages/Phase6FinancialPages';
 
 const phase2RoutesEnabled = featureFlags.phase2Experience || import.meta.env.DEV;
 const phase3RoutesEnabled = featureFlags.phase3Monetization || import.meta.env.DEV;
@@ -223,7 +230,7 @@ export function App() {
             <Route path="/post/:id" element={<ClientPostPage />} />
             <Route path="/mensagens" element={<ClientMessagesPage />} />
             <Route path="/mensagens/:id" element={<ClientMessagePage />} />
-            <Route path="/carteira" element={phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
+            <Route path="/carteira" element={featureFlags.phase6Financials ? <Phase6ClientWalletPage /> : phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
             <Route path="/compras" element={<ClientPurchasesPage />} />
             <Route path="/desejos" element={<ClientWishlistPage />} />
             {phase3RoutesEnabled ? <>
@@ -240,7 +247,7 @@ export function App() {
             </> : null}
             <Route path="/definicoes/conta" element={<ClientAccountPage />} />
             <Route path="/definicoes/privacidade" element={<ClientPrivacyPage />} />
-            <Route path="/definicoes/limites" element={<ClientLimitsPage />} />
+            <Route path="/definicoes/limites" element={featureFlags.phase6Financials ? <Phase6LimitsPage /> : <ClientLimitsPage />} />
             <Route path="/definicoes/discreto" element={<ClientDiscreetPage />} />
             <Route path="/definicoes/seguranca" element={<SecuritySettingsPage />} />
             <Route path="/verificacao" element={<VerificationPage />} />
@@ -252,7 +259,7 @@ export function App() {
             <Route path="/estudio/loja" element={phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
             <Route path="/estudio/agenda" element={<CreatorAgendaPage />} />
             <Route path="/estudio/fas" element={phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
-            <Route path="/estudio/ganhos" element={<CreatorEarningsPage />} />
+            <Route path="/estudio/ganhos" element={featureFlags.phase6Financials ? <Phase6CreatorEarningsPage /> : <CreatorEarningsPage />} />
             <Route path="/estudio/analitica" element={phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
             <Route path="/estudio/pedidos" element={phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
             <Route path="/estudio/leiloes" element={phase3RoutesEnabled ? <CreatorAuctionsAdvancedPage /> : <CreatorAuctionsPage />} />
@@ -272,13 +279,17 @@ export function App() {
         </Route> : null}
 
         <Route path="/admin/seguranca/mfa" element={<AdminMfaPage />} />
+        <Route element={<FinanceGuard />}>
+          <Route path="/admin/financeiro" element={<Phase6FinanceAdminPage />} />
+        </Route>
+
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/utilizadores" element={<AdminUsersPage />} />
           <Route path="/admin/kyc" element={<AdminKycPage />} />
           <Route path="/admin/media" element={<AdminMediaQueuePage />} />
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
-          {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+          {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria','/admin/financeiro'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
         </Route>
 
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
