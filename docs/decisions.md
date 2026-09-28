@@ -94,5 +94,18 @@ Every signed-media authorization attempt is persisted in `media_access_logs`. Co
 ### 2026-09-28: Moderation stays fail-closed
 A post cannot become client-visible while its attached media is pending, mismatched, flagged, under review or otherwise not clean. Processing jobs can remain blocked when a real processor has not been configured.
 
-### 2026-09-28: Deployment caveat remains explicit
-Supabase production migrations and the Phase 5 Edge Functions are deployed and active. GitHub Actions is running the main CI pipeline, but the Vercel integration continues to report an external deployment/build-rate-limit failure and is not treated as a successful production verification.
+### 2026-09-28: Production verification state
+Supabase production migrations for Phase 5 are applied and the process-media-job and get-media-url Edge Functions are active with JWT verification enabled. The latest successful Vercel deployment has also been observed. External media processing remains deliberately fail-closed until MEDIA_SCAN_ENDPOINT and MEDIA_PROCESSOR_ENDPOINT credentials are configured; no clean, HLS, thumbnail or watermark result is simulated.
+
+
+### 2026-09-28: Processing readiness is a publication invariant
+A post cannot be published or client-visible until every attached asset is integrity-verified, moderation-clean, scan-clean and processing-ready. Required derivative outputs are determined by media kind: thumbnails for image/video, HLS for video and a watermark derivative when watermarking is enabled.
+
+### 2026-09-28: Resumable upload sessions are reusable
+Creating an upload for the same post, MIME type, size and SHA-256 while an active upload session exists returns the existing upload session instead of creating duplicate media assets. This makes TUS resume semantics survive a page reload without introducing duplicate content records.
+
+### 2026-09-28: Private storage is not an authorization shortcut
+Creator-owned direct storage reads remain limited to the creator's own storage prefix. Administrative private-media reads are removed from Storage RLS so moderation previews must pass through get-media-url, which in turn uses get_media_access() and records the access attempt.
+
+### 2026-09-28: Media derivative paths are tenant-scoped
+Processor outputs for thumbnails, HLS and watermarks must remain inside the asset's own storage prefix. Absolute URLs, parent traversal and cross-asset paths are rejected before persistence.
