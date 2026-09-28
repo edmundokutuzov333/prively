@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(16);
 
 select ok(
   exists(select 1 from storage.buckets where id='prively-private' and public=false),
@@ -103,6 +103,41 @@ select ok(
     where jobname='prively-process-media-sweep'
   ),
   'unverified media sweep cron is not active'
+);
+
+select ok(
+  to_regprocedure('public.get_media_preview(uuid)') is not null,
+  'safe locked-media preview RPC exists'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.get_media_preview(uuid)',
+    'EXECUTE'
+  ),
+  'anonymous users cannot request locked-media previews'
+);
+
+select ok(
+  exists(
+    select 1
+    from pg_policies
+    where schemaname='public'
+      and tablename='compliance_objects'
+      and policyname='compliance_objects_admin_read'
+      and cmd='SELECT'
+  ),
+  'compliance archive metadata is protected by an admin/compliance policy'
+);
+
+select ok(
+  exists(
+    select 1
+    from public.platform_settings
+    where key='retention_days'
+  ),
+  'retention_days configuration contract exists'
 );
 
 select * from finish();
