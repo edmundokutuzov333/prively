@@ -81,7 +81,7 @@ export function useMessages(conversationId: string) {
   useEffect(() => {
     if (!conversationId) return;
     const channel: RealtimeChannel = supabase
-      .channel('conv:' + conversationId, { config: { private: true } })
+      .channel('conv:' + conversationId)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: 'conversation_id=eq.' + conversationId },
@@ -112,7 +112,7 @@ export function useConversationPresence(conversationId: string, userId: string |
 
   useEffect(() => {
     if (!conversationId || !userId) return;
-    const channel = supabase.channel('conv:' + conversationId, {
+    const channel = supabase.channel('typing:' + conversationId, {
       config: {
         private: true,
         presence: { key: userId },
