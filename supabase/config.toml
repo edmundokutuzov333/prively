@@ -1,0 +1,16 @@
+project_id = "prively"
+
+[db]
+major_version = 17
+
+[functions.livekit-token]
+verify_jwt = true
+
+[functions.livekit-webhook]
+verify_jwt = false
+
+[functions.get-media-url]
+verify_jwt = true
+
+[functions.track-analytics]
+verify_jwt = true
