@@ -32,6 +32,37 @@ type PendingUpload = {
   error?: string;
 };
 
+function contentErrorMessage(t: (key: string, options?: Record<string, unknown>) => string, error: unknown) {
+  const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+  const code = raw.toLowerCase().split(':')[0].replace(/[^a-z0-9_]/g, '');
+  const known = new Set([
+    'content_rights_required',
+    'content_terms_required',
+    'creator_verification_required',
+    'channel_forbidden',
+    'channel_handle_taken',
+    'invalid_channel_handle',
+    'display_name_required',
+    'post_create_failed',
+    'media_upload_prepare_failed',
+    'signed_upload_url_failed',
+    'session_required',
+    'unsupported_media_type',
+    'file_too_large',
+    'unsupported_image_type',
+    'unsupported_video_type',
+    'unsupported_audio_type',
+    'media_size_mismatch',
+    'sha256_mismatch',
+    'media_forbidden',
+    'media_not_ready',
+    'ppv_price_required',
+    'tier_required',
+    'price_visibility_mismatch'
+  ]);
+  return known.has(code) ? t(`content.errors.${code}`) : t('content.errors.generic');
+}
+
 export function CreatorContentPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -98,7 +129,7 @@ export function CreatorContentPage() {
     });
     setSavingChannel(false);
     if (rpcError) {
-      setError(rpcError.message);
+      setError(contentErrorMessage(t, rpcError));
       return;
     }
     setNotice(t('content.channelCreated'));
@@ -170,7 +201,7 @@ export function CreatorContentPage() {
       setNotice(t('content.uploadQueued'));
       await load();
     } catch (submissionError) {
-      const message = submissionError instanceof Error ? submissionError.message : 'content_upload_failed';
+      const message = contentErrorMessage(t, submissionError);
       setError(message);
       setUploads((items) => items.map((item) => item.state === 'queued' ? item : { ...item, state: 'failed', error: message }));
     } finally {
@@ -185,7 +216,7 @@ export function CreatorContentPage() {
     const { error: publishError } = await requireSupabase().rpc('publish_post', { _post: postId, _scheduled_at: null });
     setPublishing(null);
     if (publishError) {
-      setError(publishError.message);
+      setError(contentErrorMessage(t, publishError));
       return;
     }
     setNotice(t('content.published'));
@@ -239,7 +270,7 @@ export function CreatorContentPage() {
           {uploads.length ? <div className="space-y-2">{uploads.map((upload)=><div key={upload.fileName} className="rounded-md border border-bone-50/8 bg-ink-850 p-3"><div className="flex items-center justify-between gap-4 text-xs text-bone-300"><span className="truncate">{upload.fileName}</span><span>{upload.state==='uploading'?Math.round(upload.progress)+'%':t('content.uploadStates.'+upload.state)}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded bg-ink-700"><div className="h-full bg-crimson-500 transition-[width]" style={{width:`${upload.progress}%`}} /></div></div>)}</div> : null}
 
           <div className="flex flex-wrap gap-3">
-            <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
+            <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed||(visibility==='ppv'&&!Number.isFinite(Number(price)))||(visibility==='tier'&&(Number(tierRank)<1||Number(tierRank)>4))}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
             {creatingPost ? <span className="self-center text-xs text-bone-500">{t('content.resumableNote')}</span> : null}
           </div>
         </div>
