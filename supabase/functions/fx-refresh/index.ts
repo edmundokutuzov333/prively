@@ -59,7 +59,7 @@ Deno.serve(async (request) => {
     if(typeof apiKey==="string" && apiKey) headers.Authorization="Bearer " + apiKey;
 
     const response=await fetch(url,{headers});
-    if(!response.ok) return jsonResponse({code:\`fx_provider_http_\${response.status}\`},502);
+    if(!response.ok) return jsonResponse({code:`fx_provider_http_${response.status}`},502);
 
     const body=await response.json() as Record<string,unknown>;
     const ratesValue=body.rates;
