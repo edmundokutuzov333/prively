@@ -2,9 +2,9 @@ name: Prively CI
 
 on:
   push:
-    branches: [main, 'feat/**']
+    branches: [main]
   pull_request:
-    branches: [main, 'feat/phase-2-client-creator-experience']
+    branches: [main]
 
 permissions:
   contents: read
