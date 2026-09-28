@@ -3,6 +3,7 @@ export const featureFlags = {
   ageGate: true,
   auth: true,
   phase2Experience: false,
+  phase3Monetization: false,
   creatorStudio: false,
   wallet: false,
   payments: false,
@@ -13,8 +14,6 @@ export const featureFlags = {
   agency: false
 } as const;
 
-export type FeatureFlag = keyof typeof featureFlags;
-
-export function isFeatureEnabled(flag: FeatureFlag): boolean {
-  return featureFlags[flag];
+export function isFeatureEnabled(name: keyof typeof featureFlags): boolean {
+  return featureFlags[name];
 }

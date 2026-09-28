@@ -22,7 +22,11 @@ export function AuthPage({ mode }: AuthPageProps) {
   const schema = z.object({
     email: z.string().email(),
     password: z.string().min(8),
-    ...(mode === 'signUp' ? { handle: z.string().regex(/^[a-z0-9_]{3,24}$/) } : {})
+    handle: z.string().optional()
+  }).superRefine((values, ctx) => {
+    if (mode === 'signUp' && !values.handle?.match(/^[a-z0-9_]{3,24}$/)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['handle'], message: 'invalid_handle' });
+    }
   });
   const { register, handleSubmit, formState: { isSubmitting, errors } } = useForm<Values>({ resolver: zodResolver(schema) });
 
