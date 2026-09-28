@@ -38,10 +38,15 @@ Deno.serve(async (request) => {
 
       if (error || !receipt) return jsonResponse({ code: "receipt_not_found" }, 404);
 
-      const { data: isPrivileged } = await client.rpc("has_role", { _uid: user.id, _role: "finance" });
-      const { data: isAdmin } = await client.rpc("has_role", { _uid: user.id, _role: "admin" });
+      const { data: roleRows, error: roleError } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
 
-      if (receipt.user_id !== user.id && isPrivileged !== true && isAdmin !== true) {
+      if (roleError) return jsonResponse({ code: "role_lookup_failed" }, 500);
+
+      const privileged = (roleRows ?? []).some((row) => row.role === "finance" || row.role === "admin");
+      if (receipt.user_id !== user.id && !privileged) {
         return jsonResponse({ code: "forbidden" }, 403);
       }
 
