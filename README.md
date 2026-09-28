@@ -155,3 +155,64 @@ A Fase 6 começa no núcleo financeiro real: wallet, ledger append-only, partida
 ## Validação antes de produção pública
 
 A conclusão de código não é suficiente para abrir publicamente a plataforma. A própria especificação exige validação jurídica, termos publicados, KYC, detecção de conteúdo ilegal, equipa de moderação e suporte, criadoras verificadas e teste externo de segurança antes do lançamento público. fileciteturn0file0L543-L545
+
+## Fase 7 · Social Graph, Realtime & Communication
+
+A Fase 7 foi implementada na `main` com backend real, RLS, RPCs, Realtime, Presence, chat, anexos privados, mensagens bloqueadas, notificações e contratos server-side para chamadas e LiveKit.
+
+### Social Graph
+- `follows`, `blocks` e `hidden_from` com mutações por RPC e verificação server-side.
+- Bloqueio é aplicado no acesso a conteúdo, conversas, mensagens e salas.
+- Comentários e reacções usam RLS ligado a `can_view_post`.
+- Wishlist usa RPCs idempotentes de leitura/escrita autorizada.
+- A função interna de bloqueio não fica exposta como um oracle a clientes.
+
+### Chat e Realtime
+- `conversations`, `conversation_members` e `messages` permanecem protegidos por RLS.
+- Corrigida a vulnerabilidade anterior em que a política de mensagens usava uma condição tautológica.
+- Envio passa por `send_message_v2()`; o cliente não insere mensagens directamente.
+- Mensagens pagas usam o ledger da Fase 6. Mensagens bloqueadas usam `message_locked_content` e `unlock_message()`.
+- Estado de leitura é persistido com `mark_message_read()` e `mark_conversation_read()`.
+- Presence de digitação usa tópico separado `typing:<conversation-id>`; alterações Postgres usam `conv:<conversation-id>`.
+- A publicação `supabase_realtime` inclui as tabelas necessárias para comunicação e actividade social.
+
+### Attachments
+- Bucket privado `prively-chat`.
+- Upload através de URL assinada temporária.
+- Anexo só muda de `pending` para `attached` quando a mensagem autorizada é criada.
+- Leitura usa URL assinada de 60 segundos e passa pela RLS de membros e pela regra de desbloqueio.
+- Edge Functions activas: `chat-attachment-upload-url` e `chat-attachment-url`.
+
+### Privacy e notificações
+O aviso de privacidade das conversas segue o texto definido na especificação e aparece no primeiro acesso da conversa. As notificações não copiam corpo de mensagens nem dados reais para o payload.
+
+Existe agora infraestrutura Web Push com:
+- `push_subscriptions` e registo por RPC.
+- Service worker próprio com Workbox e tratamento de `push`/click.
+- `process-push-notifications` como Edge Function privada por token de job.
+- Flag `feature_flags.push=false` enquanto VAPID ainda não estiver configurado.
+
+### Chamadas e Live
+- `start_call()`, `heartbeat_call()`, `end_call()` e `bill_active_calls()`.
+- Billing por minuto é server-side e usa o ledger, nunca o cliente.
+- Heartbeat perdido encerra a sessão por timeout.
+- Saldo insuficiente encerra a chamada e gera notificação neutra.
+- `live_sessions` suporta `free`, `paid` e `private`, com `private_client_id`, `per_minute_price` e heartbeat.
+- `create_live_session()`, `heartbeat_live()`, `end_live()` e `bill_private_live_sessions()` foram implementados.
+- LiveKit continua atrás de flag enquanto as credenciais e endpoint externos não estiverem certificados.
+
+### Tradução
+A Edge Function `translate-message` existe com cache em `message_translations`, mas permanece desligada por `feature_flags.translation=false` até existir um fornecedor aprovado para conteúdo adulto e as respectivas secrets.
+
+### Segurança e regressão
+- `chat_rate_limits` tem RLS activo e não pode ser lida ou alterada pelos papéis de cliente.
+- Foi removido o índice duplicado de mensagens e a constraint redundante de votos.
+- Foi criada uma API de `can_view_post(uuid)` limitada ao utilizador autenticado. A variante que aceita um `user_id` arbitrário permanece interna.
+- Políticas administrativas genéricas foram removidas das tabelas de comunicação privada; acesso de conformidade continuará a ser feito através da camada específica de Compliance View da Fase 8.
+- Testes SQL da Fase 7 estão em `supabase/tests/database/phase7_social_realtime_test.sql`.
+
+### Estado de integração
+
+Operacional no Supabase: schema, RLS, RPCs, storage privado, Realtime publication, Presence contracts, chat, notificações, anexos privados e billing server-side das chamadas.
+
+Ainda condicionado a configuração externa: VAPID para Push, fornecedor de tradução aprovado, credenciais LiveKit e ligação de produção da Vercel. A Fase 7 não activa estes caminhos como se estivessem configurados quando as credenciais reais não existem.
