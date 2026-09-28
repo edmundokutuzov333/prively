@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(15);
 
 select ok(to_regclass('public.media_uploads') is not null,'media uploads exists');
 select ok(to_regclass('public.media_processing_jobs') is not null,'media jobs exists');
