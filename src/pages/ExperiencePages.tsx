@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { Escudo } from '@/design/Escudo';
+import { Cortina } from '@/design/Cortina';
 import { Selo } from '@/design/Selo';
 import { useAuth } from '@/app/session';
 import { PageFrame } from '@/pages/PageFrame';
 import { requireSupabase } from '@/lib/supabase';
+import { formatMznFromCents } from '@/lib/money';
 
 function DevSessionNote() {
   const { t } = useTranslation();
@@ -54,9 +56,11 @@ type PostMedia = {
 type SignedMedia = {
   assetId: string;
   kind: 'image' | 'video' | 'audio';
-  url: string;
+  locked?: boolean;
+  url?: string | null;
   thumbnailUrl: string | null;
-  watermark: { enabled: boolean; text: string | null };
+  blurhash?: string | null;
+  watermark?: { enabled: boolean; text: string | null };
 };
 
 export function ClientPostPage() {
@@ -107,8 +111,19 @@ export function ClientPostPage() {
       const signedResults = await Promise.all(
         (mediaResult.data as PostMedia[]).map(async (asset) => {
           const result = await sb.functions.invoke('get-media-url', { body: { assetId: asset.id } });
-          if (result.error || !result.data?.url) return null;
-          return result.data as SignedMedia;
+          if (!result.error && result.data?.url) {
+            return result.data as SignedMedia;
+          }
+
+          const preview = await sb.functions.invoke('get-media-preview', {
+            body: { assetId: asset.id },
+          });
+
+          if (!preview.error && preview.data?.locked && preview.data?.thumbnailUrl) {
+            return preview.data as SignedMedia;
+          }
+
+          return null;
         }),
       );
 
@@ -153,12 +168,21 @@ export function ClientPostPage() {
     <Ficha variant="focus" className="overflow-hidden p-2 md:p-4">
       {media.length ? <div className="grid gap-4">
         {media.map((asset) => <figure key={asset.assetId} className="relative overflow-hidden rounded-md border border-bone-50/8 bg-black">
-          {asset.kind === 'image' ? <img src={asset.url} alt={post.caption || t('post.mediaAlt')} className="max-h-[72vh] w-full object-contain" loading="eager" /> : null}
-          {asset.kind === 'video' ? <video src={asset.url} poster={asset.thumbnailUrl ?? undefined} controls playsInline preload="metadata" className="max-h-[72vh] w-full bg-black" /> : null}
-          {asset.kind === 'audio' ? <div className="flex min-h-48 items-center justify-center p-8"><audio src={asset.url} controls className="w-full" /></div> : null}
-          {asset.watermark.enabled && asset.watermark.text ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
-            <span className="rotate-[-18deg] select-none text-xl font-semibold tracking-[0.2em] text-white">{asset.watermark.text}</span>
-          </div> : null}
+          {asset.locked ? (
+            <Cortina
+              priceLabel={post.visibility === 'ppv' && post.price !== null ? formatMznFromCents(post.price) : t('post.locked')}
+              thumbnailUrl={asset.thumbnailUrl}
+            />
+          ) : (
+            <>
+              {asset.kind === 'image' && asset.url ? <img src={asset.url} alt={post.caption || t('post.mediaAlt')} className="max-h-[72vh] w-full object-contain" loading="eager" /> : null}
+              {asset.kind === 'video' && asset.url ? <video src={asset.url} poster={asset.thumbnailUrl ?? undefined} controls playsInline preload="metadata" className="max-h-[72vh] w-full bg-black" /> : null}
+              {asset.kind === 'audio' && asset.url ? <div className="flex min-h-48 items-center justify-center p-8"><audio src={asset.url} controls className="w-full" /></div> : null}
+              {asset.watermark?.enabled && asset.watermark.text ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+                <span className="rotate-[-18deg] select-none text-xl font-semibold tracking-[0.2em] text-white">{asset.watermark.text}</span>
+              </div> : null}
+            </>
+          )}
         </figure>)}
       </div> : <div className="p-10 text-center text-sm text-bone-500">{t('post.noMedia')}</div>}
     </Ficha>
