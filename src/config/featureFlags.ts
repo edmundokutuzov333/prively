@@ -8,7 +8,7 @@ export const featureFlags = {
   creatorStudio: false,
   wallet: true,
   payments: true,
-  messaging: false,
+  messaging: true,
   live: false,
   meetings: false,
   moderation: false,
