@@ -168,7 +168,8 @@ const stateSurfaceRoutes = [
   '/estado/disputa',
   '/estado/reembolso',
   '/estado/levantamento-falhou',
-  '/estado/levantamento-pendente'
+  '/estado/levantamento-pendente',
+  '/estado/auto-exclusao'
 ] as const;
 
 
