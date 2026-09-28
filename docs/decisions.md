@@ -12,3 +12,16 @@ Authentication never falls back to local or simulated success. If the environmen
 
 ### 2026-09-28: Development-only design system route
 The component inventory is available at /system only in development builds. It is not a production user-facing feature and is therefore not exposed in production routing.
+
+## Phase 2
+
+### 2026-09-28: Complete client and creator route surface before domain backends
+Phase 2 establishes the full client and creator information architecture, responsive workspace shells, route contracts, real Supabase session awareness, i18n coverage and honest empty/error states.
+
+No creator, purchase, wallet, message, live or catalogue records are invented to populate the screens. Domain data is introduced only when its backend authority exists.
+
+### 2026-09-28: Development-only experience until backend authority exists
+The Phase 2 experience routes are enabled in development, but the feature flag remains disabled in production until the corresponding backend domains are implemented and tested. This prevents incomplete product capabilities from being exposed as finished functionality.
+
+### 2026-09-28: Financial surfaces never display fabricated balances
+Wallet and earnings surfaces show an explicit unavailable state rather than a zero or sample amount until the real ledger-backed data source is connected.
