@@ -27,6 +27,7 @@ export function SocialPostActions({ postId }: Props) {
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const reload = async () => {
     if (!user) return;
@@ -103,9 +104,10 @@ export function SocialPostActions({ postId }: Props) {
     if (!ownerId) return;
     setBusy(true);
     setError(null);
+    setNotice(null);
     const { error: rpcError } = await supabase.rpc('block_user', { _blocked: ownerId });
     if (rpcError) setError(rpcError.code ?? rpcError.message);
-    else setError('A conta foi bloqueada. O conteúdo e a comunicação com esta conta deixam de estar disponíveis.');
+    else setNotice('A conta foi bloqueada. O conteúdo e a comunicação com esta conta deixam de estar disponíveis.');
     setBusy(false);
   };
 
@@ -135,6 +137,7 @@ export function SocialPostActions({ postId }: Props) {
     </div>
 
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
+    {notice ? <p role="status" className="text-sm text-ok">{notice}</p> : null}
 
     <Ficha>
       <div className="flex items-center gap-2">
