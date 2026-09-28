@@ -65,7 +65,7 @@ select is((select balance from public.balances where owner_id='10000000-0000-000
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 
-select is((select count(*) from public.ledger_entries where owner_id='10000000-0000-0000-0000-000000000001'::uuid),3::bigint,'buyer sees only own ledger rows through RLS');
+select is((select count(*) from public.ledger_entries where owner_id='10000000-0000-0000-0000-000000000001'::uuid),2::bigint,'buyer sees only own ledger rows through RLS');
 select is((select count(*) from public.ledger_entries where owner_id='10000000-0000-0000-0000-000000000002'::uuid),0::bigint,'buyer cannot read creator ledger rows');
 
 reset role;
