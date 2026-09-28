@@ -185,7 +185,7 @@ select ok(
   'client cannot view while media processing is incomplete'
 );
 
-set local role postgres;
+reset role;
 update public.media_assets
 set processing_status='ready',
     ready_at=now()
