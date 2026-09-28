@@ -10,5 +10,5 @@ create index if not exists notifications_push_pending_idx
 insert into public.platform_settings(key,value)
 values
   ('feature_flags.push','false'::jsonb),
-  ('push.provider','web-push'::jsonb)
+  ('push.provider','"web-push"'::jsonb)
 on conflict(key) do nothing;
