@@ -594,9 +594,13 @@ begin
   select * into s from public.streaks where user_id=auth.uid() for update;
   if not found then insert into public.streaks(user_id,current_days,longest_days,last_day) values(auth.uid(),1,1,today);
   elsif s.last_day=today then null;
-  elsif s.last_day=today-1 then update public.streaks set current_days=current_days+1,longest_days=greatest(longest_days,current_days+1),last_day=today where user_id=auth.uid();
-  else update public.streaks set current_days=1,last_day=today where user_id=auth.uid(); end if;
-  perform public.award_configured_points(auth.uid(),'login','streak',null);
+  elsif s.last_day=today-1 then
+    update public.streaks set current_days=current_days+1,longest_days=greatest(longest_days,current_days+1),last_day=today where user_id=auth.uid();
+    perform public.award_configured_points(auth.uid(),'login','streak',null);
+  else
+    update public.streaks set current_days=1,last_day=today where user_id=auth.uid();
+    perform public.award_configured_points(auth.uid(),'login','streak',null);
+  end if;
   return jsonb_build_object('current_days',(select current_days from public.streaks where user_id=auth.uid()),'longest_days',(select longest_days from public.streaks where user_id=auth.uid()),'points',(select points from public.loyalty_points where user_id=auth.uid()));
 end $$;
 

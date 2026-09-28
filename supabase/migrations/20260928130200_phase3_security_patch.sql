@@ -50,3 +50,31 @@ grant execute on function public.purchase_ppv(uuid,text) to authenticated;
 grant execute on function public.follow_channel(uuid) to authenticated;
 
 create index if not exists ledger_release_source_idx on public.ledger_entries(release_source_id);
+
+
+create unique index if not exists ledger_release_source_unique_idx
+on public.ledger_entries(release_source_id)
+where release_source_id is not null;
+
+create or replace function public.can_view_post(_post_id uuid,_uid uuid)
+returns boolean language plpgsql stable security definer set search_path=public as $$
+declare p public.posts; c public.channels;
+begin
+  select * into p from public.posts where id=_post_id and status='published'
+    and (publish_at is null or publish_at<=now()) and (expires_at is null or expires_at>now());
+  if not found then return false; end if;
+  select * into c from public.channels where id=p.channel_id;
+  if _uid=c.owner_id then return true; end if;
+  if not public.is_age_verified(_uid) then return false; end if;
+  if exists(select 1 from public.blocks where (owner_id=c.owner_id and blocked_user_id=_uid) or (owner_id=_uid and blocked_user_id=c.owner_id)) then return false; end if;
+  if exists(select 1 from public.hidden_from where channel_id=c.id and user_id=_uid) then return false; end if;
+  return case p.visibility
+    when 'public' then true
+    when 'followers' then exists(select 1 from public.follows where follower_id=_uid and channel_id=c.id)
+    when 'subscribers' then public.has_active_subscription(_uid,c.id)
+    when 'tier' then public.has_tier_rank(_uid,c.id,p.min_tier_rank)
+    when 'ppv' then exists(select 1 from public.ppv_purchases where buyer_id=_uid and post_id=p.id)
+      or exists(select 1 from public.bundle_purchases bp join public.bundle_items bi on bi.bundle_id=bp.bundle_id where bp.buyer_id=_uid and bi.post_id=p.id)
+    else false
+  end;
+end $$;
