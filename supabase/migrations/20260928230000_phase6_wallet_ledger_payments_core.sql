@@ -26,7 +26,7 @@ create table if not exists public.topups (
   unique(user_id,idempotency_key)
 );
 
-create index if not exists topups_user_created_idx on public.topups(user_id,created_at desc);
+create index if not exists topups_user_created_idx on public.topups(user_id,requested_at desc);
 create index if not exists topups_status_expiry_idx on public.topups(status,expires_at);
 
 create table if not exists public.payment_webhook_events (
