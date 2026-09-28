@@ -9,6 +9,21 @@ export type MediaUploadPlan = {
   expiresAt: string;
 };
 
+export type MediaProcessingJobs = {
+  integrity: string | null;
+  archive: string | null;
+  moderation: string | null;
+  thumbnail: string | null;
+  watermark: string | null;
+  hls: string | null;
+};
+
+export type MediaFinalizeResult = {
+  assetId: string;
+  status: string;
+  jobs: MediaProcessingJobs;
+};
+
 export type MediaUploadProgress = {
   uploadedBytes: number;
   totalBytes: number;
@@ -60,7 +75,7 @@ export async function uploadMediaResumable(
   file: File,
   plan: MediaUploadPlan,
   onProgress?: (progress: MediaUploadProgress) => void,
-): Promise<void> {
+): Promise<MediaFinalizeResult> {
   const sb = requireSupabase();
   const { data: signedData, error: signedError } = await sb.storage
     .from('prively-private')
@@ -113,13 +128,28 @@ export async function uploadMediaResumable(
       .catch(reject);
   });
 
-  const { error: finalizeError } = await sb.rpc('finalize_media_upload', {
+  const { data: finalizeData, error: finalizeError } = await sb.rpc('finalize_media_upload', {
     _upload: plan.uploadId,
     _reported_sha256: null,
     _file_size: file.size,
   });
 
-  if (finalizeError) {
-    throw new Error(finalizeError.message);
+  if (finalizeError || !finalizeData) {
+    throw new Error(finalizeError?.message ?? 'media_finalize_failed');
   }
+
+  const jobs = (finalizeData.jobs ?? {}) as Record<string, unknown>;
+
+  return {
+    assetId: String(finalizeData.assetId),
+    status: String(finalizeData.status ?? 'queued'),
+    jobs: {
+      integrity: typeof jobs.integrity === 'string' ? jobs.integrity : null,
+      archive: typeof jobs.archive === 'string' ? jobs.archive : null,
+      moderation: typeof jobs.moderation === 'string' ? jobs.moderation : null,
+      thumbnail: typeof jobs.thumbnail === 'string' ? jobs.thumbnail : null,
+      watermark: typeof jobs.watermark === 'string' ? jobs.watermark : null,
+      hls: typeof jobs.hls === 'string' ? jobs.hls : null,
+    },
+  };
 }
