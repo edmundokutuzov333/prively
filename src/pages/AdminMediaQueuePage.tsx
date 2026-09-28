@@ -33,12 +33,19 @@ export function AdminMediaQueuePage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const safeError = (value: unknown) => {
+    const raw = value instanceof Error ? value.message : typeof value === 'string' ? value : '';
+    const key = raw.toLowerCase().split(':')[0].replace(/[^a-z0-9_]/g, '');
+    const known = new Set(['processor_not_configured','media_size_mismatch','server_sha256_mismatch','media_download_failed','signed_source_url_failed','processor_invalid_status']);
+    return known.has(key) ? t('adminMedia.errors.' + key) : t('adminMedia.errors.generic');
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error: rpcError } = await requireSupabase().rpc('get_media_processing_queue', { _limit: 100 });
     setLoading(false);
     if (rpcError) {
-      setError(rpcError.message);
+      setError(safeError(rpcError));
       return;
     }
     setJobs((data ?? []) as Job[]);
@@ -52,7 +59,7 @@ export function AdminMediaQueuePage() {
     const result = await requireSupabase().functions.invoke('process-media-job', { body: { jobId } });
     setProcessing(null);
     if (result.error) {
-      setError(result.error.message);
+      setError(safeError(result.error));
       return;
     }
     await load();
@@ -90,15 +97,15 @@ export function AdminMediaQueuePage() {
               {job.job_status === 'succeeded' ? <CheckCircle className="text-ok"/> : job.job_status === 'failed' ? <WarningCircle className="text-danger"/> : <GearSix className="text-crimson-400"/>}
               <div className="min-w-0">
                 <p className="truncate font-semibold text-bone-50">{job.original_filename ?? job.asset_id}</p>
-                <p className="mt-1 text-xs text-bone-500">{job.job_type} · {job.job_status} · {job.kind} · {job.mime_type ?? 'unknown'}</p>
+                <p className="mt-1 text-xs text-bone-500">{t('adminMedia.jobTypes.'+job.job_type)} · {t('adminMedia.statuses.'+job.job_status)} · {t('adminMedia.kinds.'+job.kind)} · {job.mime_type ?? t('adminMedia.unknownType')}</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 text-xs text-bone-400">
-              <span>{t('adminMedia.integrity')}: {job.integrity_status}</span>
-              <span>{t('adminMedia.moderation')}: {job.moderation_status}</span>
+              <span>{t('adminMedia.integrity')}: {t('adminMedia.assetStates.'+job.integrity_status)}</span>
+              <span>{t('adminMedia.moderation')}: {t('adminMedia.assetStates.'+job.moderation_status)}</span>
               <span>{t('adminMedia.attempts')}: {job.attempts}</span>
             </div>
-            {job.error_message ? <p className="mt-3 text-xs text-danger">{job.error_message}</p> : null}
+            {job.error_message ? <p className="mt-3 text-xs text-danger">{safeError(job.error_message)}</p> : null}
           </div>
 
           <div className="flex flex-wrap gap-2">
