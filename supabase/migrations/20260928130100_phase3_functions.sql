@@ -41,12 +41,17 @@ select status from public.kyc_verifications where user_id=auth.uid() order by cr
 $$;
 
 create or replace function public.ledger_apply()
-returns trigger language plpgsql set search_path=public as $$
+returns trigger language plpgsql security definer set search_path=public as $
 begin
-  insert into public.balances(owner_id,account,balance) values(new.owner_id,new.account,new.amount)
-  on conflict(owner_id,account) do update set balance=public.balances.balance+excluded.balance;
+  update public.balances
+  set balance=balance+new.amount
+  where owner_id=new.owner_id and account=new.account;
+  if not found then
+    insert into public.balances(owner_id,account,balance)
+    values(new.owner_id,new.account,new.amount);
+  end if;
   return new;
-end $$;
+end $;
 
 drop trigger if exists trg_ledger_apply on public.ledger_entries;
 create trigger trg_ledger_apply after insert on public.ledger_entries
