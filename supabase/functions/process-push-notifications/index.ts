@@ -20,7 +20,7 @@ Deno.serve(async (request) => {
     .eq("key", "feature_flags.push")
     .maybeSingle();
 
-  if (flag?.value !== true) return json({ code: "push_disabled" }, 204);
+  if (flag?.value !== true) return new Response(null, { status: 204 });
   if (!vapidSubject || !vapidPublicKey || !vapidPrivateKey) return json({ code: "push_not_configured" }, 503);
 
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
