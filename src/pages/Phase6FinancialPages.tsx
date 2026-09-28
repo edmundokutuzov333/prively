@@ -5,7 +5,7 @@ import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { PageFrame } from '@/pages/PageFrame';
 import { formatMznFromCents } from '@/lib/money';
-import { requireSupabase, supabase } from '@/lib/supabase';
+import { requireSupabase, supabase, supabaseProjectRef } from '@/lib/supabase';
 
 type WalletSummary = {
   wallet: number;
@@ -87,6 +87,46 @@ async function invokeEdge<T>(name: string, body: Record<string, unknown>): Promi
   const { data, error } = await sb.functions.invoke(name, { body });
   if (error) throw new Error(error.message);
   return data as T;
+}
+
+async function downloadFinancialExport(format: 'csv' | 'receipt_pdf', receiptId?: string): Promise<void> {
+  const sb = requireSupabase();
+  const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+  if (sessionError || !sessionData.session?.access_token) throw new Error('session_required');
+
+  const response = await fetch(`https://${supabaseProjectRef}.supabase.co/functions/v1/financial-export`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ format, receiptId }),
+  });
+
+  if (!response.ok) {
+    let code = 'financial_export_failed';
+    try {
+      const body = await response.json() as { code?: unknown };
+      if (typeof body.code === 'string') code = body.code;
+    } catch {
+      // Preserve the generic export failure.
+    }
+    throw new Error(code);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const match = disposition.match(/filename="([^"]+)"/i);
+  const filename = match?.[1] ?? (format === 'csv' ? 'prively-historico-financeiro.csv' : 'prively-recibo.pdf');
+
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 export function Phase6ClientWalletPage() {
@@ -232,14 +272,20 @@ export function Phase6ClientWalletPage() {
       </Ficha>
 
       <Ficha className="p-6">
-        <div className="flex items-center gap-3"><Receipt size={22} weight="duotone" /><h2 className="text-lg text-bone-50">Recibos</h2></div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3"><Receipt size={22} weight="duotone" /><h2 className="text-lg text-bone-50">Recibos</h2></div>
+          <Botao variant="outline" type="button" onClick={()=>void downloadFinancialExport('csv').catch((e:unknown)=>setError(phase6Error(e)))}>Exportar CSV</Botao>
+        </div>
         <div className="mt-4 space-y-2">
           {receipts.map((row) => <div key={row.id} className="flex items-center justify-between gap-3 rounded-control border border-bone-50/8 p-3">
             <div>
               <p className="text-sm text-bone-50">{row.receipt_number ?? row.txn_id}</p>
               <p className="mt-1 text-xs text-bone-500">{row.kind} · {new Date(row.created_at).toLocaleString('pt-PT')}</p>
             </div>
-            <p className="font-display text-xl text-bone-50">{formatMznFromCents(row.amount)}</p>
+            <div className="flex items-center gap-3">
+              <p className="font-display text-xl text-bone-50">{formatMznFromCents(row.amount)}</p>
+              <Botao variant="outline" type="button" onClick={()=>void downloadFinancialExport('receipt_pdf',row.id).catch((e:unknown)=>setError(phase6Error(e)))}>PDF</Botao>
+            </div>
           </div>)}
           {!receipts.length ? <EstadoVazio title="Sem recibos" body="Os recibos são gerados a partir de transacções financeiras reais." /> : null}
         </div>
