@@ -41,7 +41,7 @@ Use:
 - Output Directory: `dist`
 - Install Command: automatic npm install
 
-Connect the production branch according to the repository integration policy. The current Phase 3 branch is intentionally not the production branch.
+Connect the production branch according to the repository integration policy. The production code branch is main. No phase-specific branch should be created for normal implementation.
 
 ## Production gate
 
