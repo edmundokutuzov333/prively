@@ -32,8 +32,8 @@ $$;
 
 revoke all on function public.is_blocked(uuid,uuid) from public, anon, authenticated;
 revoke all on function public.is_hidden_from(uuid,uuid) from public, anon, authenticated;
-grant execute on function public.is_blocked(uuid,uuid) to authenticated;
-grant execute on function public.is_hidden_from(uuid,uuid) to authenticated;
+grant execute on function public.is_blocked(uuid,uuid) to service_role;
+grant execute on function public.is_hidden_from(uuid,uuid) to service_role;
 
 -- Fix the Phase 5 source-of-truth access function by supplying the helpers it expects.
 create or replace function public.can_view_post(_post_id uuid, _uid uuid)
@@ -97,7 +97,28 @@ end;
 $$;
 
 revoke all on function public.can_view_post(uuid,uuid) from public, anon, authenticated;
-grant execute on function public.can_view_post(uuid,uuid) to authenticated;
+grant execute on function public.can_view_post(uuid,uuid) to service_role;
+
+
+-- Notification helper is defined before social mutations that call it.
+create or replace function public.notify_user(
+  _user uuid,
+  _kind text,
+  _payload jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql security definer set search_path=public
+as $
+declare n uuid:=gen_random_uuid();
+begin
+  if _user is null then return null; end if;
+  insert into public.notifications(id,user_id,kind,payload)
+  values(n,_user,_kind,coalesce(_payload,'{}'::jsonb));
+  return n;
+end;
+$;
+
+revoke all on function public.notify_user(uuid,text,jsonb) from public,anon,authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 2. Social graph
@@ -959,25 +980,6 @@ create policy push_subscriptions_own
 on public.push_subscriptions for select to authenticated
 using(user_id=auth.uid());
 
-create or replace function public.notify_user(
-  _user uuid,
-  _kind text,
-  _payload jsonb default '{}'::jsonb
-)
-returns uuid
-language plpgsql security definer set search_path=public
-as $$
-declare n uuid:=gen_random_uuid();
-begin
-  if _user is null then return null; end if;
-
-  insert into public.notifications(id,user_id,kind,payload)
-  values(n,_user,_kind,coalesce(_payload,'{}'::jsonb));
-
-  return n;
-end;
-$$;
-
 create or replace function public.mark_notification_read(_notification uuid)
 returns void
 language plpgsql security definer set search_path=public
@@ -1544,7 +1546,7 @@ drop policy if exists prively_conv_receive on realtime.messages;
 create policy prively_conv_receive
 on realtime.messages for select to authenticated
 using (
-  realtime.extension() in ('broadcast','presence')
+  realtime.messages.extension in ('broadcast','presence')
   and exists(
     select 1
     from public.conversation_members cm
@@ -1557,7 +1559,7 @@ drop policy if exists prively_conv_send on realtime.messages;
 create policy prively_conv_send
 on realtime.messages for insert to authenticated
 with check (
-  realtime.extension() in ('broadcast','presence')
+  realtime.messages.extension in ('broadcast','presence')
   and exists(
     select 1
     from public.conversation_members cm
