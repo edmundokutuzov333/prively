@@ -9,6 +9,13 @@ import { WorkspaceLayout } from '@/app/WorkspaceLayout';
 import { ExperienceGuard } from '@/app/ExperienceGuards';
 import { HomePage } from '@/pages/HomePage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
+import { RecoveryPage } from '@/pages/RecoveryPage';
+import { VerificationPage } from '@/pages/VerificationPage';
+import { SecuritySettingsPage } from '@/pages/SecuritySettingsPage';
+import { AdminMfaPage } from '@/pages/AdminMfaPage';
+import { AdminUsersPage } from '@/pages/AdminUsersPage';
+import { AdminKycPage } from '@/pages/AdminKycPage';
+import { AdminAuditPage } from '@/pages/AdminAuditPage';
 import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
@@ -73,9 +80,7 @@ import {
 const phase2RoutesEnabled = featureFlags.phase2Experience || import.meta.env.DEV;
 const phase3RoutesEnabled = featureFlags.phase3Monetization || import.meta.env.DEV;
 const clientSurfaceRoutes = [
-  '/verificacao',
   '/onboarding',
-  '/recuperar',
   '/pesquisa',
   '/subscricoes',
   '/tiers',
@@ -205,6 +210,7 @@ export function App() {
         <Route path="/entrar" element={<AuthPage mode="signIn" portal="client" />} />
         <Route path="/registo" element={<AuthPage mode="signUp" portal="client" />} />
         <Route path="/admin/entrar" element={<AuthPage mode="signIn" portal="admin" />} />
+        <Route path="/recuperar" element={<RecoveryPage />} />
 
         {phase2RoutesEnabled ? <Route element={<ExperienceGuard />}>
           <Route element={<WorkspaceLayout variant="client" />}>
@@ -233,6 +239,7 @@ export function App() {
             <Route path="/definicoes/privacidade" element={<ClientPrivacyPage />} />
             <Route path="/definicoes/limites" element={<ClientLimitsPage />} />
             <Route path="/definicoes/discreto" element={<ClientDiscreetPage />} />
+            <Route path="/definicoes/seguranca" element={<SecuritySettingsPage />} />
             {clientSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
@@ -255,13 +262,18 @@ export function App() {
               <Route path="/estudio/agenda-avancada" element={<CreatorSchedulePage />} />
             </> : null}
             <Route path="/estudio/definicoes" element={<CreatorSettingsPage />} />
+            <Route path="/estudio/definicoes/seguranca" element={<SecuritySettingsPage />} />
             {creatorSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
           </Route>
         </Route> : null}
 
+        <Route path="/admin/seguranca/mfa" element={<AdminMfaPage />} />
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminDashboardPage />} />
-          {adminSurfaceRoutes.filter((path) => path !== '/admin').map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+          <Route path="/admin/utilizadores" element={<AdminUsersPage />} />
+          <Route path="/admin/kyc" element={<AdminKycPage />} />
+          <Route path="/admin/auditoria" element={<AdminAuditPage />} />
+          {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/auditoria'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
         </Route>
 
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
