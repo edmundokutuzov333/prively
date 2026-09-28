@@ -1532,6 +1532,520 @@ as $$
 declare result uuid;
 begin
   if _topic is null or _topic !~ '^(conv|typing):[0-9a-fA-F-]{36}
+    result:=split_part(_topic,':',2)::uuid;
+    return result;
+  exception when others then
+    return null;
+  end;
+end;
+$$;
+
+revoke all on function public.realtime_conversation_id(text) from public,anon;
+grant execute on function public.realtime_conversation_id(text) to authenticated;
+
+drop policy if exists prively_conv_receive on realtime.messages;
+create policy prively_conv_receive
+on realtime.messages for select to authenticated
+using (
+  realtime.messages.extension in ('broadcast','presence')
+  and exists(
+    select 1
+    from public.conversation_members cm
+    where cm.conversation_id=public.realtime_conversation_id(realtime.topic())
+      and cm.user_id=auth.uid()
+  )
+);
+
+drop policy if exists prively_conv_send on realtime.messages;
+create policy prively_conv_send
+on realtime.messages for insert to authenticated
+with check (
+  realtime.messages.extension in ('broadcast','presence')
+  and exists(
+    select 1
+    from public.conversation_members cm
+    where cm.conversation_id=public.realtime_conversation_id(realtime.topic())
+      and cm.user_id=auth.uid()
+  )
+);
+
+-- ---------------------------------------------------------------------------
+-- 11. Rate limits for chat and Realtime mutation endpoints
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.chat_rate_limits (
+  user_id uuid primary key references public.profiles on delete cascade,
+  window_started_at timestamptz not null default now(),
+  message_count integer not null default 0,
+  attachment_count integer not null default 0
+);
+
+create or replace function public.assert_chat_rate_limit(_is_attachment boolean default false)
+returns void
+language plpgsql security definer set search_path=public
+as $$
+declare r public.chat_rate_limits;
+declare now_ts timestamptz:=now();
+declare max_messages integer:=60;
+declare max_attachments integer:=20;
+begin
+  insert into public.chat_rate_limits(user_id,window_started_at,message_count,attachment_count)
+  values(auth.uid(),now_ts,0,0)
+  on conflict(user_id) do nothing;
+
+  select * into r from public.chat_rate_limits where user_id=auth.uid() for update;
+
+  if r.window_started_at<now_ts-interval '1 minute' then
+    update public.chat_rate_limits
+    set window_started_at=now_ts,message_count=0,attachment_count=0
+    where user_id=auth.uid();
+    r.window_started_at:=now_ts;
+    r.message_count:=0;
+    r.attachment_count:=0;
+  end if;
+
+  if _is_attachment then
+    if r.attachment_count>=max_attachments then raise exception 'chat_rate_limited'; end if;
+    update public.chat_rate_limits set attachment_count=attachment_count+1 where user_id=auth.uid();
+  else
+    if r.message_count>=max_messages then raise exception 'chat_rate_limited'; end if;
+    update public.chat_rate_limits set message_count=message_count+1 where user_id=auth.uid();
+  end if;
+end;
+$$;
+
+revoke all on function public.assert_chat_rate_limit(boolean) from public,anon,authenticated;
+grant execute on function public.assert_chat_rate_limit(boolean) to authenticated;
+
+-- Apply rate limiting inside the real mutation.
+create or replace function public.send_message_v2(
+  _conversation uuid,
+  _body text default null,
+  _kind text default 'text',
+  _attachment_id uuid default null,
+  _idem text default null
+)
+returns uuid
+language plpgsql security definer set search_path=public
+as $$
+declare
+  c public.conversations;
+  channel_owner uuid;
+  mode text;
+  dm_price bigint;
+  message_id uuid:=gen_random_uuid();
+  idem_key text;
+  attachment public.message_attachments;
+  auto_reply text;
+begin
+  select * into c from public.conversations where id=_conversation;
+  if not found then raise exception 'conversation_not_found'; end if;
+  if not exists(select 1 from public.conversation_members where conversation_id=_conversation and user_id=auth.uid()) then raise exception 'forbidden'; end if;
+  if public.is_blocked(c.client_id,c.creator_id) then raise exception 'user_blocked'; end if;
+  if public.is_blocked(c.creator_id,auth.uid()) then raise exception 'user_blocked'; end if;
+
+  select ch.owner_id,ch.dm_mode,ch.dm_price into channel_owner,mode,dm_price
+  from public.channels ch where ch.id=c.channel_id;
+
+  if auth.uid()<>channel_owner and mode='off' then raise exception 'dm_disabled'; end if;
+  if auth.uid()<>channel_owner and mode='subscribers'
+     and not public.has_active_subscription(auth.uid(),c.channel_id) then raise exception 'subscription_required'; end if;
+
+  if _kind not in ('text','image','video','audio') then raise exception 'invalid_message_kind'; end if;
+  if char_length(trim(coalesce(_body,'')))=0 and _attachment_id is null then raise exception 'message_content_required'; end if;
+  if char_length(coalesce(_body,''))>5000 then raise exception 'invalid_message'; end if;
+
+  perform public.assert_chat_rate_limit(_attachment_id is not null);
+
+  if _attachment_id is not null then
+    select * into attachment
+    from public.message_attachments
+    where id=_attachment_id
+      and conversation_id=_conversation
+      and owner_id=auth.uid()
+      and status='pending'
+    for update;
+    if not found then raise exception 'attachment_not_available'; end if;
+  end if;
+
+  idem_key:=coalesce(nullif(trim(_idem),''),'message:'||_conversation::text||':'||message_id::text);
+
+  if auth.uid()<>channel_owner and mode='paid' then
+    if dm_price is null or dm_price<=0 then raise exception 'message_price_not_configured'; end if;
+    perform public._spend_on_channel(auth.uid(),c.channel_id,dm_price,'message','conversation',_conversation,idem_key);
+  end if;
+
+  insert into public.messages(id,conversation_id,sender_id,kind,body,price)
+  values(message_id,_conversation,auth.uid(),_kind,nullif(trim(_body),''),case when auth.uid()<>channel_owner and mode='paid' then dm_price else null end);
+
+  if _attachment_id is not null then
+    update public.message_attachments set message_id=message_id,status='attached' where id=_attachment_id;
+  end if;
+
+  if auth.uid()<>c.creator_id then
+    select a.reply into auto_reply
+    from public.auto_replies a
+    where a.channel_id=c.channel_id and a.enabled
+      and (lower(a.trigger)=lower(trim(coalesce(_body,''))) or a.trigger='*')
+    order by case when lower(a.trigger)=lower(trim(coalesce(_body,''))) then 0 else 1 end
+    limit 1;
+
+    if auto_reply is not null then
+      insert into public.messages(conversation_id,sender_id,kind,body)
+      values(c.id,c.creator_id,'system',auto_reply);
+    end if;
+  end if;
+
+  perform public.notify_user(
+    case when auth.uid()=c.client_id then c.creator_id else c.client_id end,
+    'message',
+    jsonb_build_object('conversation_id',_conversation,'message_id',message_id)
+  );
+
+  return message_id;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 12. Scheduled jobs
+-- ---------------------------------------------------------------------------
+
+do $$
+begin
+  begin
+    perform cron.unschedule('prively-reconcile-ledger-v2');
+  exception when others then null;
+  end;
+
+  begin
+    perform cron.unschedule('prively-bill-private-live');
+  exception when others then null;
+  end;
+
+  begin
+    perform cron.unschedule('prively-bill-calls');
+  exception when others then null;
+  end;
+
+  perform cron.schedule('prively-bill-calls','* * * * *','select public.bill_active_calls();');
+  perform cron.schedule('prively-bill-private-live','* * * * *','select public.bill_private_live_sessions();');
+end
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 13. Basic RLS and grants for social graph hardening
+-- ---------------------------------------------------------------------------
+
+alter table public.follows enable row level security;
+alter table public.blocks enable row level security;
+alter table public.hidden_from enable row level security;
+alter table public.conversations enable row level security;
+alter table public.conversation_members enable row level security;
+alter table public.messages enable row level security;
+
+
+-- Do not expose block lists or hidden lists to arbitrary users.
+drop policy if exists blocks_own on public.blocks;
+drop policy if exists blocks_read_own on public.blocks;
+create policy blocks_read_own
+on public.blocks for select to authenticated
+using(owner_id=auth.uid());
+
+drop policy if exists hidden_owner on public.hidden_from;
+create policy hidden_owner_read
+on public.hidden_from for select to authenticated
+using(user_id=auth.uid());
+
+-- Follow visibility: only the owner of the follow relation or channel owner may see it.
+drop policy if exists follows_own on public.follows;
+create policy follows_read_own_or_owner
+on public.follows for select to authenticated
+using(
+  follower_id=auth.uid()
+  or exists(select 1 from public.channels c where c.id=follows.channel_id and c.owner_id=auth.uid())
+);
+
+-- Conversation member rows expose only the current user's membership.
+drop policy if exists conversation_members_own on public.conversation_members;
+create policy conversation_members_own
+on public.conversation_members for select to authenticated
+using(user_id=auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- 14. Server contracts for notification privacy and future translation/live workers
+-- ---------------------------------------------------------------------------
+
+insert into public.platform_settings(key,value)
+values
+  ('feature_flags.messaging','true'::jsonb),
+  ('feature_flags.push','false'::jsonb),
+  ('feature_flags.translation','false'::jsonb),
+  ('feature_flags.live','false'::jsonb),
+  ('feature_flags.private_calls','true'::jsonb)
+on conflict(key) do nothing;
+
+-- Keep notification payloads metadata-only. Never place message body, real name or explicit content here.
+comment on table public.notifications is
+  'Notification payloads are metadata-only. Sensitive message contents must never be copied into push or notification payloads.';
+ then return null; end if;
+  begin
+    result:=split_part(_topic,':',2)::uuid;
+    return result;
+  exception when others then
+    return null;
+  end;
+end;
+$$;
+
+revoke all on function public.realtime_conversation_id(text) from public,anon;
+grant execute on function public.realtime_conversation_id(text) to authenticated;
+
+drop policy if exists prively_conv_receive on realtime.messages;
+create policy prively_conv_receive
+on realtime.messages for select to authenticated
+using (
+  realtime.messages.extension in ('broadcast','presence')
+  and exists(
+    select 1
+    from public.conversation_members cm
+    where cm.conversation_id=public.realtime_conversation_id(realtime.topic())
+      and cm.user_id=auth.uid()
+  )
+);
+
+drop policy if exists prively_conv_send on realtime.messages;
+create policy prively_conv_send
+on realtime.messages for insert to authenticated
+with check (
+  realtime.messages.extension in ('broadcast','presence')
+  and exists(
+    select 1
+    from public.conversation_members cm
+    where cm.conversation_id=public.realtime_conversation_id(realtime.topic())
+      and cm.user_id=auth.uid()
+  )
+);
+
+-- ---------------------------------------------------------------------------
+-- 11. Rate limits for chat and Realtime mutation endpoints
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.chat_rate_limits (
+  user_id uuid primary key references public.profiles on delete cascade,
+  window_started_at timestamptz not null default now(),
+  message_count integer not null default 0,
+  attachment_count integer not null default 0
+);
+
+create or replace function public.assert_chat_rate_limit(_is_attachment boolean default false)
+returns void
+language plpgsql security definer set search_path=public
+as $$
+declare r public.chat_rate_limits;
+declare now_ts timestamptz:=now();
+declare max_messages integer:=60;
+declare max_attachments integer:=20;
+begin
+  insert into public.chat_rate_limits(user_id,window_started_at,message_count,attachment_count)
+  values(auth.uid(),now_ts,0,0)
+  on conflict(user_id) do nothing;
+
+  select * into r from public.chat_rate_limits where user_id=auth.uid() for update;
+
+  if r.window_started_at<now_ts-interval '1 minute' then
+    update public.chat_rate_limits
+    set window_started_at=now_ts,message_count=0,attachment_count=0
+    where user_id=auth.uid();
+    r.window_started_at:=now_ts;
+    r.message_count:=0;
+    r.attachment_count:=0;
+  end if;
+
+  if _is_attachment then
+    if r.attachment_count>=max_attachments then raise exception 'chat_rate_limited'; end if;
+    update public.chat_rate_limits set attachment_count=attachment_count+1 where user_id=auth.uid();
+  else
+    if r.message_count>=max_messages then raise exception 'chat_rate_limited'; end if;
+    update public.chat_rate_limits set message_count=message_count+1 where user_id=auth.uid();
+  end if;
+end;
+$$;
+
+revoke all on function public.assert_chat_rate_limit(boolean) from public,anon,authenticated;
+grant execute on function public.assert_chat_rate_limit(boolean) to authenticated;
+
+-- Apply rate limiting inside the real mutation.
+create or replace function public.send_message_v2(
+  _conversation uuid,
+  _body text default null,
+  _kind text default 'text',
+  _attachment_id uuid default null,
+  _idem text default null
+)
+returns uuid
+language plpgsql security definer set search_path=public
+as $$
+declare
+  c public.conversations;
+  channel_owner uuid;
+  mode text;
+  dm_price bigint;
+  message_id uuid:=gen_random_uuid();
+  idem_key text;
+  attachment public.message_attachments;
+  auto_reply text;
+begin
+  select * into c from public.conversations where id=_conversation;
+  if not found then raise exception 'conversation_not_found'; end if;
+  if not exists(select 1 from public.conversation_members where conversation_id=_conversation and user_id=auth.uid()) then raise exception 'forbidden'; end if;
+  if public.is_blocked(c.client_id,c.creator_id) then raise exception 'user_blocked'; end if;
+  if public.is_blocked(c.creator_id,auth.uid()) then raise exception 'user_blocked'; end if;
+
+  select ch.owner_id,ch.dm_mode,ch.dm_price into channel_owner,mode,dm_price
+  from public.channels ch where ch.id=c.channel_id;
+
+  if auth.uid()<>channel_owner and mode='off' then raise exception 'dm_disabled'; end if;
+  if auth.uid()<>channel_owner and mode='subscribers'
+     and not public.has_active_subscription(auth.uid(),c.channel_id) then raise exception 'subscription_required'; end if;
+
+  if _kind not in ('text','image','video','audio') then raise exception 'invalid_message_kind'; end if;
+  if char_length(trim(coalesce(_body,'')))=0 and _attachment_id is null then raise exception 'message_content_required'; end if;
+  if char_length(coalesce(_body,''))>5000 then raise exception 'invalid_message'; end if;
+
+  perform public.assert_chat_rate_limit(_attachment_id is not null);
+
+  if _attachment_id is not null then
+    select * into attachment
+    from public.message_attachments
+    where id=_attachment_id
+      and conversation_id=_conversation
+      and owner_id=auth.uid()
+      and status='pending'
+    for update;
+    if not found then raise exception 'attachment_not_available'; end if;
+  end if;
+
+  idem_key:=coalesce(nullif(trim(_idem),''),'message:'||_conversation::text||':'||message_id::text);
+
+  if auth.uid()<>channel_owner and mode='paid' then
+    if dm_price is null or dm_price<=0 then raise exception 'message_price_not_configured'; end if;
+    perform public._spend_on_channel(auth.uid(),c.channel_id,dm_price,'message','conversation',_conversation,idem_key);
+  end if;
+
+  insert into public.messages(id,conversation_id,sender_id,kind,body,price)
+  values(message_id,_conversation,auth.uid(),_kind,nullif(trim(_body),''),case when auth.uid()<>channel_owner and mode='paid' then dm_price else null end);
+
+  if _attachment_id is not null then
+    update public.message_attachments set message_id=message_id,status='attached' where id=_attachment_id;
+  end if;
+
+  if auth.uid()<>c.creator_id then
+    select a.reply into auto_reply
+    from public.auto_replies a
+    where a.channel_id=c.channel_id and a.enabled
+      and (lower(a.trigger)=lower(trim(coalesce(_body,''))) or a.trigger='*')
+    order by case when lower(a.trigger)=lower(trim(coalesce(_body,''))) then 0 else 1 end
+    limit 1;
+
+    if auto_reply is not null then
+      insert into public.messages(conversation_id,sender_id,kind,body)
+      values(c.id,c.creator_id,'system',auto_reply);
+    end if;
+  end if;
+
+  perform public.notify_user(
+    case when auth.uid()=c.client_id then c.creator_id else c.client_id end,
+    'message',
+    jsonb_build_object('conversation_id',_conversation,'message_id',message_id)
+  );
+
+  return message_id;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 12. Scheduled jobs
+-- ---------------------------------------------------------------------------
+
+do $$
+begin
+  begin
+    perform cron.unschedule('prively-reconcile-ledger-v2');
+  exception when others then null;
+  end;
+
+  begin
+    perform cron.unschedule('prively-bill-private-live');
+  exception when others then null;
+  end;
+
+  begin
+    perform cron.unschedule('prively-bill-calls');
+  exception when others then null;
+  end;
+
+  perform cron.schedule('prively-bill-calls','* * * * *','select public.bill_active_calls();');
+  perform cron.schedule('prively-bill-private-live','* * * * *','select public.bill_private_live_sessions();');
+end
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 13. Basic RLS and grants for social graph hardening
+-- ---------------------------------------------------------------------------
+
+alter table public.follows enable row level security;
+alter table public.blocks enable row level security;
+alter table public.hidden_from enable row level security;
+alter table public.conversations enable row level security;
+alter table public.conversation_members enable row level security;
+alter table public.messages enable row level security;
+
+
+-- Do not expose block lists or hidden lists to arbitrary users.
+drop policy if exists blocks_own on public.blocks;
+drop policy if exists blocks_read_own on public.blocks;
+create policy blocks_read_own
+on public.blocks for select to authenticated
+using(owner_id=auth.uid());
+
+drop policy if exists hidden_owner on public.hidden_from;
+create policy hidden_owner_read
+on public.hidden_from for select to authenticated
+using(user_id=auth.uid());
+
+-- Follow visibility: only the owner of the follow relation or channel owner may see it.
+drop policy if exists follows_own on public.follows;
+create policy follows_read_own_or_owner
+on public.follows for select to authenticated
+using(
+  follower_id=auth.uid()
+  or exists(select 1 from public.channels c where c.id=follows.channel_id and c.owner_id=auth.uid())
+);
+
+-- Conversation member rows expose only the current user's membership.
+drop policy if exists conversation_members_own on public.conversation_members;
+create policy conversation_members_own
+on public.conversation_members for select to authenticated
+using(user_id=auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- 14. Server contracts for notification privacy and future translation/live workers
+-- ---------------------------------------------------------------------------
+
+insert into public.platform_settings(key,value)
+values
+  ('feature_flags.messaging','true'::jsonb),
+  ('feature_flags.push','false'::jsonb),
+  ('feature_flags.translation','false'::jsonb),
+  ('feature_flags.live','false'::jsonb),
+  ('feature_flags.private_calls','true'::jsonb)
+on conflict(key) do nothing;
+
+-- Keep notification payloads metadata-only. Never place message body, real name or explicit content here.
+comment on table public.notifications is
+  'Notification payloads are metadata-only. Sensitive message contents must never be copied into push or notification payloads.';
+ then return null; end if;
+
   begin
     result:=split_part(_topic,':',2)::uuid;
     return result;
