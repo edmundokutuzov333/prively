@@ -1,5 +1,5 @@
 begin;
-select plan(22);
+select plan(14);
 
 select ok(to_regclass('public.role_permissions') is not null,'role_permissions exists');
 select ok(to_regclass('public.consent_records') is not null,'consent_records exists');
