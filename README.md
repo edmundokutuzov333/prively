@@ -124,6 +124,15 @@ Acesso a destinos de payout exige AAL2 e fica registado no financial audit log. 
 
 A retenção do arquivo de conformidade da Fase 5 continua configurável separadamente.
 
+
+### Step-up para levantamentos
+
+Levantamentos de criadora exigem KYC aprovado, telefone confirmado e uma verificação MFA recente. A UI usa o MFA Phone do Supabase para enviar o código por SMS e elevar a sessão para AAL2; o RPC de payout volta a validar estas condições no servidor. O Supabase documenta Phone MFA como segundo factor suportado e a promoção da sessão para AAL2 após a verificação bem sucedida. citeturn858121search0turn858121search2
+
+### Princípio de secrets
+
+As chaves de provider ficam exclusivamente no ambiente seguro das Edge Functions. O browser não recebe chaves secretas nem service role. A documentação actual do Supabase recomenda secret keys apenas em backend e validação específica para funções autenticadas ou webhooks. citeturn835509search0turn835509search1turn835509search4
+
 ### Estado de produção da Fase 6
 
 Implementado e aplicado no Supabase:
