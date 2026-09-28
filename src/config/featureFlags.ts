@@ -9,6 +9,8 @@ export const featureFlags = {
   wallet: true,
   payments: true,
   messaging: true,
+  push: false,
+  translation: false,
   live: false,
   meetings: false,
   moderation: false,
