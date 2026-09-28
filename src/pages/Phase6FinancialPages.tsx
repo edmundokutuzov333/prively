@@ -62,6 +62,14 @@ type Reconciliation = {
   created_at: string;
 };
 
+function normalizeMozambiquePhone(value: string): string {
+  const compact = value.replace(/[\s()-]/g, '');
+  if (compact.startsWith('08') && compact.length === 9) return '+258' + compact.slice(1);
+  if (/^8\d{8}$/.test(compact)) return '+258' + compact;
+  if (/^\+2588\d{8}$/.test(compact)) return compact;
+  throw new Error('invalid_phone');
+}
+
 function phase6Error(error: unknown): string {
   const code = error instanceof Error ? error.message : 'financial_error';
   const known: Record<string, string> = {
@@ -139,6 +147,29 @@ export function Phase6ClientWalletPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [mfaPhoneFactorId, setMfaPhoneFactorId] = useState<string | null>(null);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [phoneConfirmed, setPhoneConfirmed] = useState(false);
+  const [financialMfaReady, setFinancialMfaReady] = useState(false);
+  const [mfaBusy, setMfaBusy] = useState(false);
+
+  const loadSecurity = async () => {
+    const sb = requireSupabase();
+    const [{ data: userResult, error: userError }, factorsResult, aalResult] = await Promise.all([
+      sb.auth.getUser(),
+      sb.auth.mfa.listFactors(),
+      sb.auth.mfa.getAuthenticatorAssuranceLevel(),
+    ]);
+    if (userError || !userResult.user) throw new Error('session_required');
+
+    setPhoneConfirmed(Boolean(userResult.user.phone && userResult.user.phone_confirmed_at));
+    const verifiedPhone = !factorsResult.error
+      ? factorsResult.data.phone.find((factor) => factor.status === 'verified')
+      : undefined;
+    setMfaPhoneFactorId(verifiedPhone?.id ?? null);
+    setFinancialMfaReady(Boolean(verifiedPhone && aalResult.data?.currentLevel === 'aal2'));
+  };
 
   const load = async () => {
     if (!supabase) return;
@@ -324,8 +355,71 @@ export function Phase6CreatorEarningsPage() {
   };
 
   useEffect(() => {
-    void load().catch((e: unknown) => setError(phase6Error(e)));
+    void Promise.all([load(), loadSecurity()]).catch((e: unknown) => setError(phase6Error(e)));
   }, []);
+
+  const startPayoutMfa = async () => {
+    setMfaBusy(true);
+    setError(null);
+    try {
+      const sb = requireSupabase();
+      const { data: userResult, error: userError } = await sb.auth.getUser();
+      if (userError || !userResult.user) throw new Error('session_required');
+      if (!userResult.user.phone || !userResult.user.phone_confirmed_at) {
+        throw new Error('phone_confirmation_required');
+      }
+
+      let factorId = mfaPhoneFactorId;
+      if (!factorId) {
+        const enrollment = await sb.auth.mfa.enroll({
+          factorType: 'phone',
+          friendlyName: 'Levantamentos Prively',
+          phone: userResult.user.phone,
+        });
+        if (enrollment.error) throw enrollment.error;
+        factorId = enrollment.data.id;
+        setMfaPhoneFactorId(factorId);
+      }
+
+      const challenge = await sb.auth.mfa.challenge({ factorId });
+      if (challenge.error) throw challenge.error;
+
+      setMfaChallengeId(challenge.data.id);
+      setMfaCode('');
+      setSuccess('Enviámos um código de segurança por SMS.');
+    } catch (e: unknown) {
+      setError(phase6Error(e));
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
+  const verifyPayoutMfa = async () => {
+    if (!mfaPhoneFactorId || !mfaChallengeId || !/^\d{6}$/.test(mfaCode)) {
+      setError(new Error('invalid_mfa_code').message);
+      return;
+    }
+
+    setMfaBusy(true);
+    setError(null);
+    try {
+      const result = await requireSupabase().auth.mfa.verify({
+        factorId: mfaPhoneFactorId,
+        challengeId: mfaChallengeId,
+        code: mfaCode,
+      });
+      if (result.error) throw result.error;
+
+      await loadSecurity();
+      setMfaChallengeId(null);
+      setMfaCode('');
+      setSuccess('Confirmação por SMS concluída. O levantamento pode continuar.');
+    } catch (e: unknown) {
+      setError(phase6Error(e));
+    } finally {
+      setMfaBusy(false);
+    }
+  };
 
   const requestPayout = async (event: FormEvent) => {
     event.preventDefault();
@@ -336,8 +430,12 @@ export function Phase6CreatorEarningsPage() {
       const amountCents = Math.round(Number(amount) * 100);
       if (!Number.isFinite(amountCents) || amountCents <= 0) throw new Error('invalid_amount');
       if (!destination.trim()) throw new Error('destination_required');
+      if (!phoneConfirmed) throw new Error('phone_confirmation_required');
+      if (!financialMfaReady) throw new Error('financial_mfa_recent_required');
 
-      const payout = destination.trim().replace(/\s+/g, '');
+      const payout = method === 'bank'
+        ? destination.trim().replace(/\s+/g, '')
+        : normalizeMozambiquePhone(destination);
       const destinationJson = method === 'bank'
         ? { account: payout }
         : { phone: payout };
@@ -380,7 +478,33 @@ export function Phase6CreatorEarningsPage() {
       </div>
 
       <Ficha className="p-6">
-        <div className="flex items-start gap-3"><ArrowUpRight size={22} weight="duotone" className="text-crimson-400" /><div><h2 className="text-lg text-bone-50">Pedir levantamento</h2><p className="mt-1 text-sm text-bone-500">Requer KYC aprovado e autenticação multifactor AAL2.</p></div></div>
+        <div className="flex items-start gap-3"><ArrowUpRight size={22} weight="duotone" className="text-crimson-400" /><div><h2 className="text-lg text-bone-50">Pedir levantamento</h2><p className="mt-1 text-sm text-bone-500">Requer KYC aprovado, telefone confirmado e uma confirmação recente por SMS.</p></div></div>
+
+        {!phoneConfirmed ? (
+          <div className="mt-5 rounded-control border border-warn/30 bg-warn/5 p-4">
+            <p className="text-sm text-bone-200">Confirma o teu número de telefone nas definições da conta antes do levantamento.</p>
+          </div>
+        ) : !financialMfaReady ? (
+          <div className="mt-5 grid gap-3 rounded-control border border-bone-50/10 p-4">
+            <p className="text-sm text-bone-300">A confirmação por SMS é exigida para cada pedido financeiro sensível.</p>
+            {!mfaChallengeId ? (
+              <Botao type="button" loading={mfaBusy} onClick={() => void startPayoutMfa()}>Enviar código por SMS</Botao>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <input
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="Código de 6 dígitos"
+                  className="min-h-11 rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50"
+                />
+                <Botao type="button" loading={mfaBusy} onClick={() => void verifyPayoutMfa()}>Confirmar código</Botao>
+              </div>
+            )}
+          </div>
+        ) : null}
+
         <form onSubmit={requestPayout} className="mt-5 grid gap-4 md:grid-cols-3">
           <label className="space-y-2 text-sm text-bone-300"><span>Valor em MT</span><input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" min="1" step="0.01" required className="min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50" /></label>
           <label className="space-y-2 text-sm text-bone-300"><span>Método</span><select value={method} onChange={(e) => setMethod(e.target.value)} className="min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50"><option value="mpesa">M-Pesa</option><option value="emola">e-Mola</option><option value="mkesh">mKesh</option><option value="ponto24">Ponto24</option><option value="bank">Banco</option></select></label>
