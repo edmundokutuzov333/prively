@@ -1,3 +1,4 @@
+import { createSHA256 } from "npm:hash-wasm@4.12.0";
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
 
@@ -5,15 +6,6 @@ function env(name: string, required = true): string | null {
   const value = Deno.env.get(name);
   if (!value && required) throw new Error(`missing_env:${name}`);
   return value ?? null;
-}
-
-function hex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function sha256Buffer(buffer: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", buffer);
-  return hex(new Uint8Array(digest));
 }
 
 function derivativeRoot(asset: Record<string, unknown>): string {
@@ -63,11 +55,28 @@ async function auditProcessingRead(
   const { error } = await admin.from("media_access_logs").insert({
     asset_id: assetId,
     user_id: null,
-    action: `processing:${jobType}`,
+    action: "processing",
     granted: true,
-    reason: "server_worker",
+    reason: `server_worker:${jobType}`,
   });
   if (error) throw new Error("processing_access_audit_failed");
+}
+
+async function sha256Stream(blob: Blob): Promise<string> {
+  const hasher = await createSHA256();
+  const reader = blob.stream().getReader();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      hasher.update(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return hasher.digest();
 }
 
 async function executeProviderJob(
@@ -127,20 +136,127 @@ async function executeProviderJob(
   return result;
 }
 
+async function executeComplianceArchive(
+  admin: ReturnType<typeof serviceClient>,
+  asset: Record<string, unknown>,
+): Promise<{ archivePath: string; retainedUntil: string | null; alreadyArchived: boolean }> {
+  const assetId = String(asset.id);
+  const sha256 = String(asset.sha256 ?? "").toLowerCase();
+
+  if (asset.integrity_status !== "verified" || !/^[0-9a-f]{64}$/.test(sha256)) {
+    throw new Error("archive_waiting_for_integrity");
+  }
+
+  const { data: existing, error: existingError } = await admin
+    .from("compliance_objects")
+    .select("archive_path,status,sha256,retained_until")
+    .eq("source_asset_id", assetId)
+    .maybeSingle();
+
+  if (existingError) throw new Error("compliance_record_lookup_failed");
+  if (existing?.status === "archived") {
+    return {
+      archivePath: String(existing.archive_path),
+      retainedUntil: typeof existing.retained_until === "string" ? existing.retained_until : null,
+      alreadyArchived: true,
+    };
+  }
+
+  const archivePath = `assets/${assetId}/${sha256}`;
+  const parentPath = `assets/${assetId}`;
+
+  const { data: existingObjects, error: listError } = await admin
+    .storage
+    .from("compliance-archive")
+    .list(parentPath, { search: sha256, limit: 1 });
+
+  if (listError) throw new Error("compliance_object_lookup_failed");
+
+  const existsInStorage = (existingObjects ?? []).some((item) => item.name === sha256);
+
+  if (!existsInStorage) {
+    const { error: copyError } = await admin
+      .storage
+      .from("prively-private")
+      .copy(
+        String(asset.storage_path),
+        archivePath,
+        { destinationBucket: "compliance-archive" },
+      );
+
+    if (copyError) throw new Error("compliance_archive_copy_failed");
+  }
+
+  const { data: retentionSetting, error: retentionError } = await admin
+    .from("platform_settings")
+    .select("value")
+    .eq("key", "retention_days")
+    .maybeSingle();
+
+  if (retentionError) throw new Error("retention_setting_lookup_failed");
+
+  const raw = retentionSetting?.value;
+  const configuredDays =
+    typeof raw === "number"
+      ? raw
+      : typeof raw === "object" && raw !== null && "days" in raw
+        ? Number((raw as { days?: unknown }).days)
+        : Number.NaN;
+
+  const retainedUntil =
+    Number.isFinite(configuredDays) && configuredDays > 0
+      ? new Date(Date.now() + configuredDays * 86_400_000).toISOString()
+      : null;
+
+  const { error: recordError } = await admin
+    .from("compliance_objects")
+    .upsert({
+      source_asset_id: assetId,
+      source_post_id: asset.post_id,
+      bucket_id: "compliance-archive",
+      archive_path: archivePath,
+      sha256,
+      status: "archived",
+      retained_until: retainedUntil,
+      archived_at: new Date().toISOString(),
+      deleted_at: null,
+    }, { onConflict: "source_asset_id" });
+
+  if (recordError) throw new Error("compliance_record_write_failed");
+
+  const { error: eventError } = await admin
+    .from("content_archive_events")
+    .insert({
+      post_id: asset.post_id,
+      asset_id: assetId,
+      actor_id: null,
+      event_type: "uploaded",
+      reason: "compliance_archive",
+      storage_path: archivePath,
+      sha256,
+      snapshot: {
+        sourcePath: asset.storage_path,
+        bucket: "prively-private",
+        archiveBucket: "compliance-archive",
+        retainedUntil,
+      },
+    });
+
+  if (eventError) throw new Error("compliance_archive_event_failed");
+
+  return {
+    archivePath,
+    retainedUntil,
+    alreadyArchived: false,
+  };
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return optionsResponse();
   if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
 
   try {
     const { client, user } = await requireUser(request);
-
-    const permission = await client.rpc("has_permission", {
-      _uid: user.id,
-      _permission: "admin.moderation",
-    });
-    if (permission.error || permission.data !== true) {
-      return jsonResponse({ code: "forbidden" }, 403);
-    }
 
     const body = await request.json() as { jobId?: unknown };
     if (typeof body.jobId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.jobId)) {
@@ -167,8 +283,32 @@ Deno.serve(async (request) => {
 
     if (assetError || !asset) return jsonResponse({ code: "asset_not_found" }, 404);
 
+    const adminPermission = await client.rpc("has_permission", {
+      _uid: user.id,
+      _permission: "admin.moderation",
+    });
+
+    const isAdminWorker = !adminPermission.error && adminPermission.data === true;
+
+    if (!isAdminWorker) {
+      if (!["integrity", "archive"].includes(String(job.job_type))) {
+        return jsonResponse({ code: "forbidden" }, 403);
+      }
+
+      const { data: creatorOwner } = await admin
+        .from("channels")
+        .select("owner_id")
+        .eq("id", asset.channel_id)
+        .maybeSingle();
+
+      if (creatorOwner?.owner_id !== user.id) {
+        return jsonResponse({ code: "forbidden" }, 403);
+      }
+    }
+
     const attempts = Number(job.attempts ?? 0) + 1;
-    await admin
+
+    const { error: processingError } = await admin
       .from("media_processing_jobs")
       .update({
         status: "processing",
@@ -178,6 +318,8 @@ Deno.serve(async (request) => {
         error_message: null,
       })
       .eq("id", job.id);
+
+    if (processingError) throw new Error("media_job_claim_failed");
 
     try {
       if (job.job_type === "integrity") {
@@ -190,13 +332,16 @@ Deno.serve(async (request) => {
 
         if (downloadError || !blob) throw new Error("media_download_failed");
 
-        const buffer = await blob.arrayBuffer();
-        if (buffer.byteLength !== Number(asset.file_size_bytes)) {
+        if (blob.size !== Number(asset.file_size_bytes)) {
           throw new Error("media_size_mismatch");
         }
 
-        const computedSha = await sha256Buffer(buffer);
-        if (computedSha !== String(asset.client_sha256).toLowerCase()) {
+        const computedSha = await sha256Stream(blob);
+        const clientSha = typeof asset.client_sha256 === "string"
+          ? asset.client_sha256.toLowerCase()
+          : null;
+
+        if (clientSha && computedSha !== clientSha) {
           await admin
             .from("media_assets")
             .update({
@@ -211,7 +356,7 @@ Deno.serve(async (request) => {
           throw new Error("server_sha256_mismatch");
         }
 
-        await admin
+        const { error: assetUpdateError } = await admin
           .from("media_assets")
           .update({
             sha256: computedSha,
@@ -220,11 +365,42 @@ Deno.serve(async (request) => {
           })
           .eq("id", asset.id);
 
+        if (assetUpdateError) throw new Error("integrity_asset_update_failed");
+
+        const { error: jobUpdateError } = await admin
+          .from("media_processing_jobs")
+          .update({
+            status: "succeeded",
+            output: { sha256: computedSha, bytes: blob.size },
+            finished_at: new Date().toISOString(),
+          })
+          .eq("id", job.id);
+
+        if (jobUpdateError) throw new Error("integrity_job_update_failed");
+
+        const processingStatus = await refreshStatus(admin, String(asset.id));
+
+        return jsonResponse({
+          ok: true,
+          jobId: job.id,
+          status: "succeeded",
+          processingStatus,
+          sha256: computedSha,
+        });
+      }
+
+      if (job.job_type === "archive") {
+        const archived = await executeComplianceArchive(admin, asset);
+
         await admin
           .from("media_processing_jobs")
           .update({
             status: "succeeded",
-            output: { sha256: computedSha, bytes: buffer.byteLength },
+            output: {
+              archivePath: archived.archivePath,
+              retainedUntil: archived.retainedUntil,
+              alreadyArchived: archived.alreadyArchived,
+            },
             finished_at: new Date().toISOString(),
           })
           .eq("id", job.id);
@@ -236,7 +412,7 @@ Deno.serve(async (request) => {
           jobId: job.id,
           status: "succeeded",
           processingStatus,
-          sha256: computedSha,
+          archivePath: archived.archivePath,
         });
       }
 
@@ -345,6 +521,7 @@ Deno.serve(async (request) => {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "media_job_failed";
+      const waitingForIntegrity = message === "archive_waiting_for_integrity";
       const blocked = message === "processor_not_configured";
       const terminal = blocked || attempts >= Number(job.max_attempts ?? 5);
 
@@ -352,8 +529,8 @@ Deno.serve(async (request) => {
         .from("media_processing_jobs")
         .update({
           status: blocked ? "blocked" : terminal ? "failed" : "queued",
-          error_code: blocked ? "processor_not_configured" : message,
-          error_message: message,
+          error_code: waitingForIntegrity ? null : blocked ? "processor_not_configured" : message,
+          error_message: waitingForIntegrity ? null : message,
           finished_at: terminal ? new Date().toISOString() : null,
           available_at: terminal
             ? new Date().toISOString()
@@ -379,6 +556,16 @@ Deno.serve(async (request) => {
         processingStatus = await refreshStatus(admin, String(asset.id));
       } catch {
         // Preserve original job failure; status reconciliation can be retried by the next job run.
+      }
+
+      if (waitingForIntegrity) {
+        return jsonResponse({
+          ok: false,
+          jobId: job.id,
+          status: "queued",
+          processingStatus,
+          code: "waiting_for_integrity",
+        }, 202);
       }
 
       return jsonResponse({
