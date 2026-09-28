@@ -78,3 +78,33 @@ begin
     else false
   end;
 end $$;
+
+
+create or replace function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path=public as $$
+declare h text;
+begin
+  h:=lower(trim(coalesce(new.raw_user_meta_data->>'handle','')));
+  if h !~ '^[a-z0-9_]{3,24}$' then h:='priv_'||replace(left(new.id::text,18),'-',''); end if;
+  insert into public.profiles(id,handle,display_name)
+  values(new.id,h,coalesce(nullif(new.raw_user_meta_data->>'display_name',''),h))
+  on conflict(id) do nothing;
+  insert into public.user_roles(user_id,role) values(new.id,'client') on conflict do nothing;
+  insert into public.balances(owner_id,account,balance)
+  values
+    (new.id,'wallet',0),
+    (new.id,'creator_pending',0),
+    (new.id,'creator_available',0)
+  on conflict(owner_id,account) do nothing;
+  return new;
+end $$;
+
+insert into public.balances(owner_id,account,balance)
+select p.id, a.account, 0
+from public.profiles p
+cross join (values
+  ('wallet'::public.ledger_account),
+  ('creator_pending'::public.ledger_account),
+  ('creator_available'::public.ledger_account)
+) a(account)
+on conflict(owner_id,account) do nothing;
