@@ -107,7 +107,7 @@ begin
     execute $cron$
       select cron.schedule(
         'prively-process-media-sweep',
-        '1 minute',
+        '* * * * *',
         $cmd$
           select net.http_post(
             url := (select decrypted_secret from vault.decrypted_secrets where name='prively_project_url') || '/functions/v1/process-media-job',
