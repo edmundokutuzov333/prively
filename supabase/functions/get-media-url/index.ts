@@ -1,8 +1,46 @@
-import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
-import { requireUser, serviceClient } from "../_shared/auth.ts";
+import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function env(name: string): string {
+  const value = Deno.env.get(name);
+  if (!value) throw new Error(`missing_env:${name}`);
+  return value;
+}
+
+function userClient(request: Request): SupabaseClient {
+  return createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), {
+    global: { headers: { Authorization: request.headers.get("Authorization") ?? "" } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function requireUser(request: Request): Promise<{ client: SupabaseClient; user: User }> {
+  const client = userClient(request);
+  const { data, error } = await client.auth.getUser();
+  if (error || !data.user) throw new Error("unauthorized");
+  return { client, user: data.user };
+}
+
+function serviceClient(): SupabaseClient {
+  return createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return optionsResponse();
+  if (request.method === "OPTIONS") return jsonResponse({ ok: true });
   if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
 
   try {
@@ -13,49 +51,12 @@ Deno.serve(async (request) => {
       return jsonResponse({ code: "invalid_asset_id" }, 400);
     }
 
-    const accessResult = await client.rpc("get_media_access", { _asset: payload.assetId });
-
-    if (accessResult.error || !accessResult.data || typeof accessResult.data !== "object") {
-      const previewResult = await client.rpc("get_media_preview", { _asset: payload.assetId });
-
-      if (previewResult.error || !previewResult.data || typeof previewResult.data !== "object") {
-        return jsonResponse({ code: "media_forbidden" }, 403);
-      }
-
-      const preview = previewResult.data as {
-        asset_id?: unknown;
-        kind?: unknown;
-        thumbnail_path?: unknown;
-        blurhash?: unknown;
-        expires_in?: unknown;
-      };
-
-      if (typeof preview.thumbnail_path !== "string") {
-        return jsonResponse({ code: "media_preview_unavailable" }, 404);
-      }
-
-      const admin = serviceClient();
-      const thumbnail = await admin.storage
-        .from("prively-private")
-        .createSignedUrl(preview.thumbnail_path, 60);
-
-      if (thumbnail.error || !thumbnail.data?.signedUrl) {
-        return jsonResponse({ code: "signed_preview_failed" }, 500);
-      }
-
-      return jsonResponse({
-        assetId: preview.asset_id ?? payload.assetId,
-        kind: preview.kind ?? null,
-        locked: true,
-        url: null,
-        thumbnailUrl: thumbnail.data.signedUrl,
-        blurhash: typeof preview.blurhash === "string" ? preview.blurhash : null,
-        source: "locked_preview",
-        expiresIn: typeof preview.expires_in === "number" ? preview.expires_in : 60,
-      });
+    const { data, error } = await client.rpc("get_media_access", { _asset: payload.assetId });
+    if (error || !data || typeof data !== "object") {
+      return jsonResponse({ code: error?.code ?? "media_forbidden" }, 403);
     }
 
-    const access = accessResult.data as {
+    const access = data as {
       asset_id?: unknown;
       path?: unknown;
       hls_path?: unknown;
@@ -74,9 +75,9 @@ Deno.serve(async (request) => {
 
     const admin = serviceClient();
     const storage = admin.storage.from("prively-private");
-
     const watermarkPath = typeof access.watermark_path === "string" ? access.watermark_path : null;
     const useWatermark = access.watermark_enabled === true && Boolean(watermarkPath);
+
     const primaryPath = useWatermark
       ? watermarkPath!
       : typeof access.hls_path === "string" && access.kind === "video"
@@ -97,7 +98,6 @@ Deno.serve(async (request) => {
     return jsonResponse({
       assetId: access.asset_id ?? payload.assetId,
       kind: access.kind ?? null,
-      locked: false,
       url: signed.data.signedUrl,
       thumbnailUrl,
       source: useWatermark
