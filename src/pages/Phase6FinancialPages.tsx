@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Bank, Cardholder, CheckCircle, Clock, FilePdf, LockKey, Money, Receipt, ShieldCheck, Wallet, XCircle } from '@phosphor-icons/react';
+import { ArrowDownLeft, ArrowUpRight, Bank, CheckCircle, Clock, LockKey, Money, Receipt, ShieldCheck, Wallet, XCircle } from '@phosphor-icons/react';
 import { Botao } from '@/design/Botao';
 import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
@@ -450,7 +450,7 @@ export function Phase6FinanceAdminPage() {
   const reconcile=async()=>{
     setBusy('reconcile');setError(null);setSuccess(null);
     try{
-      const {error}=await requireSupabase().rpc('reconcile_ledger');
+      const {error}=await requireSupabase().rpc('run_financial_reconciliation');
       if(error) throw error;
       setSuccess('Reconciliação executada.');
       await load();
