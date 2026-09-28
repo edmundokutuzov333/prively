@@ -9,6 +9,8 @@ import { Botao } from '@/design/Botao';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { requireSupabase } from '@/lib/supabase';
 import { formatMznFromCents } from '@/lib/money';
+import { featureFlags } from '@/config/featureFlags';
+import { getVapidPublicKey, registerPushForCurrentUser } from '@/lib/push';
 import { PageFrame } from '@/pages/PageFrame';
 
 const PRIVACY_NOTICE = 'As tuas conversas são privadas. Ficam protegidas com cifragem em trânsito e em repouso, e no dia-a-dia só as pessoas na conversa as vêem. Para segurança e cumprimento da lei, a equipa de moderação pode analisar conteúdo denunciado ou sinalizado, e a Prively pode ser obrigada a partilhar dados com as autoridades.';
@@ -332,6 +334,9 @@ export function Phase7NotificationsPage() {
   const { user } = useAuth();
   const supabase = requireSupabase();
   const queryClient = useQueryClient();
+  const [pushState, setPushState] = useState<'idle' | 'enabled' | 'error'>('idle');
+  const pushConfigured = featureFlags.push && Boolean(getVapidPublicKey());
+
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['phase7', 'notifications', user?.id],
     enabled: Boolean(user),
@@ -362,7 +367,23 @@ export function Phase7NotificationsPage() {
   }, [queryClient, supabase, user?.id]);
 
   if (!user) return <LoginRedirect />;
+  const enablePush = async () => {
+    setPushState('idle');
+    try {
+      await registerPushForCurrentUser();
+      setPushState('enabled');
+    } catch {
+      setPushState('error');
+    }
+  };
+
   return <PageFrame title="Notificações" intro="Actividade da tua conta">
+    {pushConfigured ? <Ficha variant="flat" className="mb-4 border-bone-50/10">
+      <p className="m-0 text-sm text-bone-300">Recebe notificações neutras neste dispositivo.</p>
+      <Botao type="button" className="mt-3" onClick={() => void enablePush()}>Activar notificações</Botao>
+      {pushState === 'enabled' ? <p className="mt-2 text-xs text-ok">Notificações activas neste dispositivo.</p> : null}
+      {pushState === 'error' ? <p className="mt-2 text-xs text-danger">Não foi possível activar as notificações neste dispositivo.</p> : null}
+    </Ficha> : null}
     {isLoading ? <p className="text-sm text-bone-500">A carregar.</p> : null}
     {!notifications.length && !isLoading ? <EstadoVazio title="Ainda não tens notificações." body="Actividade relevante aparece aqui sem expor conteúdo sensível." /> : null}
     <div className="grid gap-3">
