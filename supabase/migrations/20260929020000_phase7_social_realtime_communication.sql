@@ -1544,8 +1544,6 @@ $$;
 revoke all on function public.realtime_conversation_id(text) from public,anon;
 grant execute on function public.realtime_conversation_id(text) to authenticated;
 
-alter table realtime.messages enable row level security;
-
 drop policy if exists prively_conv_receive on realtime.messages;
 create policy prively_conv_receive
 on realtime.messages for select to authenticated
