@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+:root {
+  --ink-950: 340 30% 3%;
+  --ink-900: 340 28% 5%;
+  --ink-850: 340 24% 7%;
+  --ink-800: 340 22% 10%;
+  --ink-700: 340 18% 15%;
+  --wine-900: 345 70% 12%;
+  --wine-800: 345 68% 18%;
+  --wine-700: 345 66% 25%;
+  --wine-600: 346 68% 32%;
+  --wine-500: 347 72% 40%;
+  --crimson-500: 350 78% 50%;
+  --crimson-400: 351 85% 60%;
+  --rose-300: 350 90% 76%;
+  --bone-50: 20 40% 95%;
+  --bone-300: 350 12% 70%;
+  --bone-500: 345 8% 48%;
+  --tier-bronze: 28 50% 45%;
+  --tier-prata: 220 8% 72%;
+  --tier-ouro: 42 65% 55%;
+  --ok: 152 45% 45%;
+  --warn: 36 90% 55%;
+  --danger: 0 72% 58%;
+  --background: var(--ink-950);
+  --foreground: var(--bone-50);
+  --card: var(--ink-900);
+  --card-foreground: var(--bone-50);
+  --popover: var(--ink-850);
+  --popover-foreground: var(--bone-50);
+  --primary: var(--crimson-500);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--ink-800);
+  --secondary-foreground: var(--bone-50);
+  --muted: var(--ink-800);
+  --muted-foreground: var(--bone-300);
+  --accent: var(--wine-700);
+  --accent-foreground: var(--bone-50);
+  --destructive: var(--danger);
+  --destructive-foreground: 0 0% 100%;
+  --border: 340 15% 20%;
+  --input: 340 15% 20%;
+  --ring: var(--rose-300);
+  --radius-surface: 4px;
+  --radius-control: 2px;
+}
+
+@theme inline {
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-ink-950: hsl(var(--ink-950));
+  --color-ink-900: hsl(var(--ink-900));
+  --color-ink-850: hsl(var(--ink-850));
+  --color-ink-800: hsl(var(--ink-800));
+  --color-ink-700: hsl(var(--ink-700));
+  --color-wine-900: hsl(var(--wine-900));
+  --color-wine-800: hsl(var(--wine-800));
+  --color-wine-700: hsl(var(--wine-700));
+  --color-wine-600: hsl(var(--wine-600));
+  --color-wine-500: hsl(var(--wine-500));
+  --color-crimson-500: hsl(var(--crimson-500));
+  --color-crimson-400: hsl(var(--crimson-400));
+  --color-rose-300: hsl(var(--rose-300));
+  --color-bone-50: hsl(var(--bone-50));
+  --color-bone-300: hsl(var(--bone-300));
+  --color-bone-500: hsl(var(--bone-500));
+  --color-tier-bronze: hsl(var(--tier-bronze));
+  --color-tier-prata: hsl(var(--tier-prata));
+  --color-tier-ouro: hsl(var(--tier-ouro));
+  --color-danger: hsl(var(--danger));
+  --color-ok: hsl(var(--ok));
+  --color-input: hsl(var(--input));
+}
+
+html { color-scheme: dark; background: hsl(var(--background)); }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: hsl(var(--foreground));
+  background: radial-gradient(circle at top center, hsl(var(--wine-900) / 0.22), transparent 42rem), hsl(var(--background));
+  font-family: "Hanken Grotesk Variable", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+* { box-sizing: border-box; }
+button, input { font: inherit; }
+button { min-height: 44px; }
+:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
+::selection { background: hsl(var(--crimson-500) / 0.35); color: hsl(var(--bone-50)); }
+a { color: inherit; }
+
+.ficha {
+  border: 1px solid hsl(var(--bone-50) / 0.07);
+  box-shadow: inset 0 1px 0 hsl(var(--bone-50) / 0.05);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  border-radius: var(--radius-surface);
+}
+
+.cordao-line {
+  position: relative;
+  height: 1px;
+  background: hsl(var(--crimson-500) / 0.55);
+  overflow: hidden;
+}
+
+.cordao-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: hsl(var(--crimson-400));
+  box-shadow: 0 0 18px hsl(var(--crimson-500) / 0.7);
+  transform: translate(-50%, -50%);
+}
+
+.ficha-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: hsl(var(--wine-700));
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

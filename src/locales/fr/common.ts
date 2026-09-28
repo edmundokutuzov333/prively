@@ -1,0 +1,14 @@
+const common = {
+  brand: { badge: 'Sceau Prively', name: 'Prively', tagline: 'Ton Privê digital.', discreet: 'Moins public, beaucoup plus Privê.' },
+  levels: { Bronze: 'Bronze', Prata: 'Argent', Ouro: 'Or', VIP: 'VIP' },
+  nav: { enter: 'Entrer dans le Privê', creator: 'Devenir créatrice', home: 'Accueil', designSystem: 'Système de design' },
+  hero: { title: 'Ton Privê digital.', body: 'Un espace privé pour le contenu, le lien et le contrôle, conçu pour les adultes.', privacyTitle: 'La discrétion par conception.', privacyBody: 'L’identité sociale reste séparée des données légales, les notifications restent neutres et le produit repose sur des règles claires.', clientAction: 'Entrer dans le Privê', creatorAction: 'Devenir créatrice' },
+  ageGate: { eyebrow: 'Avant d’entrer', title: 'Confirme que tu as 18 ans ou plus.', body: 'C’est le premier portail. La vérification d’identité vient ensuite.', confirm: 'J’ai 18 ans ou plus', leave: 'Quitter', policy: 'En continuant, tu acceptes de consulter les Conditions et la Politique de confidentialité.' },
+  auth: { signInTitle: 'Entrer dans le Privê', signUpTitle: 'Créer un compte', email: 'Email', password: 'Mot de passe', handle: 'Pseudonyme', signIn: 'Entrer', signUp: 'Créer un compte', noAccount: "Tu n’as pas encore de compte ?", haveAccount: 'Tu as déjà un compte ?', createNow: 'Créer maintenant', signInNow: 'Entrer maintenant', back: 'Retour', configError: 'L’authentification n’est pas configurée dans cet environnement.', invalidCredentials: 'L’email ou le mot de passe est incorrect.', genericError: 'Cette action n’a pas pu être terminée. Réessaie.', checkEmail: 'Vérifie ton email pour terminer l’inscription.', registered: 'Compte créé. Vérifie ton email pour confirmer ton adresse.' },
+  system: { sampleSans: 'Privê en contrôle.', sampleSerif: 'Ton Privê.', title: 'Prively Interface Kernel', intro: 'Inventaire vivant du système de design. Ces composants sont la base réutilisable du produit.', foundations: 'Fondations', components: 'Composants', states: 'États', typography: 'Typographie', colors: 'Couleur', buttons: 'Boutons', levels: 'Niveaux', money: 'Argent', cortina: 'Rideau', cordao: 'Cordon', shield: 'Bouclier de confidentialité', empty: 'État vide', pin: 'PinPad' },
+  common: { primary: 'Action principale', secondary: 'Action secondaire', loading: 'Chargement', error: 'Erreur', empty: 'Vide', success: 'Terminé', close: 'Fermer', language: 'Langue' },
+  privacy: { notice: 'Tes conversations sont privées. Elles sont protégées en transit et au repos, et au quotidien seules les personnes de la conversation peuvent les voir.', learnMore: 'En savoir plus' },
+  curtain: { unlock: 'Déverrouiller pour {{price}}', protected: 'Protégé par le Rideau', unlocked: 'Contenu déverrouillé', pin: 'PIN', delete: 'Supprimer', confirm: 'OK' },
+  errors: { ageRequired: 'Tu dois confirmer ton âge pour continuer.' }
+} as const;
+export default common;

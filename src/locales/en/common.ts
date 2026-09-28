@@ -1,0 +1,14 @@
+const common = {
+  brand: { badge: 'Prively badge', name: 'Prively', tagline: 'Your digital Privê.', discreet: 'Less public, much more Privê.' },
+  levels: { Bronze: 'Bronze', Prata: 'Silver', Ouro: 'Gold', VIP: 'VIP' },
+  nav: { enter: 'Enter the Privê', creator: 'Become a creator', home: 'Home', designSystem: 'Design system' },
+  hero: { title: 'Your digital Privê.', body: 'A private space for content, connection and control, built for adults.', privacyTitle: 'Privacy by design.', privacyBody: 'Social identity stays separate from legal data, notifications stay neutral, and the product is built around clear rules.', clientAction: 'Enter the Privê', creatorAction: 'Become a creator' },
+  ageGate: { eyebrow: 'Before entering', title: 'Confirm you are 18 or older.', body: 'This is the first gate. Identity verification happens afterwards.', confirm: 'I am 18 or older', leave: 'Leave', policy: 'By continuing, you agree to review the Terms and Privacy Policy.' },
+  auth: { signInTitle: 'Enter the Privê', signUpTitle: 'Create account', email: 'Email', password: 'Password', handle: 'Pseudonym', signIn: 'Sign in', signUp: 'Create account', noAccount: "Don't have an account yet?", haveAccount: 'Already have an account?', createNow: 'Create one', signInNow: 'Sign in now', back: 'Back', configError: 'Authentication is not configured in this environment.', invalidCredentials: 'The email or password is incorrect.', genericError: 'This action could not be completed. Try again.', checkEmail: 'Check your email to finish registration.', registered: 'Account created. Check your email to confirm your address.' },
+  system: { sampleSans: 'Privê in control.', sampleSerif: 'Your Privê.', title: 'Prively Interface Kernel', intro: 'Living inventory of the design system. These components are the reusable base of the product.', foundations: 'Foundations', components: 'Components', states: 'States', typography: 'Typography', colors: 'Color', buttons: 'Buttons', levels: 'Levels', money: 'Money', cortina: 'Curtain', cordao: 'Cord', shield: 'Privacy shield', empty: 'Empty state', pin: 'PinPad' },
+  common: { primary: 'Primary action', secondary: 'Secondary action', loading: 'Loading', error: 'Error', empty: 'Empty', success: 'Done', close: 'Close', language: 'Language' },
+  privacy: { notice: 'Your conversations are private. They are protected in transit and at rest, and day to day only the people in the conversation can see them.', learnMore: 'Learn more' },
+  curtain: { unlock: 'Unlock for {{price}}', protected: 'Protected by Curtain', unlocked: 'Content unlocked', pin: 'PIN', delete: 'Delete', confirm: 'OK' },
+  errors: { ageRequired: 'You must confirm your age to continue.' }
+} as const;
+export default common;

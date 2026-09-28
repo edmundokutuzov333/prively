@@ -1,0 +1,14 @@
+const common = {
+  brand: { badge: 'Selo Prively', name: 'Prively', tagline: 'O teu Privê digital.', discreet: 'Menos público, muito mais Privê.' },
+  levels: { Bronze: 'Bronze', Prata: 'Prata', Ouro: 'Ouro', VIP: 'VIP' },
+  nav: { enter: 'Entrar no Privê', creator: 'Sê criadora', home: 'Início', designSystem: 'Sistema de design' },
+  hero: { title: 'O teu Privê digital.', body: 'Um espaço privado para conteúdo, ligação e controlo, pensado para adultos.', privacyTitle: 'Discrição por desenho.', privacyBody: 'Identidade social separada dos dados legais, notificações neutras e um produto construído com regras claras.', clientAction: 'Entrar no Privê', creatorAction: 'Sê criadora' },
+  ageGate: { eyebrow: 'Antes de entrar', title: 'Confirma que tens 18 anos ou mais.', body: 'Esta confirmação é o primeiro portão. A verificação de identidade acontece depois.', confirm: 'Tenho 18 anos ou mais', leave: 'Sair', policy: 'Ao continuar, aceitas consultar os Termos e a Política de Privacidade.' },
+  auth: { signInTitle: 'Entrar no Privê', signUpTitle: 'Criar conta', email: 'Email', password: 'Palavra-passe', handle: 'Pseudónimo', signIn: 'Entrar', signUp: 'Criar conta', noAccount: 'Ainda não tens conta?', haveAccount: 'Já tens conta?', createNow: 'Criar agora', signInNow: 'Entrar agora', back: 'Voltar', configError: 'A autenticação ainda não está configurada neste ambiente.', invalidCredentials: 'O email ou a palavra-passe não estão correctos.', genericError: 'Não foi possível concluir esta acção. Tenta novamente.', checkEmail: 'Confirma o teu email para concluir o registo.', registered: 'Conta criada. Consulta o teu email para confirmar o endereço.' },
+  system: { sampleSans: 'Privê em controlo.', sampleSerif: 'O teu Privê.', title: 'Prively Interface Kernel', intro: 'Inventário vivo do sistema de design. Estes componentes são a base reutilizável do produto.', foundations: 'Fundamentos', components: 'Componentes', states: 'Estados', typography: 'Tipografia', colors: 'Cor', buttons: 'Botões', levels: 'Níveis', money: 'Dinheiro', cortina: 'Cortina', cordao: 'Cordão', shield: 'Escudo de privacidade', empty: 'Estado vazio', pin: 'PinPad' },
+  common: { primary: 'Acção principal', secondary: 'Acção secundária', loading: 'A carregar', error: 'Erro', empty: 'Vazio', success: 'Concluído', close: 'Fechar', language: 'Idioma' },
+  privacy: { notice: 'As tuas conversas são privadas. Ficam protegidas com cifragem em trânsito e em repouso, e no dia-a-dia só as pessoas na conversa as vêem.', learnMore: 'Saber mais' },
+  curtain: { unlock: 'Desbloquear por {{price}}', protected: 'Protegido por Cortina', unlocked: 'Conteúdo desbloqueado', pin: 'PIN', delete: 'Apagar', confirm: 'OK' },
+  errors: { ageRequired: 'É necessário confirmar a idade para continuar.' }
+} as const;
+export default common;
