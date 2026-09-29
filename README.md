@@ -535,3 +535,22 @@ A Edge Function `translate-message` existe com cache em `message_translations`, 
 Operacional no Supabase: schema, RLS, RPCs, storage privado, Realtime publication, Presence contracts, chat, notificações, anexos privados e billing server-side das chamadas.
 
 Ainda condicionado a configuração externa: VAPID para Push, fornecedor de tradução aprovado, credenciais LiveKit e ligação de produção da Vercel. A Fase 7 não activa estes caminhos como se estivessem configurados quando as credenciais reais não existem.
+
+## Termos e Condições para Criadoras · v1.0.0
+
+Os Termos e Condições para Criadoras foram integrados como documento versionado e fluxo real de aceitação.
+
+A implementação inclui:
+- documento completo em `src/content/creatorTerms.ts`, com as 16 declarações obrigatórias;
+- rota pública `/legal/termos-criadoras` para leitura integral e aceitação;
+- cadastro de criadora com todas as 16 caixas obrigatórias e botão bloqueado até conclusão;
+- RPC `accept_creator_terms()` com validação server-side da versão e de todas as declarações;
+- tabela privada `creator_terms_acceptances` com RLS e trilho de auditoria;
+- ligação da aceitação ao ledger jurídico `legal_acceptances`, incluindo `creator_terms`, `privacy` e `content_prohibited`;
+- gate server-side `has_current_creator_terms()` aplicado às principais operações de criadora;
+- acesso ao Estúdio bloqueado até a aceitação da versão vigente e KYC aprovado;
+- comissão configurada em 20% por defeito e 10% para gorjetas, conforme os Termos v1.0.0. Encontros presenciais não passam pelo motor financeiro;
+- mínimo de levantamento de 500 MZN mantido no motor financeiro;
+- suite SQL nativa `creator_terms_native_test.sql`, teste unitário do documento e extensão da matriz de alinhamento da especificação.
+
+A aceitação não é considerada aprovação jurídica final. O próprio documento fornecido para esta implementação continua marcado como modelo para discussão e requer revisão por advogado em Moçambique antes da publicação para produção. Por isso, `production.legal_reviewed` e `production.terms_published` permanecem deliberadamente desligados.
