@@ -12,6 +12,7 @@ export function ExperienceGuard() {
   const [roles, setRoles] = useState<string[]>([]);
   const [accountState, setAccountState] = useState<string | null>(null);
   const [selfExcludedUntil, setSelfExcludedUntil] = useState<string | null>(null);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -21,6 +22,7 @@ export function ExperienceGuard() {
           setRoles([]);
           setAccountState(null);
           setSelfExcludedUntil(null);
+          setKycStatus(null);
           setChecking(false);
         }
         return;
@@ -33,9 +35,10 @@ export function ExperienceGuard() {
       if (!active) return;
       setRoles((rolesResult.data ?? []).map((item) => item.role));
       if (!securityResult.error && securityResult.data) {
-        const state = securityResult.data as { account_status?: string; self_excluded_until?: string | null };
+        const state = securityResult.data as { account_status?: string; self_excluded_until?: string | null; kyc_status?: string | null };
         setAccountState(state.account_status ?? null);
         setSelfExcludedUntil(state.self_excluded_until ?? null);
+        setKycStatus(state.kyc_status ?? null);
       }
       setChecking(false);
     };
@@ -56,6 +59,9 @@ export function ExperienceGuard() {
   if (accountState === 'banned') return <Navigate to="/estado/banida" replace />;
   if (accountState === 'suspended') return <Navigate to="/estado/suspensa" replace />;
   if (selfExcludedUntil && new Date(selfExcludedUntil).getTime() > Date.now()) return <Navigate to="/estado/auto-exclusao" replace />;
+
+  const kycExempt = ['/verificacao', '/definicoes/conta', '/definicoes/seguranca'].some((path) => location.pathname === path || location.pathname.startsWith(path + '/'));
+  if (!kycExempt && kycStatus !== 'approved') return <Navigate to="/verificacao" replace />;
 
   if (location.pathname.startsWith('/estudio') && !roles.includes('creator')) {
     return <Navigate to="/estado/acesso-negado" replace />;
