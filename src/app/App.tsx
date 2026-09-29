@@ -96,6 +96,7 @@ import {
   Phase6LimitsPage,
 } from '@/pages/Phase6FinancialPages';
 import { Phase10ProductionReadinessPage } from '@/pages/Phase10ProductionReadinessPage';
+import { ClientDiscoverCorePage, ClientFeedCorePage, ClientProfileCorePage, ClientPurchasesCorePage, ClientWishlistCorePage, ClientAccountCorePage, ClientLimitsCorePage, ClientDiscreetCorePage, ClientStoriesCorePage } from '@/pages/ClientCorePages';
 import {
   Phase9AdminBusinessPage,
   Phase9AgencyPage,
@@ -245,6 +246,11 @@ function Header() {
   </header>;
 }
 
+function ClientProfileRoutePage() {
+  const { handle = '' } = useParams<{ handle: string }>();
+  return <ClientProfileCorePage handle={handle} />;
+}
+
 export function App() {
   return <SessionProvider><BrowserRouter>
     <Header />
@@ -259,9 +265,9 @@ export function App() {
 
         {phase2RoutesEnabled ? <Route element={<ExperienceGuard />}>
           <Route element={<WorkspaceLayout variant="client" />}>
-            <Route path="/descobrir" element={phase9RoutesEnabled ? <Phase9ClientDiscoveryPage /> : <ClientDiscoverPage />} />
-            <Route path="/feed" element={<ClientFeedPage />} />
-            <Route path="/c/:handle" element={<ClientProfilePage />} />
+            <Route path="/descobrir" element={<ClientDiscoverCorePage />} />
+            <Route path="/feed" element={<ClientFeedCorePage />} />
+            <Route path="/c/:handle" element={<ClientProfileRoutePage />} />
             <Route path="/post/:id" element={<ClientPostPage />} />
             <Route path="/mensagens" element={<Phase7MessagesPage />} />
             <Route path="/mensagens/:id" element={<Phase7MessagePage />} />
@@ -269,8 +275,8 @@ export function App() {
             <Route path="/encontros" element={<Phase8ClientMeetingsPage />} />
             <Route path="/denuncias" element={<Phase8MyReportsPage />} />
             <Route path="/carteira" element={featureFlags.phase6Financials ? <Phase6ClientWalletPage /> : phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
-            <Route path="/compras" element={<ClientPurchasesPage />} />
-            <Route path="/desejos" element={<ClientWishlistPage />} />
+            <Route path="/compras" element={<ClientPurchasesCorePage />} />
+            <Route path="/desejos" element={<ClientWishlistCorePage />} />
             {phase3RoutesEnabled ? <>
               <Route path="/lives" element={<ClientLiveListPage />} />
               <Route path="/live/:sessionId" element={<ClientLiveRoomPage />} />
@@ -290,13 +296,36 @@ export function App() {
               <Route path="/recompensas" element={<Phase9ClientLoyaltyPage />} />
               <Route path="/bundles" element={<Phase9ClientBundlesPage />} />
             </> : null}
-            <Route path="/definicoes/conta" element={<ClientAccountPage />} />
+            <Route path="/definicoes/conta" element={<ClientAccountCorePage />} />
             <Route path="/definicoes/privacidade" element={<ClientPrivacyPage />} />
-            <Route path="/definicoes/limites" element={featureFlags.phase6Financials ? <Phase6LimitsPage /> : <ClientLimitsPage />} />
-            <Route path="/definicoes/discreto" element={<ClientDiscreetPage />} />
+            <Route path="/definicoes/limites" element={<ClientLimitsCorePage />} />
+            <Route path="/definicoes/discreto" element={<ClientDiscreetCorePage />} />
             <Route path="/definicoes/seguranca" element={<SecuritySettingsPage />} />
             <Route path="/verificacao" element={<VerificationPage />} />
-            {clientSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+            
+            <Route path="/onboarding" element={<ClientAccountCorePage />} />
+            <Route path="/pesquisa" element={<ClientDiscoverCorePage />} />
+            <Route path="/subscricoes" element={<ClientSupportCreatorPage />} />
+            <Route path="/tiers" element={<ClientSupportCreatorPage />} />
+            <Route path="/ppv" element={<ClientFeedCorePage />} />
+            <Route path="/comentarios" element={<ClientFeedCorePage />} />
+            <Route path="/reaccoes" element={<ClientFeedCorePage />} />
+            <Route path="/sorteios" element={<Phase9ClientGiveawaysPage />} />
+            <Route path="/enquetes" element={<ClientEngagementPage />} />
+            <Route path="/ranking-fas" element={<ClientRankingsPage />} />
+            <Route path="/notificacoes" element={<Phase7NotificationsPage />} />
+            <Route path="/denuncias" element={<Phase8MyReportsPage />} />
+            <Route path="/mensagens/bloqueadas" element={<Phase7MessagesPage />} />
+            <Route path="/live-privada" element={<ClientLiveListPage />} />
+            <Route path="/chamadas" element={<ClientLiveListPage />} />
+            <Route path="/recarga" element={<Phase6ClientWalletPage />} />
+            <Route path="/historico-carteira" element={<Phase6ClientWalletPage />} />
+            <Route path="/recibos" element={<Phase6ClientWalletPage />} />
+            <Route path="/moeda" element={<ClientAccountCorePage />} />
+            <Route path="/pausa" element={<ClientLimitsCorePage />} />
+            <Route path="/auto-exclusao" element={<ClientLimitsCorePage />} />
+            <Route path="/modo-neutro" element={<ClientDiscreetCorePage />} />
+            <Route path="/stories" element={<ClientStoriesCorePage />} />
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
             <Route path="/estudio" element={<CreatorStudioPage />} />
