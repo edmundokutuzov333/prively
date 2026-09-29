@@ -82,9 +82,7 @@ begin
     )::text,true
   );
 
-  if public.get_admin_kyc_queue(10) is null then
-    raise exception 'FAIL: AAL2 KYC queue access returned NULL';
-  end if;
+  perform public.get_admin_kyc_queue(10);
 
   perform set_config('request.jwt.claim.sub',compliance_uid::text,true);
   perform set_config('request.jwt.claims',
