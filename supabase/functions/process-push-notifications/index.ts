@@ -4,6 +4,15 @@ import { serviceClient } from "../_shared/auth.ts";
 const json = (body: unknown, status=200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
+function safeEqual(left: string, right: string): boolean {
+  const a = new TextEncoder().encode(left);
+  const b = new TextEncoder().encode(right);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 const jobToken = Deno.env.get("PRIVELY_PUSH_JOB_TOKEN");
 const vapidSubject = Deno.env.get("VAPID_SUBJECT");
 const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
@@ -11,7 +20,7 @@ const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
-  if (!jobToken || request.headers.get("x-prively-job-token") !== jobToken) return json({ code: "unauthorized" }, 401);
+  if (!jobToken || !safeEqual(request.headers.get("x-prively-job-token") ?? "", jobToken)) return json({ code: "unauthorized" }, 401);
 
   const supabase = serviceClient();
   const { data: flag } = await supabase
