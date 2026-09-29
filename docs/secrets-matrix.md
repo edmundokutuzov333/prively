@@ -13,8 +13,8 @@ Values are configured per environment. Browser variables are public by design; a
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase function secrets | Supabase project owner | Immediately after exposure or scheduled quarterly |
 | `APP_ALLOWED_ORIGINS` | Supabase function secrets | Product/engineering | On domain change |
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Supabase function secrets | LiveKit owner | Scheduled quarterly and after exposure |
-| `MEDIA_SCAN_ENDPOINT`, `MEDIA_SCAN_TOKEN` | Supabase function secrets | Moderation provider owner | Provider policy |
-| `MEDIA_PROCESSOR_ENDPOINT`, `MEDIA_PROCESSOR_TOKEN` | Supabase function secrets | Media provider owner | Provider policy |
+| `MEDIA_SCAN_ENDPOINT`, `MEDIA_SCAN_TOKEN`, `MEDIA_SCAN_HMAC_SECRET` | Supabase function secrets | Moderation provider owner | Provider policy |
+| `MEDIA_PROCESSOR_ENDPOINT`, `MEDIA_PROCESSOR_TOKEN`, `MEDIA_PROCESSOR_HMAC_SECRET` | Supabase function secrets | Media pipeline owner | Provider policy |
 | `MODERATION_API_URL`, `MODERATION_API_KEY` | Supabase function secrets | Moderation provider owner | Provider policy |
 | `AI_RESPONSE_API_URL`, `AI_RESPONSE_API_KEY`, `AI_RESPONSE_PROVIDER_APPROVED` | Supabase function secrets | Product/AI owner | Provider policy and approval change |
 | `TRANSLATION_PROVIDER`, `TRANSLATION_APPROVED` | Supabase function secrets | Product owner | Provider policy and approval change |
