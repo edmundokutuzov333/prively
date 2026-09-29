@@ -78,6 +78,18 @@ import {
 } from '@/pages/Phase3AdvancedPages';
 import { Phase7MessagePage, Phase7MessagesPage, Phase7NotificationsPage } from '@/pages/Phase7CommunicationPages';
 import {
+  Phase8ClientMeetingsPage,
+  Phase8CompliancePage,
+  Phase8CreatorMeetingsPage,
+  Phase8CreatorSafetyPage,
+  Phase8DmcaPage,
+  Phase8EmergenciesPage,
+  Phase8LegalHoldsPage,
+  Phase8ModerationPage,
+  Phase8MyReportsPage,
+  Phase8SafeVenuesPage,
+} from '@/pages/Phase8SafetyPages';
+import {
   Phase6ClientWalletPage,
   Phase6CreatorEarningsPage,
   Phase6FinanceAdminPage,
@@ -230,6 +242,8 @@ export function App() {
             <Route path="/mensagens" element={<Phase7MessagesPage />} />
             <Route path="/mensagens/:id" element={<Phase7MessagePage />} />
             <Route path="/notificacoes" element={<Phase7NotificationsPage />} />
+            <Route path="/encontros" element={<Phase8ClientMeetingsPage />} />
+            <Route path="/denuncias" element={<Phase8MyReportsPage />} />
             <Route path="/carteira" element={featureFlags.phase6Financials ? <Phase6ClientWalletPage /> : phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
             <Route path="/compras" element={<ClientPurchasesPage />} />
             <Route path="/desejos" element={<ClientWishlistPage />} />
@@ -261,6 +275,9 @@ export function App() {
             <Route path="/estudio/fas" element={phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
             <Route path="/estudio/mensagens" element={<Phase7MessagesPage />} />
             <Route path="/estudio/mensagens/:id" element={<Phase7MessagePage />} />
+            <Route path="/estudio/encontros" element={<Phase8CreatorMeetingsPage />} />
+            <Route path="/estudio/check-in" element={<Phase8CreatorSafetyPage />} />
+            <Route path="/estudio/panico" element={<Phase8CreatorSafetyPage />} />
             <Route path="/estudio/ganhos" element={featureFlags.phase6Financials ? <Phase6CreatorEarningsPage /> : <CreatorEarningsPage />} />
             <Route path="/estudio/analitica" element={phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
             <Route path="/estudio/pedidos" element={phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
@@ -290,6 +307,11 @@ export function App() {
           <Route path="/admin/utilizadores" element={<AdminUsersPage />} />
           <Route path="/admin/kyc" element={<AdminKycPage />} />
           <Route path="/admin/media" element={<AdminMediaQueuePage />} />
+          <Route path="/admin/moderacao" element={<Phase8ModerationPage />} />
+          <Route path="/admin/conformidade" element={<Phase8CompliancePage />} />
+          <Route path="/admin/legal-holds" element={<Phase8LegalHoldsPage />} />
+          <Route path="/admin/locais-seguros" element={<Phase8SafeVenuesPage />} />
+          <Route path="/admin/emergencias" element={<Phase8EmergenciesPage />} />
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
           {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria','/admin/financeiro'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
         </Route>
@@ -301,7 +323,7 @@ export function App() {
         {phase2RoutesEnabled ? <Route path="/legal/conteudo-proibido" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/reembolsos" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/cookies" element={<InfoPage />} /> : null}
-        {phase2RoutesEnabled ? <Route path="/legal/dmca" element={<InfoPage />} /> : null}
+        {phase2RoutesEnabled ? <Route path="/legal/dmca" element={<Phase8DmcaPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/se-criadora" element={<SeCriadoraPage />} /> : <Route path="/se-criadora" element={<Navigate to="/registo" replace />} />}
 
         <Route path="/404" element={<SurfaceStatePage />} />
