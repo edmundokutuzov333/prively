@@ -22,7 +22,7 @@ create policy support_tickets_select_own on public.support_tickets
 for select to authenticated
 using (
   (select auth.uid()) = requester_id
-  or public.has_any_role((select auth.uid()), array['support','moderator','admin']::text[])
+  or (public.has_role((select auth.uid()), 'support'::public.app_role) or public.has_role((select auth.uid()), 'moderator'::public.app_role) or public.has_role((select auth.uid()), 'admin'::public.app_role))
 );
 
 drop policy if exists support_tickets_insert_own on public.support_tickets;
@@ -33,8 +33,8 @@ with check ((select auth.uid()) = requester_id);
 drop policy if exists support_tickets_update_staff on public.support_tickets;
 create policy support_tickets_update_staff on public.support_tickets
 for update to authenticated
-using (public.has_any_role((select auth.uid()), array['support','moderator','admin']::text[]))
-with check (public.has_any_role((select auth.uid()), array['support','moderator','admin']::text[]));
+using ((public.has_role((select auth.uid()), 'support'::public.app_role) or public.has_role((select auth.uid()), 'moderator'::public.app_role) or public.has_role((select auth.uid()), 'admin'::public.app_role)))
+with check ((public.has_role((select auth.uid()), 'support'::public.app_role) or public.has_role((select auth.uid()), 'moderator'::public.app_role) or public.has_role((select auth.uid()), 'admin'::public.app_role)));
 
 create or replace function public.create_support_ticket(
   _category text,
@@ -72,7 +72,7 @@ set search_path = public, pg_temp
 as $$
   select *
   from public.support_tickets
-  where public.has_any_role(auth.uid(), array['support','moderator','admin']::text[])
+  where (public.has_role(auth.uid(), 'support'::public.app_role) or public.has_role(auth.uid(), 'moderator'::public.app_role) or public.has_role(auth.uid(), 'admin'::public.app_role))
   order by
     case priority when 'emergency' then 0 when 'high' then 1 else 2 end,
     created_at asc
@@ -86,7 +86,7 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
-  if not public.has_any_role(auth.uid(), array['support','moderator','admin']::text[]) then
+  if not (public.has_role(auth.uid(), 'support'::public.app_role) or public.has_role(auth.uid(), 'moderator'::public.app_role) or public.has_role(auth.uid(), 'admin'::public.app_role)) then
     raise exception 'forbidden';
   end if;
   if _status not in ('in_progress','resolved','closed') then raise exception 'invalid_status'; end if;
