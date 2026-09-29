@@ -62,7 +62,7 @@ export const homeCopy = {
     creatorTitle: 'Your content. Your rules.',
     creatorBody: 'Creators decide what they publish, what is free or paid, the prices and who can see it. They can also track earnings and fan relationships.',
     safetyEyebrow: 'Trust',
-    safetyTitle: 'Clear rules before any access.',
+    safetyTitle: 'Clear rules before access.',
     safetyItems: ['18+ and identity verification', 'Consent on every publication', 'Reporting, blocking and moderation', 'Money and permissions enforced on the server'],
     journeyEyebrow: 'How it starts',
     journeyTitle: 'Four steps. No shortcuts.',
