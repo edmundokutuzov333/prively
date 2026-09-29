@@ -9,7 +9,7 @@ select ok(has_function_privilege('authenticated','public.get_security_overview()
 select ok(has_function_privilege('authenticated','public.is_age_verified(uuid)','EXECUTE'),'authenticated can execute RLS age helper');
 select ok(has_function_privilege('authenticated','public.can_view_post(uuid)','EXECUTE'),'authenticated can execute auth-bound RLS media visibility helper');
 select ok(not has_function_privilege('authenticated','public.can_view_post(uuid,uuid)','EXECUTE'),'authenticated cannot supply an arbitrary user id to the internal media visibility helper');
-select ok(not has_function_privilege('anon','public.prively_autoconfirm_email()','EXECUTE'),'anonymous cannot execute auth trigger function');
+select ok(to_regprocedure('public.prively_autoconfirm_email()') is null,'email auto-confirm trigger function is removed');
 
 select * from finish();
 rollback;
