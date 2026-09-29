@@ -20,7 +20,12 @@ with checks as (
   union all select 3, 'message membership',
     exists(select 1 from pg_policies where schemaname='public' and tablename='messages' and policyname='messages_member' and qual ilike '%conversation_members%')
   union all select 4, 'no tautology',
-    not exists(select 1 from pg_policies where schemaname='public' and tablename='messages' and coalesce(qual,'') ilike '%m.conversation_id = m.conversation_id%')
+    not exists(select 1 from pg_policies
+      where schemaname='public'
+        and tablename='messages'
+        and policyname='messages_member'
+        and coalesce(qual,'') ilike '%cm.conversation_id = messages.conversation_id%'
+        and coalesce(qual,'') ilike '%cm.user_id%')
   union all select 5, 'no generic admin private comm',
     not exists(select 1 from pg_policies where schemaname='public' and tablename in ('messages','conversations','conversation_members','notifications') and policyname in ('admin_read_all','admin_manage_all'))
   union all select 6, 'rate limits private',

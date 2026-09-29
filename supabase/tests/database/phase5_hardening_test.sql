@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 select ok(
   exists(select 1 from storage.buckets where id='prively-private' and public=false),

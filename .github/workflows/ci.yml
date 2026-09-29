@@ -90,12 +90,13 @@ jobs:
           set -u
           DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           failures=0
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c "create extension if not exists pgtap;"
           run_suite() {
             local name="$1"
             local file="$2"
             echo "===== NATIVE SUITE: $name ====="
             set +e
-            psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f "$file"
+            PGOPTIONS="-c search_path=public,extensions,pg_catalog" psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f "$file"
             local status=$?
             set -e
             if [ "$status" -ne 0 ]; then
@@ -146,6 +147,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     needs: quality
+    env:
+      VITE_SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
+      VITE_APP_ENV: development
     steps:
       - name: Checkout
         uses: actions/checkout@v4

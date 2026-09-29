@@ -47,7 +47,7 @@ begin
 
   insert into public.creator_terms_acceptances(user_id,version,source,declarations)
   values(
-    creator,'1.0','native-test',
+    creator,'1.0.0','native-test',
     jsonb_build_object('identity',true,'consent',true,'rights',true)
   );
 

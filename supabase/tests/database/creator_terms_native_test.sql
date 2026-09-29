@@ -71,20 +71,20 @@ union all select 'commission.meeting', public.commission_rate(null, 'meeting')::
 
 do $$
 declare
-  v text;
+  v numeric;
 begin
-  select value into v from _creator_terms_test_meta where key='commission.subscription';
-  if v <> '0.20' then raise exception 'FAIL: subscription commission must be 20%%, got %', v; end if;
-  select value into v from _creator_terms_test_meta where key='commission.ppv';
+  select value::numeric into v from _creator_terms_test_meta where key='commission.subscription';
+  if v <> 0.20 then raise exception 'FAIL: subscription commission must be 20%%, got %', v; end if;
+  select value::numeric into v from _creator_terms_test_meta where key='commission.ppv';
   if v <> '0.20' then raise exception 'FAIL: PPV commission must be 20%%, got %', v; end if;
-  select value into v from _creator_terms_test_meta where key='commission.message';
+  select value::numeric into v from _creator_terms_test_meta where key='commission.message';
   if v <> '0.20' then raise exception 'FAIL: message commission must be 20%%, got %', v; end if;
-  select value into v from _creator_terms_test_meta where key='commission.live';
+  select value::numeric into v from _creator_terms_test_meta where key='commission.live';
   if v <> '0.20' then raise exception 'FAIL: live commission must be 20%%, got %', v; end if;
-  select value into v from _creator_terms_test_meta where key='commission.tip';
-  if v <> '0.10' then raise exception 'FAIL: tip commission must be 10%%, got %', v; end if;
-  select value into v from _creator_terms_test_meta where key='commission.meeting';
-  if v <> '0.00' then raise exception 'FAIL: meeting commission must be 0%%, got %', v; end if;
+  select value::numeric into v from _creator_terms_test_meta where key='commission.tip';
+  if v <> 0.10 then raise exception 'FAIL: tip commission must be 10%%, got %', v; end if;
+  select value::numeric into v from _creator_terms_test_meta where key='commission.meeting';
+  if v <> 0 then raise exception 'FAIL: meeting commission must be 0%%, got %', v; end if;
 end
 $$;
 
