@@ -206,6 +206,8 @@ A Edge Function `translate-message` existe com cache em `message_translations`, 
 
 ### Segurança e regressão
 - `chat_rate_limits` tem RLS activo e não pode ser lida ou alterada pelos papéis de cliente.
+- As policies da Fase 7 foram optimizadas para avaliar `auth.uid()` uma vez por statement, reduzindo custo por linha em Realtime e chat.
+- Foram adicionados índices para FKs críticas de mensagens, polls e wishlist.
 - Foi removido o índice duplicado de mensagens e a constraint redundante de votos.
 - Foi criada uma API de `can_view_post(uuid)` limitada ao utilizador autenticado. A variante que aceita um `user_id` arbitrário permanece interna.
 - Políticas administrativas genéricas foram removidas das tabelas de comunicação privada; acesso de conformidade continuará a ser feito através da camada específica de Compliance View da Fase 8.
@@ -213,7 +215,8 @@ A Edge Function `translate-message` existe com cache em `message_translations`, 
 - Os oracles `is_blocked()` e `is_hidden_from()` continuam internos.
 - Os índices duplicados de anexos e traduções foram removidos da produção e o migration file foi corrigido para não os recriar em instalações novas.
 - A suite `supabase/tests/database/phase7_social_realtime_test.sql` usa SQL nativo, sem depender de pgTAP.
-- Validação Supabase da Fase 7: **24/24 critérios aprovados**.
+- Validação Supabase da Fase 7: **24/24 critérios aprovados** antes e depois do hardening de performance.
+- O migration final de performance foi aplicado no Supabase sem alteração de dados de produção.
 
 ### Estado de integração
 
