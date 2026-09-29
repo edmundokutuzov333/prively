@@ -351,7 +351,7 @@ export function Phase8EmergenciesPage() {
       {isLoading ? <p className="text-sm text-bone-500">A carregar.</p> : null}
       {!data.length && !isLoading ? <EstadoVazio title="Sem incidentes activos." body="Os alertas de segurança são apresentados aqui quando existem." /> : null}
       <div className="space-y-3">
-        {data.map((item) => <Ficha key={(item.panic_id ?? '') + (item.checkin_id ?? '')} className="border-danger/20"><div className="flex flex-col gap-4 lg:flex-row lg:justify-between"><div><p className="flex items-center gap-2 text-sm font-semibold text-bone-50"><WarningCircle size={19} className="text-danger" />Alerta de segurança</p><p className="mt-1 text-xs text-bone-500">{item.panic_id ? 'Pânico' : 'Check-in expirado'} · {item.panic_created_at ? dt(item.panic_created_at) : dt(item.checkin_alerted_at)}</p><p className="mt-3 text-xs text-bone-400">Partilha de localização: {item.panic_share_location ? 'sim' : 'não'}</p></div>{item.panic_id ? <div className="flex flex-wrap gap-2"><Botao variant="outline" onClick={() => void dispatch(item.panic_id)}>Disparar alerta</Botao><Botao onClick={() => void resolve(item.panic_id)}>Resolver</Botao></div> : null}</div></Ficha>)}
+        {data.map((item) => { const panicId = item.panic_id; const when = item.panic_created_at ?? item.checkin_alerted_at; return <Ficha key={(panicId ?? '') + (item.checkin_id ?? '')} className="border-danger/20"><div className="flex flex-col gap-4 lg:flex-row lg:justify-between"><div><p className="flex items-center gap-2 text-sm font-semibold text-bone-50"><WarningCircle size={19} className="text-danger" />Alerta de segurança</p><p className="mt-1 text-xs text-bone-500">{panicId ? 'Pânico' : 'Check-in expirado'} · {when ? dt(when) : 'sem timestamp'}</p><p className="mt-3 text-xs text-bone-400">Partilha de localização: {item.panic_share_location ? 'sim' : 'não'}</p></div>{panicId ? <div className="flex flex-wrap gap-2"><Botao variant="outline" onClick={() => void dispatch(panicId)}>Disparar alerta</Botao><Botao onClick={() => void resolve(panicId)}>Resolver</Botao></div> : null}</div></Ficha>; })}
       </div>
     </PageFrame>
   );
@@ -575,7 +575,6 @@ export function Phase8CreatorMeetingsPage() {
 export function Phase8ClientMeetingsPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [channelId, setChannelId] = useState('');
   const [slotId, setSlotId] = useState('');
   const [venueId, setVenueId] = useState('');
   const [proposedAt, setProposedAt] = useState('');
@@ -613,7 +612,6 @@ export function Phase8ClientMeetingsPage() {
   useEffect(() => {
     if (!slotId && slots[0]) {
       setSlotId(slots[0].id);
-      setChannelId(slots[0].channel_id);
       setProposedAt(slots[0].starts_at.slice(0, 16));
     }
   }, [slotId, slots]);
