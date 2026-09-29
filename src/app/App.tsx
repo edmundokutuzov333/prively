@@ -33,7 +33,6 @@ import {
   CreatorAuctionsPage,
   CreatorEarningsPage,
   CreatorFansPage,
-  CreatorLivesPage,
   CreatorRequestsPage,
   CreatorSettingsPage,
   CreatorStorePage,
