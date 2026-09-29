@@ -50,7 +50,7 @@ begin
   end if;
 
   update public.giveaways
-     set draw_seed=encode(gen_random_bytes(32),'hex'),status='drawn'
+     set draw_seed=encode(extensions.gen_random_bytes(32),'hex'),status='drawn'
    where id=g.id
    returning * into g;
 
@@ -95,7 +95,7 @@ begin
     for update skip locked
   loop
     update public.giveaways
-       set draw_seed=encode(gen_random_bytes(32),'hex'),status='drawn'
+     set draw_seed=encode(extensions.gen_random_bytes(32),'hex'),status='drawn'
      where id=g.id
     returning draw_seed into seed;
 

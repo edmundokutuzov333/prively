@@ -12,7 +12,7 @@ on conflict(key) do nothing;
 do $$
 begin
   if not exists (select 1 from vault.secrets where name='prively_fx_job_token') then
-    perform vault.create_secret(encode(gen_random_bytes(32),'hex'),'prively_fx_job_token');
+    perform vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'),'prively_fx_job_token');
   end if;
 end
 $$;

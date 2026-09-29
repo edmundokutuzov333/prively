@@ -14,7 +14,7 @@ begin
     if not exists (
       select 1 from vault.secrets where name='prively_media_worker_token'
     ) then
-      perform vault.create_secret(encode(gen_random_bytes(32),'hex'),'prively_media_worker_token');
+      perform vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'),'prively_media_worker_token');
     end if;
   end if;
 end
