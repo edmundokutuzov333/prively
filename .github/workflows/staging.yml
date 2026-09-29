@@ -1,0 +1,49 @@
+name: Prively Staging Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging-supabase:
+    if: \${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN != '' && secrets.SUPABASE_STAGING_PROJECT_REF != '' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link staging project
+        env:
+          SUPABASE_ACCESS_TOKEN: \${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: \${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: \${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+        run: |
+          test -n "$SUPABASE_DB_PASSWORD"
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Lint staging migrations
+        run: supabase db lint
+      - name: Push staging migrations
+        run: supabase db push
+
+  staging-vercel:
+    if: \${{ secrets.VERCEL_STAGING_TOKEN != '' && secrets.VERCEL_STAGING_ORG_ID != '' && secrets.VERCEL_STAGING_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - name: Deploy staging
+        env:
+          VERCEL_TOKEN: \${{ secrets.VERCEL_STAGING_TOKEN }}
+          VERCEL_ORG_ID: \${{ secrets.VERCEL_STAGING_ORG_ID }}
+          VERCEL_PROJECT_ID: \${{ secrets.VERCEL_STAGING_PROJECT_ID }}
+        run: npx vercel@latest deploy --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
