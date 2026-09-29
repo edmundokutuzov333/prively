@@ -779,15 +779,18 @@ returns table(
 )
 language sql stable security definer set search_path=public
 as $$
-  select p.id,p.handle::text,
-    coalesce((select count(*) from public.subscriptions s where s.channel_id=_channel and s.subscriber_id=p.id and s.status='active' and s.current_period_end>now()),0),
-    coalesce((select count(*) from public.ledger_entries l where l.owner_id=p.id and l.amount<0 and l.account='wallet' and l.metadata->>'channel_id'=_channel::text),0),
-    (select max(l.created_at) from public.ledger_entries l where l.owner_id=p.id and l.amount<0 and l.account='wallet' and l.metadata->>'channel_id'=_channel::text),
-    (select max(m.created_at) from public.conversations cv join public.messages m on m.conversation_id=cv.id where cv.channel_id=_channel and cv.client_id=p.id)
-  from public.profiles p
-  where exists(select 1 from public.subscriptions s where s.channel_id=_channel and s.subscriber_id=p.id)
-  order by last_purchase_at desc nulls last,p.handle
-  limit greatest(1,least(_limit,500))
+  select x.fan_id,x.pseudonym,x.subscriptions,x.purchases,x.last_purchase_at,x.last_message_at
+  from (
+    select p.id fan_id,p.handle::text pseudonym,
+      coalesce((select count(*) from public.subscriptions s where s.channel_id=_channel and s.subscriber_id=p.id and s.status='active' and s.current_period_end>now()),0)::bigint subscriptions,
+      coalesce((select count(*) from public.ledger_entries l where l.owner_id=p.id and l.amount<0 and l.account='wallet' and l.metadata->>'channel_id'=_channel::text),0)::bigint purchases,
+      (select max(l.created_at) from public.ledger_entries l where l.owner_id=p.id and l.amount<0 and l.account='wallet' and l.metadata->>'channel_id'=_channel::text) last_purchase_at,
+      (select max(m.created_at) from public.conversations cv join public.messages m on m.conversation_id=cv.id where cv.channel_id=_channel and cv.client_id=p.id) last_message_at
+    from public.profiles p
+    where exists(select 1 from public.subscriptions s where s.channel_id=_channel and s.subscriber_id=p.id)
+  ) x
+  order by x.last_purchase_at desc nulls last,x.pseudonym
+  limit greatest(1,least(_limit,500));
 $$;
 
 create or replace function public.create_referral_code(_code text)
