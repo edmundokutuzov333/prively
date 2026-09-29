@@ -223,7 +223,7 @@ export function Phase7MessagePage() {
   }, [messages, id, queryClient, supabase, user?.id]);
 
   const send = async () => {
-    if ((!text.trim() && !attachmentId) || uploading) return;
+    if (!flags.messaging || ((!text.trim() && !attachmentId) || uploading)) return;
     setErrorCode(null);
     const kind = attachmentKind ?? 'text';
     const { error: sendError } = await supabase.rpc('send_message_guarded', {
@@ -357,7 +357,7 @@ export function Phase7MessagePage() {
           placeholder="Escreve uma mensagem"
           className="min-h-11 flex-1 resize-none rounded-control border border-bone-50/10 bg-ink-900 px-3 py-3 text-sm text-bone-50"
         />
-        <Botao type="button" onClick={() => void send()} disabled={uploading || (!text.trim() && !attachmentId)}>
+        <Botao type="button" onClick={() => void send()} disabled={!flags.messaging || uploading || (!text.trim() && !attachmentId)}>
           <PaperPlaneTilt size={18} weight="duotone" />Enviar
         </Botao>
       </div>
