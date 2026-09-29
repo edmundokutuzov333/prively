@@ -5,7 +5,11 @@ const env=(name:string)=>{const value=Deno.env.get(name);if(!value)throw new Err
 
 const clean=(value:unknown,max:number)=>{
   const text=typeof value==="string"?value:"";
-  return text.replace(/[\x00-\x1F\x7F]/g," ").trim().slice(0,max);
+  const filtered=Array.from(text,ch=>{
+    const code=ch.charCodeAt(0);
+    return code<0x20||code===0x7f ? " " : ch;
+  }).join("");
+  return filtered.trim().slice(0,max);
 };
 
 Deno.serve(async(req)=>{
