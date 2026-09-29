@@ -95,6 +95,7 @@ import {
   Phase6FinanceAdminPage,
   Phase6LimitsPage,
 } from '@/pages/Phase6FinancialPages';
+import { Phase10ProductionReadinessPage } from '@/pages/Phase10ProductionReadinessPage';
 import {
   Phase9AdminBusinessPage,
   Phase9AgencyPage,
@@ -350,6 +351,7 @@ export function App() {
             <Route path="/admin/negocio" element={<Phase9AdminBusinessPage />} />
             <Route path="/admin/integracoes-negocio" element={<Phase9BusinessIntegrationsPage />} />
             <Route path="/admin/agencia" element={<Phase9AgencyPage />} />
+            <Route path="/admin/production" element={<Phase10ProductionReadinessPage />} />
           </> : null}
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
           {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria','/admin/financeiro'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
