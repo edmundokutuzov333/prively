@@ -308,6 +308,142 @@ O Supabase está com as migrations da Fase 9 aplicadas e as Edge Functions activ
 
 O estado Vercel ainda não pode ser declarado como verificado para o commit final: o endpoint GitHub devolveu statuses=[] e o projecto Prively não aparece na listagem actual da equipa KUTUZOV no Vercel. Portanto, não foi inventado um “deploy verde”. A configuração/domínio existente não foi alterada.
 
+## Fase 10 · Production Hardening, Integration & Launch
+
+A Fase 10 implementa o hardening previsto no documento: TypeScript strict, auditoria de source, testes unitários, SQL/RLS, Playwright + axe, CI/CD, rate limiting, observabilidade, CSP/security headers, health checks, runbooks, migration validation, staging e deployment gates. A especificação determina ainda testes de segurança, concorrência, pagamentos, webhooks, idempotência, ledger reconciliation, media access, accessibility AA, mobile/3G/4G, PWA, backups, recovery e um production readiness audit antes de qualquer lançamento público. fileciteturn651file0L827-L909
+
+### Hardening executado
+
+- TypeScript strict, noUnusedLocals e noUnusedParameters permanecem activos.
+- ESLint mantém no-explicit-any como erro.
+- production-audit.mjs verifica browser source, Edge Functions, secrets, TODO/FIXME, console.log, dangerouslySetInnerHTML, security headers, CI scripts e configuração Supabase.
+- ProductionErrorBoundary foi adicionado ao shell React e envia eventos sanitizados para client-error.
+- Edge Function health verifica o contrato da base de dados sem expor detalhes internos.
+- CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, COOP, CORP e X-Frame-Options foram adicionados ao vercel.json.
+- RLS init-plan hardening removeu chamadas directas a auth.uid() das policies afectadas e eliminou os 64 avisos correspondentes do advisor de performance.
+- Todos os public tables têm RLS e pelo menos uma policy explícita.
+- Todos os buckets de Storage continuam privados.
+- security_rate_limits aplica limites server-side a reports, topups, payouts e mensagens, com limpeza automática.
+- Os contratos financeiros de entrada, encontrados sem EXECUTE para authenticated, foram restaurados. Os guards de autorização permanecem dentro das funções.
+- O production readiness pipeline não liga o lançamento automaticamente.
+
+### Production Readiness Gate
+
+Foi criado o RPC administrativo get_production_readiness() e a rota /admin/production.
+
+No estado real actual:
+- RLS: OK.
+- Storage privado: OK.
+- Reconciliação do ledger: OK.
+- Wallet sem saldo negativo: OK.
+- Jobs críticos: OK.
+- Contratos de media e financeiros: OK.
+- production.launch_enabled: OFF.
+- Revisão jurídica: BLOCKED.
+- Termos publicados: BLOCKED.
+- Política de privacidade publicada: BLOCKED.
+- Provider KYC: BLOCKED.
+- Teste externo de segurança: BLOCKED.
+- Equipa de moderação: BLOCKED.
+- Backups validados: BLOCKED.
+- Recovery drill: BLOCKED.
+- Provider de pagamentos de produção: BLOCKED.
+
+O gate devolveu launchable=false, de forma intencional. A especificação determina precisamente que o código terminado não basta para abrir publicamente a plataforma. fileciteturn651file0L827-L909
+
+### Rate limiting
+
+A camada security_rate_limits usa lock transaccional para concorrência. Existem triggers de servidor para reports, topup intents, payouts e mensagens. O chat mantém também o limite específico existente.
+
+### Observabilidade e recuperação
+
+Foram adicionados:
+- client_error_events privado;
+- Edge Function client-error;
+- Edge Function health;
+- retenção automática de telemetry;
+- docs/production-readiness.md;
+- docs/recovery-runbook.md;
+- workflow separado para staging;
+- workflow manual de carga k6 com 200 VUs;
+- workflow de deploy de produção condicionado a secrets e ambiente production.
+
+A carga de 200 utilizadores está preparada no repositório, mas ainda não foi executada contra uma URL real de produção/staging porque não existe uma URL de carga validada configurada como secret.
+
+### QA automatizado
+
+O CI foi expandido para:
+- typecheck;
+- lint;
+- unit tests;
+- source audit;
+- build;
+- supabase db lint --local;
+- supabase test db;
+- suites SQL nativas de Fase 6, 7, 8, 9 e 10;
+- Playwright + axe em rotas públicas;
+- política de security headers em E2E quando executado contra um deployment real.
+
+Suites validadas directamente no Supabase real:
+- Fase 6 native: 20/20
+- Fase 7 regression: 24/24
+- Fase 8 regression: 16/16
+- Fase 9 regression: 18/18
+- Fase 10 production hardening: 19/19
+
+Smoke adicional:
+- refresh_creator_analytics(): OK
+- refresh_rankings(): OK
+- award_badges(): OK
+- draw_due_giveaways(): OK
+- hash do audit_log: OK
+- rate-limit concorrente: OK
+- production readiness gate: bloqueado apenas pelos critérios externos e pelo launch gate desligado
+
+### Edge Functions verificadas
+
+A Supabase apresenta actualmente 23 Edge Functions ACTIVE, incluindo os novos:
+- health
+- client-error
+
+e os já existentes para pagamentos, media, chat, LiveKit, moderação, segurança, loja e Fase 9.
+
+### CI/CD e staging
+
+Existem agora:
+- .github/workflows/ci.yml
+- .github/workflows/deploy.yml
+- .github/workflows/staging.yml
+- .github/workflows/load.yml
+
+Os deploys externos estão condicionados às secrets de ambiente. Isto evita que uma configuração incompleta seja confundida com um deploy operacional.
+
+### Advisor status
+
+Após o hardening:
+- auth_rls_initplan: 0
+- public tables sem RLS: 0
+- public tables sem policy: 0
+- buckets públicos: 0
+
+Ainda existem avisos explícitos e conhecidos:
+- extension_in_public: 1
+- auth_leaked_password_protection: 1
+- authenticated_security_definer_function_executable: 146
+- multiple_permissive_policies: 72
+- unindexed_foreign_keys: 55
+- unused_index: 123
+
+Os 146 SECURITY DEFINER correspondem sobretudo a RPCs autenticados intencionalmente, com search_path definido e autorização server-side. Os 72 avisos de policies permissivas resultam principalmente da camada histórica de acesso administrativo que ainda suporta o Control Room. Estes avisos não foram mascarados nem convertidos artificialmente em OK. A lista de exceções está documentada em docs/production-security-exceptions.md.
+
+### Deploy
+
+O Supabase está aplicado e as Edge Functions estão activas.
+
+O frontend Vercel permanece não certificado para o commit final: a API de status do GitHub continua a devolver statuses=[] e o projecto Prively não aparece na listagem actual da equipa KUTUZOV no conector Vercel. Portanto, não foi declarado um deploy frontend como verde sem evidência.
+
+A especificação exige que o deploy só seja considerado pronto quando o caminho de CI/CD e os requisitos externos estiverem validados. fileciteturn651file0L827-L909
+
 ## Próxima fase
 
 A próxima fase é a **Fase 9, Business Engine & Advanced Monetization**, que deve reaproveitar os contratos de segurança, social, meetings e compliance já estabilizados. A especificação posiciona aqui Custom Requests, Escrow, Auctions, Anti-sniping, Bundles, Promotions, Gifts, Product Store, Orders, Giveaways, Loyalty, Rankings, Creator Analytics, Fan CRM, Goals, Referral, Agency, Premium Features, Recommendation Engine, Translation, AI Response Assistant, Auto Captions, Face Blur e processamento avançado. fileciteturn172file0L753-L823
