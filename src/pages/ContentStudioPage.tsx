@@ -60,7 +60,8 @@ function contentErrorMessage(t: (key: string, options?: Record<string, unknown>)
     'media_finalize_failed',
     'ppv_price_required',
     'tier_required',
-    'price_visibility_mismatch'
+    'price_visibility_mismatch',
+    'participant_consent_required'
   ]);
   return known.has(code) ? t(`content.errors.${code}`) : t('content.errors.generic');
 }
@@ -87,6 +88,7 @@ export function ContentStudioPage() {
   const [price, setPrice] = useState('');
   const [isStory, setIsStory] = useState(false);
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
+  const [participantsConsent, setParticipantsConsent] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploads, setUploads] = useState<PendingUpload[]>([]);
 
@@ -146,6 +148,7 @@ export function ContentStudioPage() {
 
   const ensureContentTerms = async () => {
     if (!rightsConfirmed) throw new Error('content_rights_required');
+    if (!participantsConsent) throw new Error('participant_consent_required');
     const sb = requireSupabase();
     const accepted = await sb.rpc('record_legal_acceptance', {
       _document_type: 'content_prohibited',
@@ -180,7 +183,7 @@ export function ContentStudioPage() {
         const file = files[index];
         setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, state: 'preparing' } : item));
 
-        const plan = await prepareMediaUpload(String(postId), file);
+        const plan = await prepareMediaUpload(String(postId), file, participantsConsent);
         const finalized = await uploadMediaResumable(file, plan, (progress) => {
           setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
             ...item,
@@ -231,6 +234,7 @@ export function ContentStudioPage() {
       setCaption('');
       setFiles([]);
       setRightsConfirmed(false);
+      setParticipantsConsent(false);
       setPrice('');
       setNotice(t('content.uploadQueued'));
       await load();
@@ -301,10 +305,12 @@ export function ContentStudioPage() {
 
           <label className="flex items-start gap-3 rounded-md border border-bone-50/8 p-4 text-sm leading-6 text-bone-300"><input type="checkbox" checked={rightsConfirmed} onChange={(event)=>setRightsConfirmed(event.target.checked)} className="mt-1 accent-crimson-500"/><span>{t('content.rights')}</span></label>
 
+          <label className="flex items-start gap-3 rounded-md border border-bone-50/8 p-4 text-sm leading-6 text-bone-300"><input type="checkbox" checked={participantsConsent} onChange={(event)=>setParticipantsConsent(event.target.checked)} className="mt-1 accent-crimson-500"/><span>{t('content.participantsConsent')}</span></label>
+
           {uploads.length ? <div className="space-y-2">{uploads.map((upload)=><div key={upload.fileName} className="rounded-md border border-bone-50/8 bg-ink-850 p-3"><div className="flex items-center justify-between gap-4 text-xs text-bone-300"><span className="truncate">{upload.fileName}</span><span>{upload.state==='uploading'?Math.round(upload.progress)+'%':t('content.uploadStates.'+upload.state)}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded bg-ink-700"><div className="h-full bg-crimson-500 transition-[width]" style={{width:`${upload.progress}%`}} /></div></div>)}</div> : null}
 
           <div className="flex flex-wrap gap-3">
-            <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed||(visibility==='ppv'&&(!Number.isFinite(Number(price))||Number(price)<=0))||(visibility==='tier'&&(Number(tierRank)<1||Number(tierRank)>4))}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
+            <Botao onClick={()=>void createPost()} loading={creatingPost} disabled={!files.length||!rightsConfirmed||!participantsConsent||(visibility==='ppv'&&(!Number.isFinite(Number(price))||Number(price)<=0))||(visibility==='tier'&&(Number(tierRank)<1||Number(tierRank)>4))}><CloudArrowUp size={18}/>{t('content.createAndUpload')}</Botao>
             {creatingPost ? <span className="self-center text-xs text-bone-500">{t('content.resumableNote')}</span> : null}
           </div>
         </div>
