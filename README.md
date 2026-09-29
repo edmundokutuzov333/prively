@@ -209,6 +209,105 @@ A especificação determina explicitamente a separação entre encontro social e
 - LiveKit, Push e tradução continuam controlados pelas flags das fases anteriores quando as credenciais externas não estão disponíveis.
 - O código não apresenta nenhuma destas integrações como activa enquanto o provider real não estiver configurado.
 
+## Fase 9 · Business Engine & Advanced Monetization
+
+A Fase 9 está implementada na \`main\` com contratos reais de negócio, monetização avançada e integrações condicionadas por feature flag. O documento de referência define nesta fase Custom Requests, Escrow, Auctions, Anti-sniping, Bundles, Promotions, Gifts, Product Store, Orders, Giveaways, Loyalty, Points, Missions, Streaks, Badges, Rankings, Fan ranking, Creator analytics, Fan CRM, Goals, Referral, Agency, Premium features, Featured creators, Premium client layer, Recommendation engine, Translation, AI response assistant, Auto captions, Face blur e processamento avançado de media. fileciteturn350file0L755-L823
+
+### Business transactions
+
+- Custom Requests: pedido com briefing e orçamento, aceite, recusa, contraproposta, entrega, disputa e escrow server-side.
+- Auctions: licitação server-side, incremento mínimo, lock de linha e extensão anti-sniping de 120 segundos.
+- Bundles: compra idempotente com promoção opcional e ledger.
+- Promotions: códigos por canal, percentagem ou valor fixo, limites por utilizador e limite global de utilizações.
+- Gifts: continuam no ledger da plataforma, sem saldo alterado pelo cliente.
+- Product Store: produtos, stock, encomendas e escrow. A morada é cifrada com AES-GCM numa Edge Function antes de ser guardada.
+- Shipping access: só o owner do canal da encomenda recebe a morada desencriptada e cada acesso fica no audit_log.
+- Giveaways: entrada pelo servidor, sorteio determinístico baseado num seed aleatório guardado e auditado, com job automático de encerramento.
+
+### Loyalty, rankings e analytics
+
+- Loyalty Points, Missions, Streaks e Badges estão server-side. Missões têm uma constraint que impede requisitos de gasto. fileciteturn350file0L781-L795
+- Creator Ranking usa crescimento e engagement. O cálculo não usa earnings.
+- Fan Ranking usa gasto atribuído por canal, com fan_ranking_opt_out e sem leitura directa do ranking interno por clientes.
+- Creator Analytics é calculado a partir de actividade real, com fronteiras de dia no fuso Africa/Maputo.
+- Fan CRM usa pseudónimo, subscrições, compras e mensagens, com notas e tags isoladas por canal.
+- Goals calculam progresso no servidor.
+
+### Referral, Agency e Premium
+
+- Referral e Agency permanecem desligados por feature_flags até validação económica, jurídica e operacional.
+- O módulo de Agency não expõe saldo, payout, credenciais, KYC privado ou DMs privadas e permite que a criadora saia da relação.
+- Premium Features e Featured Creators têm tabelas, RPCs, débito pelo ledger e duração configurável.
+- Selo pago mantém source=purchased, separado da verificação KYC, de acordo com a especificação. fileciteturn350file0L1162-L1169
+
+### Recommendation Engine
+
+Existe uma primeira camada server-side de recomendações com eventos de impressão, abertura, follow, subscribe, purchase, hide e not_interested. O ranking mistura actividade recente, cidade e destaque configurado. Os embeddings têm apenas o contrato de armazenamento jsonb; não é apresentado um motor vectorial activo onde a infraestrutura actual não o suporta.
+
+A camada nunca fabrica métricas de popularidade. A UI usa dados reais das tabelas de canais, analytics e featured placements, em linha com a regra de não inventar números nem utilizadores. fileciteturn350file0L1101-L1115
+
+### IA e processamento avançado
+
+Existem contratos reais para:
+- ai-response-assistant, que só funciona com provider aprovado e secret configurada, e devolve sugestões sem enviar mensagens automaticamente;
+- media-advanced-process, com jobs para caption, face_blur e advanced_media;
+- process-media-job, que escreve derivados seguros em caption_path e face_blur_path;
+- get-media-url, que pode servir variantes autorizadas como face_blur e o caminho de watermark.
+
+Estas integrações permanecem desligadas até provider e secrets reais estarem configurados. A especificação exige que a política do fornecedor permita processar conteúdo adulto antes de enviar texto/media para serviços de IA. fileciteturn350file0L1166-L1170
+
+Flags actualmente desligadas por dependência externa ou validação: referral, agency, translation, ai_response_assistant, auto_captions, face_blur e advanced_media_processing. A plataforma não mostra estas superfícies como activas quando o provider não está certificado.
+
+### Segurança e RLS
+
+Todas as tabelas introduzidas na Fase 9 têm RLS. Os caminhos financeiros continuam server-side e os helpers internos não têm execução para anon/clientes. Foram optimizadas policies com (select auth.uid()) e adicionados índices para FKs críticas. A morada da loja não fica disponível por select normal do browser. A descoberta e os eventos de recomendação exigem identidade e verificação de idade no servidor.
+
+A Fase 9 também revelou e corrigiu um bug herdado da Fase 8 no hash do audit_log: o digest da extensão crypto está no schema extensions e agora é chamado de forma explicitamente qualificada e compatível com o runtime. O teste de runtime confirmou escrita auditada com event_hash presente.
+
+### Edge Functions
+
+Activas e verificadas no Supabase:
+- create-order
+- order-shipping-access
+- ai-response-assistant
+- media-advanced-process
+- process-media-job
+- get-media-url
+
+As funções usam verify_jwt=true onde a operação é autenticada. Não existem secrets no cliente.
+
+### UI, UX, CX e Service Design
+
+Foram ligadas à aplicação real:
+- cliente: descoberta, pedidos personalizados, leilões, loja, bundles, presentes, sorteios, fidelidade e premium;
+- criadora: pedidos, leilões, loja, analytics, fan CRM, metas e promoções;
+- control room: business engine e estado das integrações;
+- mensagens de estado e vazios não usam dados fictícios e os CTAs descrevem o resultado da acção.
+
+A arquitectura mantém a orientação mobile-first, o visual Cordão de Veludo e a regra de não usar afirmações falsas de segurança. fileciteturn350file0L1173-L1284
+
+### Testes e regressão
+
+No Supabase real:
+- phase9_business_engine_test.sql: 18/18 critérios aprovados;
+- phase7_social_realtime_test.sql: 24/24 critérios aprovados;
+- phase8_safety_moderation_meetings_test.sql: 16/16 critérios aprovados.
+
+Smoke tests adicionais executados:
+- refresh_creator_analytics() executou;
+- refresh_rankings() executou;
+- award_badges() executou;
+- draw_due_giveaways() executou sem erros;
+- novo audit_log recebeu evento rankings_refreshed com event_hash válido.
+
+A suite financeira da Fase 6 continua com a limitação documentada de depender de pgTAP no ficheiro original; a validação remota dessa fase permanece baseada no smoke SQL já documentado.
+
+### Estado de deploy
+
+O Supabase está com as migrations da Fase 9 aplicadas e as Edge Functions activas.
+
+O estado Vercel ainda não pode ser declarado como verificado para o commit final: o endpoint GitHub devolveu statuses=[] e o projecto Prively não aparece na listagem actual da equipa KUTUZOV no Vercel. Portanto, não foi inventado um “deploy verde”. A configuração/domínio existente não foi alterada.
+
 ## Próxima fase
 
 A próxima fase é a **Fase 9, Business Engine & Advanced Monetization**, que deve reaproveitar os contratos de segurança, social, meetings e compliance já estabilizados. A especificação posiciona aqui Custom Requests, Escrow, Auctions, Anti-sniping, Bundles, Promotions, Gifts, Product Store, Orders, Giveaways, Loyalty, Rankings, Creator Analytics, Fan CRM, Goals, Referral, Agency, Premium Features, Recommendation Engine, Translation, AI Response Assistant, Auto Captions, Face Blur e processamento avançado. fileciteturn172file0L753-L823
