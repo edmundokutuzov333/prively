@@ -1,6 +1,5 @@
 import {
   ArrowDown,
-  ArrowDownRight,
   ArrowRight,
   CheckCircle,
   ChatsCircle,
@@ -76,9 +75,9 @@ export function HomePage() {
             </div>
 
             <div className="mt-8 grid max-w-xl gap-3 border-t border-bone-50/8 pt-5 sm:grid-cols-3">
-              <span className="text-xs leading-5 text-bone-500">18+ · {language === 'pt-MZ' ? 'adultos' : language === 'fr' ? 'adultes' : 'adults'}</span>
-              <span className="text-xs leading-5 text-bone-500">{language === 'pt-MZ' ? 'Identidade verificada antes do acesso' : language === 'fr' ? 'Identité vérifiée avant l’accès' : 'Identity verified before access'}</span>
-              <span className="text-xs leading-5 text-bone-500">{language === 'pt-MZ' ? 'Sem conteúdo explícito nesta página' : language === 'fr' ? 'Aucun contenu explicite sur cette page' : 'No explicit content on this page'}</span>
+              <span className="text-xs leading-5 text-bone-500">{copy.audienceNote}</span>
+              <span className="text-xs leading-5 text-bone-500">{copy.identityNote}</span>
+              <span className="text-xs leading-5 text-bone-500">{copy.publicNote}</span>
             </div>
           </div>
 
@@ -126,7 +125,7 @@ export function HomePage() {
               </button>
 
               <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 text-[10px] uppercase tracking-[.18em] text-bone-500">
-                <Fingerprint size={14} weight="duotone" /> {language === 'pt-MZ' ? 'identidade social separada dos dados legais' : language === 'fr' ? 'identité sociale séparée des données légales' : 'social identity separate from legal data'}
+                <Fingerprint size={14} weight="duotone" /> {copy.legalIdentityNote}
               </div>
             </motion.div>
           </div>
@@ -181,10 +180,7 @@ export function HomePage() {
             <h2 className="mt-5 max-w-xl font-display text-5xl leading-[.9] text-bone-50 md:text-6xl">{copy.privacyTitle}</h2>
             <p className="mt-6 max-w-xl text-base leading-7 text-bone-300">{copy.privacyBody}</p>
             <div className="mt-8 flex flex-wrap gap-2 text-xs text-bone-400">
-              <span className="rounded-full border border-bone-50/10 px-3 py-2">Pseudónimo</span>
-              <span className="rounded-full border border-bone-50/10 px-3 py-2">Notificações neutras</span>
-              <span className="rounded-full border border-bone-50/10 px-3 py-2">Modo discreto</span>
-              <span className="rounded-full border border-bone-50/10 px-3 py-2">PIN</span>
+              {copy.privacyTags.map((tag) => <span key={tag} className="rounded-full border border-bone-50/10 px-3 py-2">{tag}</span>)}
             </div>
           </div>
 
@@ -196,19 +192,12 @@ export function HomePage() {
             <h2 className="mt-5 max-w-xl font-display text-5xl leading-[.9] text-bone-50 md:text-6xl">{copy.creatorTitle}</h2>
             <p className="mt-6 max-w-xl text-base leading-7 text-bone-300">{copy.creatorBody}</p>
             <div className="mt-8 grid gap-3">
-              {['01', '02', '03'].map((no, index) => {
-                const labels = language === 'pt-MZ'
-                  ? ['Publica e controla a visibilidade', 'Define preços e níveis', 'Acompanha ganhos e fãs']
-                  : language === 'fr'
-                    ? ['Publie et contrôle la visibilité', 'Définit les prix et niveaux', 'Suit les revenus et les fans']
-                    : ['Publish and control visibility', 'Set prices and tiers', 'Track earnings and fans'];
-                return (
-                  <div key={no} className="flex items-start gap-4 border-t border-bone-50/8 pt-3 text-sm text-bone-300">
-                    <span className="text-bone-500">{no}</span>
-                    <span>{labels[index]}</span>
-                  </div>
-                );
-              })}
+              {copy.creatorSteps.map((label, index) => (
+                <div key={label} className="flex items-start gap-4 border-t border-bone-50/8 pt-3 text-sm text-bone-300">
+                  <span className="text-bone-500">0{index + 1}</span>
+                  <span>{label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
