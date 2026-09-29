@@ -133,6 +133,9 @@ edge_contract_check as (
   select
     exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='get_media_access') as media_access,
     exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_order_v2') as order_rpc
+),
+giveaway_cron_check as (
+  select exists(select 1 from cron.job where jobname='prively-draw-giveaways' and active) as ok
 )
 select * from table_check
 union all select * from rls_check
@@ -150,4 +153,5 @@ union all select * from media_check
 union all select * from flag_check
 union all select spend_hidden and escrow_hidden from internal_function_check
 union all select * from meeting_function_check
-union all select media_access and order_rpc from edge_contract_check;
+union all select media_access and order_rpc from edge_contract_check
+union all select * from giveaway_cron_check;
