@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: production-deploy
@@ -22,7 +23,21 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     steps:
       - id: sha
-        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          runs="$(gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${GITHUB_SHA}&event=push&per_page=100")"
+          approved="$(printf '%s' "$runs" | jq -r '[.workflow_runs[] | select(.name=="Prively CI" and .head_sha=="'"$GITHUB_SHA"'" and .conclusion=="success")] | length')"
+          if [ "$approved" -lt 1 ]; then
+            echo "No successful Prively CI run exists for ${GITHUB_SHA}; refusing manual production delivery."
+            exit 1
+          fi
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
   prepare:
     needs: gate
