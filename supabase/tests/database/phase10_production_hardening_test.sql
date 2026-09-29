@@ -69,6 +69,16 @@ with checks as (
     to_regprocedure('public.create_custom_request(uuid,text,bigint,text)') is not null
     and to_regprocedure('public.create_auction_v2(uuid,text,text,bigint,bigint,timestamptz,timestamptz,uuid)') is not null
     and to_regprocedure('public.create_order_v2(jsonb,text,text,text,text)') is not null
+  union all select 'anon_rpc_hardening',
+    not has_function_privilege('anon','public.create_support_ticket(text,text,text,text)','EXECUTE')
+    and not has_function_privilege('anon','public.get_support_queue(integer)','EXECUTE')
+    and not has_function_privilege('anon','public.hide_creator_from_feed(uuid)','EXECUTE')
+    and not has_function_privilege('anon','public.mute_user(uuid)','EXECUTE')
+    and not has_function_privilege('anon','public.resolve_support_ticket(uuid,text,text)','EXECUTE')
+    and not has_function_privilege('anon','public.show_creator_in_feed(uuid)','EXECUTE')
+    and not has_function_privilege('anon','public.unmute_user(uuid)','EXECUTE')
+    and has_function_privilege('authenticated','public.create_support_ticket(text,text,text,text)','EXECUTE')
+    and has_function_privilege('authenticated','public.hide_creator_from_feed(uuid)','EXECUTE'),
   union all select 'health_contract',
     to_regprocedure('public.get_health_probe()') is not null
 )
