@@ -47,6 +47,7 @@ export function mediaKind(file: File) {
 export async function prepareMediaUpload(
   postId: string,
   file: File,
+  participantsConsent: boolean,
 ): Promise<MediaUploadPlan> {
   const sb = requireSupabase();
   const { data, error } = await sb.rpc('create_media_upload', {
@@ -56,6 +57,7 @@ export async function prepareMediaUpload(
     _file_size: file.size,
     _sha256: null,
     _original_filename: file.name,
+    _participants_consent: participantsConsent,
   });
 
   if (error || !data) {
