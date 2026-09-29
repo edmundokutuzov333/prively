@@ -1,0 +1,18 @@
+{
+  "name": "Actividade",
+  "short_name": "Actividade",
+  "description": "Aplicação privada de actividade da conta.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b090b",
+  "theme_color": "#0b090b",
+  "lang": "pt-MZ",
+  "icons": [
+    {
+      "src": "/icon-neutral.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
