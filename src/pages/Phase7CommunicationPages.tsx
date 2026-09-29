@@ -9,7 +9,7 @@ import { Botao } from '@/design/Botao';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { requireSupabase } from '@/lib/supabase';
 import { formatMznFromCents } from '@/lib/money';
-import { featureFlags } from '@/config/featureFlags';
+import { useFeatureFlags } from '@/features/feature-flags/useFeatureFlags';
 import { getVapidPublicKey, registerPushForCurrentUser } from '@/lib/push';
 import { PageFrame } from '@/pages/PageFrame';
 import { ReportButton } from '@/features/safety/ReportButton';
@@ -159,6 +159,7 @@ function MessageBubble({
 
 export function Phase7MessagePage() {
   const { user } = useAuth();
+  const { flags } = useFeatureFlags();
   const { id = '' } = useParams();
   const supabase = requireSupabase();
   const queryClient = useQueryClient();
@@ -203,7 +204,7 @@ export function Phase7MessagePage() {
     if ((!text.trim() && !attachmentId) || uploading) return;
     setErrorCode(null);
     const kind = attachmentKind ?? 'text';
-    const { error: sendError } = await supabase.rpc('send_message_v2', {
+    const { error: sendError } = await supabase.rpc('send_message_guarded', {
       _conversation: id,
       _body: text.trim() || null,
       _kind: kind,
@@ -344,10 +345,11 @@ export function Phase7MessagePage() {
 
 export function Phase7NotificationsPage() {
   const { user } = useAuth();
+  const { flags } = useFeatureFlags();
   const supabase = requireSupabase();
   const queryClient = useQueryClient();
   const [pushState, setPushState] = useState<'idle' | 'enabled' | 'error'>('idle');
-  const pushConfigured = featureFlags.push && Boolean(getVapidPublicKey());
+  const pushConfigured = flags.push && Boolean(getVapidPublicKey());
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['phase7', 'notifications', user?.id],
