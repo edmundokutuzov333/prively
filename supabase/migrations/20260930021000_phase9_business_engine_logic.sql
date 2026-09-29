@@ -647,7 +647,7 @@ as $$
 $$;
 
 create or replace function public.refresh_rankings()
-returns integer language plpgsql security definer set search_path=public
+returns void language plpgsql security definer set search_path=public
 as $$
 declare w date:=date_trunc('week',current_date)::date;
 declare creator_count integer:=0;
@@ -689,8 +689,8 @@ begin
   join public.profiles p on p.id=s.user_id
   where not p.fan_ranking_opt_out;
 
-  return creator_count;
-end $$;
+  null;
+end $;
 
 create or replace function public.refresh_creator_analytics()
 returns void language plpgsql security definer set search_path=public
