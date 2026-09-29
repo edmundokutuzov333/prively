@@ -273,21 +273,21 @@ export function App() {
             {phase3RoutesEnabled ? <>
               <Route path="/lives" element={<ClientLiveListPage />} />
               <Route path="/live/:sessionId" element={<ClientLiveRoomPage />} />
-              <Route path="/pedidos" element={phase9RoutesEnabled ? <Phase9ClientRequestsPage /> : <ClientCustomRequestPage />} />
               <Route path="/leilao/:auctionId" element={<ClientAuctionPage />} />
-              <Route path="/loja" element={phase9RoutesEnabled ? <Phase9ClientStorePage /> : <ClientStorePage />} />
-              {phase9RoutesEnabled ? <>
-                <Route path="/leiloes" element={<Phase9ClientAuctionsPage />} />
-                <Route path="/sorteios" element={<Phase9ClientGiveawaysPage />} />
-                <Route path="/presentes" element={<Phase9ClientGiftsPage />} />
-                <Route path="/fidelidade" element={<Phase9ClientLoyaltyPage />} />
-                <Route path="/premium" element={<Phase9ClientPremiumPage />} />
-              </> : null}
-              <Route path="/recompensas" element={phase9RoutesEnabled ? <Phase9ClientLoyaltyPage /> : <ClientRewardsPage />} />
               <Route path="/apoio" element={<ClientSupportCreatorPage />} />
-              <Route path="/bundles" element={phase9RoutesEnabled ? <Phase9ClientBundlesPage /> : <ClientBundlesPage />} />
               <Route path="/actividades" element={<ClientEngagementPage />} />
               <Route path="/rankings" element={<ClientRankingsPage />} />
+            </> : null}
+            {phase9RoutesEnabled ? <>
+              <Route path="/pedidos" element={<Phase9ClientRequestsPage />} />
+              <Route path="/loja" element={<Phase9ClientStorePage />} />
+              <Route path="/leiloes" element={<Phase9ClientAuctionsPage />} />
+              <Route path="/sorteios" element={<Phase9ClientGiveawaysPage />} />
+              <Route path="/presentes" element={<Phase9ClientGiftsPage />} />
+              <Route path="/fidelidade" element={<Phase9ClientLoyaltyPage />} />
+              <Route path="/premium" element={<Phase9ClientPremiumPage />} />
+              <Route path="/recompensas" element={<Phase9ClientLoyaltyPage />} />
+              <Route path="/bundles" element={<Phase9ClientBundlesPage />} />
             </> : null}
             <Route path="/definicoes/conta" element={<ClientAccountPage />} />
             <Route path="/definicoes/privacidade" element={<ClientPrivacyPage />} />
@@ -314,12 +314,16 @@ export function App() {
             <Route path="/estudio/leiloes" element={phase9RoutesEnabled ? <Phase9CreatorAuctionsPage /> : phase3RoutesEnabled ? <CreatorAuctionsAdvancedPage /> : <CreatorAuctionsPage />} />
             <Route path="/estudio/lives" element={phase3RoutesEnabled ? <CreatorLiveStudioPage /> : <CreatorLivesPage />} />
             {phase3RoutesEnabled ? <>
-              <Route path="/estudio/metas" element={phase9RoutesEnabled ? <Phase9CreatorGoalsPage /> : <CreatorGoalsPage />} />
-              <Route path="/estudio/referral" element={phase9RoutesEnabled ? <Phase9CreatorReferralPage /> : <CreatorReferralPage />} />
               <Route path="/estudio/respostas" element={<CreatorAutoRepliesPage />} />
               <Route path="/estudio/bundles" element={<CreatorBundlesPage />} />
               <Route path="/estudio/actividades" element={<CreatorEngagementPage />} />
               <Route path="/estudio/agenda-avancada" element={<CreatorSchedulePage />} />
+            </> : null}
+            {phase9RoutesEnabled ? <>
+              <Route path="/estudio/metas" element={<Phase9CreatorGoalsPage />} />
+              <Route path="/estudio/referral" element={<Phase9CreatorReferralPage />} />
+              <Route path="/estudio/promocoes" element={<Phase9CreatorPromotionsPage />} />
+              <Route path="/estudio/integracoes" element={<Phase9BusinessIntegrationsPage />} />
             </> : null}
             <Route path="/estudio/definicoes" element={<CreatorSettingsPage />} />
             <Route path="/estudio/definicoes/seguranca" element={<SecuritySettingsPage />} />
