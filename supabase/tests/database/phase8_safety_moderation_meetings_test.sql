@@ -48,6 +48,8 @@ with checks as (
     and to_regprocedure('public.claim_moderation_case(uuid)') is not null
     and to_regprocedure('public.resolve_moderation_case(uuid,text,text)') is not null
     and to_regprocedure('public.submit_appeal(uuid,text)') is not null
+    and to_regclass('public.moderation_queue') is not null
+    and exists(select 1 from information_schema.columns where table_schema='public' and table_name='moderation_queue' and column_name='appeal_id')
   union all select 6,'safety contracts',
     to_regprocedure('public.create_safety_checkin(timestamptz,smallint,boolean)') is not null
     and to_regprocedure('public.confirm_safety_checkin(uuid)') is not null
