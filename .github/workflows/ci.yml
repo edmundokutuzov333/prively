@@ -42,9 +42,31 @@ jobs:
       - name: Build
         run: npm run build
 
+  edge_functions:
+    name: Edge Functions contract tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Run Edge Function and shared contract tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t tests < <(find supabase/functions -type f \( -name '*.test.ts' -o -name '*.spec.ts' \) | sort)
+          if [ "${#tests[@]}" -eq 0 ]; then
+            echo "No Deno tests found"
+            exit 1
+          fi
+          deno test --allow-env --allow-read "${tests[@]}"
+
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,14 +84,53 @@ jobs:
         id: canonical_db
         continue-on-error: true
         run: supabase test db
-      - name: Run raw SQL native regression suites
+      - name: Run native SQL regression suites
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f supabase/tests/database/phase6_financial_core_native_test.sql
-          psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f supabase/tests/database/creator_terms_native_test.sql
-          psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f supabase/tests/database/spec_alignment_native_test.sql
+          failures=0
+          run_suite() {
+            local name="$1"
+            local file="$2"
+            echo "===== NATIVE SUITE: $name ====="
+            set +e
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f "$file"
+            local status=$?
+            set -e
+            if [ "$status" -ne 0 ]; then
+              echo "FAILED: $name (exit $status)"
+              failures=$((failures + 1))
+            else
+              echo "PASSED: $name"
+            fi
+          }
+
+          suites=(
+            "phase3_test.sql"
+            "phase4_function_security_test.sql"
+            "phase4_identity_security_test.sql"
+            "phase5_content_media_test.sql"
+            "phase5_hardening_test_v2.sql"
+            "phase5_storage_security_test.sql"
+            "phase6_financial_core_test.sql"
+            "phase6_financial_core_native_test.sql"
+            "phase7_social_realtime_test.sql"
+            "phase8_safety_moderation_meetings_test.sql"
+            "phase9_business_engine_test.sql"
+            "phase10_production_hardening_test.sql"
+            "creator_terms_native_test.sql"
+            "spec_alignment_native_test.sql"
+          )
+
+          for file in "${suites[@]}"; do
+            run_suite "$file" "supabase/tests/database/$file"
+          done
+
+          if [ "$failures" -ne 0 ]; then
+            echo "Native SQL suites failed: $failures"
+            exit 1
+          fi
       - name: Evaluate canonical database suite
         if: ${{ always() }}
         run: |
