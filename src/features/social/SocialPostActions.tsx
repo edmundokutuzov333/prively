@@ -4,6 +4,7 @@ import { Botao } from '@/design/Botao';
 import { Ficha } from '@/design/Ficha';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuth } from '@/app/session';
+import { ReportButton } from '@/features/safety/ReportButton';
 
 type Props = { postId: string };
 
@@ -131,6 +132,7 @@ export function SocialPostActions({ postId }: Props) {
       <Botao type="button" variant="outline" onClick={() => void toggleWishlist()} disabled={busy}>
         <BookmarkSimple size={18} weight="duotone" /> {labels.save}
       </Botao>
+      <ReportButton targetType="post" targetId={postId} />
       {ownerId && ownerId !== user.id ? <Botao type="button" variant="danger" onClick={() => void blockOwner()} disabled={busy}>
         <LockKey size={18} weight="duotone" /> Bloquear
       </Botao> : null}
