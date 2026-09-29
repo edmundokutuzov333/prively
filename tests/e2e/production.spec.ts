@@ -32,6 +32,7 @@ for (const route of publicRoutes) {
 }
 
 test('security headers are present on the application shell', async ({ page }) => {
+  test.skip(process.env.PLAYWRIGHT_EXPECT_HEADERS !== 'true', 'Header verification runs against a deployed Vercel environment.');
   const response = await page.goto('/');
   expect(response).not.toBeNull();
 
