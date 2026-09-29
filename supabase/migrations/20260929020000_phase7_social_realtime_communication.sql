@@ -190,6 +190,19 @@ begin
 end;
 $phase7_notify$;
 
+
+create or replace function public.unfollow_channel(_channel uuid)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $phase7_unfollow$
+begin
+  delete from public.follows
+  where follower_id=auth.uid() and channel_id=_channel;
+end;
+$phase7_unfollow$;
+
 -- ---------------------------------------------------------------------------
 -- Client-safe RPC surface
 -- UI mutates through guarded RPCs. Internal helpers remain server-only.
