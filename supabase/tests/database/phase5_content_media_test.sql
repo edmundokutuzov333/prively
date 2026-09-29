@@ -42,6 +42,15 @@ begin
   values(creator,'creator')
   on conflict do nothing;
 
+  insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
+  values(creator,'native-test','approved','native:'||creator::text,now());
+
+  insert into public.creator_terms_acceptances(user_id,version,source,declarations)
+  values(
+    creator,'1.0','native-test',
+    jsonb_build_object('identity',true,'consent',true,'rights',true)
+  );
+
   insert into public.legal_acceptances(user_id,document_type,version)
   values
     (creator,'terms','1.0'),
