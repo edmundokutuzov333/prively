@@ -270,7 +270,7 @@ export function App() {
             </> : null}
             {phase9RoutesEnabled ? <>
               <Route path="/estudio/metas" element={<Phase9CreatorGoalsPage />} />
-              <Route path="/estudio/referral" element={<Phase9CreatorReferralPage />} />
+              {featureFlags.referral ? <Route path="/estudio/referral" element={<Phase9CreatorReferralPage />} /> : null}
               <Route path="/estudio/promocoes" element={<Phase9CreatorPromotionsPage />} />
               <Route path="/estudio/integracoes" element={<Phase9BusinessIntegrationsPage />} />
             </> : null}
@@ -317,7 +317,7 @@ export function App() {
           {phase9RoutesEnabled ? <>
             <Route path="/admin/negocio" element={<Phase9AdminBusinessPage />} />
             <Route path="/admin/integracoes-negocio" element={<Phase9BusinessIntegrationsPage />} />
-            <Route path="/admin/agencia" element={<Phase9AgencyPage />} />
+            {featureFlags.agency ? <Route path="/admin/agencia" element={<Phase9AgencyPage />} /> : null}
             <Route path="/admin/production" element={<Phase10ProductionReadinessPage />} />
           </> : null}
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
