@@ -107,8 +107,8 @@ create or replace function public.create_media_upload(
   _kind text,
   _mime_type text,
   _file_size bigint,
-  _sha256 text,
-  _original_filename text
+  _sha256 text default null,
+  _original_filename text default 'file'
 )
 returns jsonb
 language plpgsql
