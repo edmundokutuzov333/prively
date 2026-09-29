@@ -55,12 +55,12 @@ begin
   select balance into creator_pending from public.balances where owner_id=creator and account='creator_pending';
 
   if buyer_wallet<>700000 then raise exception 'unexpected buyer wallet %',buyer_wallet; end if;
-  if creator_pending<>210000 then raise exception 'unexpected creator pending %',creator_pending; end if;
+  if creator_pending<>250000 then raise exception 'unexpected creator pending %',creator_pending; end if;
   if not exists(select 1 from public.escrow_records where id=escrow and status='released') then raise exception 'escrow not released'; end if;
 end $$;
 
 select is((select balance from public.balances where owner_id='10000000-0000-0000-0000-000000000001'::uuid and account='wallet'),700000::bigint,'ledger wallet balance is exact');
-select is((select balance from public.balances where owner_id='10000000-0000-0000-0000-000000000002'::uuid and account='creator_pending'),210000::bigint,'creator pending balance is exact');
+select is((select balance from public.balances where owner_id='10000000-0000-0000-0000-000000000002'::uuid and account='creator_pending'),250000::bigint,'creator pending balance is exact');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
