@@ -8,7 +8,7 @@ A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Env
 
 - `a753c31` — `fase-1: pipeline: gate production delivery behind CI`
 - Segundo commit desta fase: correções de reprodutibilidade, configuração, ambiente, CORS e baseline.
-- Tag: `fase-1-concluida` será criada após a publicação do segundo commit.
+- Tag: `fase-1-concluida` criada localmente; a publicação remota está pendente porque a conexão GitHub disponível nesta sessão não expõe criação de refs de tags e o terminal não tem credencial de push.
 
 ## 3. Evidências
 
