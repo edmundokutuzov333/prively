@@ -33,7 +33,23 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
     handle: z.string().optional(),
     ageConfirmed: z.boolean().optional(),
     termsAccepted: z.boolean().optional(),
-    privacyAccepted: z.boolean().optional()
+    privacyAccepted: z.boolean().optional(),
+    age_18: z.boolean().optional(),
+    accept_terms: z.boolean().optional(),
+    commission_rates: z.boolean().optional(),
+    identity_verification: z.boolean().optional(),
+    all_involved_adults_consent: z.boolean().optional(),
+    encounters_not_prively: z.boolean().optional(),
+    prohibited_content: z.boolean().optional(),
+    content_rights: z.boolean().optional(),
+    privacy_sensitive_data: z.boolean().optional(),
+    pending_balance_retention: z.boolean().optional(),
+    no_illegal_use: z.boolean().optional(),
+    no_income_guarantee: z.boolean().optional(),
+    essential_communications: z.boolean().optional(),
+    truthful_information: z.boolean().optional(),
+    suspension_termination: z.boolean().optional(),
+    mozambique_law_maputo_forum: z.boolean().optional()
   }).superRefine((values, ctx) => {
     if (mode === 'signUp' && !values.handle?.match(/^[a-z0-9_]{3,24}$/)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['handle'], message: 'invalid_handle' });
