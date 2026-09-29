@@ -281,21 +281,21 @@ security_checks as (
   union all
   select 'security.live_flag_off_without_provider',
     coalesce((
-      select value=false
+      select value='false'::jsonb
       from public.platform_settings
       where key='feature_flags.live'
     ), true)
   union all
   select 'security.translation_flag_off_without_provider',
     coalesce((
-      select value=false
+      select value='false'::jsonb
       from public.platform_settings
       where key='feature_flags.translation'
     ), true)
   union all
   select 'security.push_flag_off_without_provider',
     coalesce((
-      select value=false
+      select value='false'::jsonb
       from public.platform_settings
       where key='feature_flags.push'
     ), true)
