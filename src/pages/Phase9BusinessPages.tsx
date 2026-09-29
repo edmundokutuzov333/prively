@@ -5,9 +5,10 @@ import { EstadoVazio } from '@/design/EstadoVazio';
 import { Ficha } from '@/design/Ficha';
 import { PageFrame } from '@/pages/PageFrame';
 import { featureFlags } from '@/config/featureFlags';
-import { supabase } from '@/lib/supabase';
+import { supabase, requireSupabase } from '@/lib/supabase';
 import { phase9Edge, phase9Rpc, phase9Rows } from '@/lib/phase9Api';
 import { formatMznFromCents } from '@/lib/money';
+import { useAuth } from '@/app/session';
 
 type Channel = { id: string; display_name: string; handle: string };
 type RequestRow = { id: string; channel_id: string; brief: string; budget: number; status: string; counter_budget: number | null; response_note: string | null; created_at: string };
@@ -325,11 +326,121 @@ export function Phase9AdminBusinessPage() {
 }
 
 export function Phase9CreatorReferralPage() {
-  if (!featureFlags.referral) return <BusinessDisabled title="Referral" body="O módulo existe no backend, mas permanece desligado até a validação económica e operacional prevista para a Fase 9." />;
-  return <PageFrame icon={UsersThree} title="Referral" intro="O referral será activado quando o feature flag e as regras de recompensa estiverem configurados." />;
+  const [code, setCode] = useState('');
+  const [codes, setCodes] = useState<{ id: string; code: string; active: boolean }[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = async () => {
+    try {
+      const rows = await phase9Rows<{ id: string; code: string; active: boolean }>(requireSupabase(), 'referral_codes', 'id,code,active');
+      setCodes(rows);
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : 'Falha ao carregar referral.');
+    }
+  };
+  useEffect(() => { void load(); }, []);
+  const create = async () => {
+    try {
+      if (!code.trim()) throw new Error('Indica um código.');
+      await phase9Rpc('create_referral_code', { _code: code.trim() });
+      setCode('');
+      setNotice('Código criado.');
+      await load();
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : 'Não foi possível criar o código.');
+    }
+  };
+  const redeem = async () => {
+    try {
+      if (!code.trim()) throw new Error('Indica um código.');
+      await phase9Rpc('redeem_referral', { _code: code.trim() });
+      setCode('');
+      setNotice('Referral aplicado.');
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : 'Não foi possível aplicar o referral.');
+    }
+  };
+  return <PageFrame icon={UsersThree} title="Referral" intro="Convites e recompensa são tratados no servidor e ficam associados ao utilizador autenticado.">
+    <ErrorBox message={error} />
+    {notice ? <p role="status" className="text-sm text-ok">{notice}</p> : null}
+    <Ficha className="p-5">
+      <input value={code} onChange={(event) => setCode(event.target.value)} placeholder="Código referral" className="min-h-11 w-full rounded-[2px] bg-ink-800 px-3 text-bone-50" />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Botao onClick={() => void create()}>Criar código</Botao>
+        <Botao variant="outline" onClick={() => void redeem()}>Aplicar código</Botao>
+      </div>
+    </Ficha>
+    <div className="mt-4 grid gap-3">{codes.map((item) => <Ficha key={item.id}><p className="text-bone-50">{item.code}</p><p className="mt-1 text-xs text-bone-500">{item.active ? 'Activo' : 'Inactivo'}</p></Ficha>)}</div>
+  </PageFrame>;
 }
 
 export function Phase9AgencyPage() {
-  if (!featureFlags.agency) return <BusinessDisabled title="Agência" body="O módulo existe no backend com separação de acesso, mas permanece desligado até validação jurídica e operacional." />;
-  return <PageFrame icon={UsersThree} title="Agência" intro="Painel de agência com acesso agregado, sem saldo, payout, credenciais, KYC ou DMs privadas da criadora." />;
+  const { user } = useAuth();
+  const [name, setName] = useState('');
+  const [agencyId, setAgencyId] = useState('');
+  const [agencies, setAgencies] = useState<{ id: string; name: string; status: string }[]>([]);
+  const [members, setMembers] = useState<{ creator_id: string; status: string; commission_rate_bps: number; consent_at: string | null }[]>([]);
+  const [creatorId, setCreatorId] = useState('');
+  const [commission, setCommission] = useState('0');
+  const [error, setError] = useState<string | null>(null);
+  const load = async () => {
+    if (!user) return;
+    try {
+      const sb = requireSupabase();
+      const agencyRows = await sb.from('agencies').select('id,name,status').eq('owner_id', user.id).order('created_at', { ascending: false });
+      if (agencyRows.error) throw agencyRows.error;
+      setAgencies(agencyRows.data ?? []);
+      const current = agencyId || agencyRows.data?.[0]?.id || '';
+      if (current) {
+        setAgencyId(current);
+        const dashboard = await phase9Rpc<unknown[]>('get_agency_dashboard', { _agency: current });
+        setMembers((dashboard ?? []).map((item) => item as { creator_id: string; status: string; commission_rate_bps: number; consent_at: string | null }));
+      }
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : 'Falha ao carregar agência.');
+    }
+  };
+  useEffect(() => { void load(); }, [user]);
+  const create = async () => {
+    try {
+      if (!name.trim()) throw new Error('Indica o nome da agência.');
+      const id = await phase9Rpc<string>('create_agency', { _name: name.trim() });
+      setAgencyId(String(id));
+      setName('');
+      await load();
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : 'Não foi possível criar a agência.');
+    }
+  };
+  const invite = async () => {
+    try {
+      if (!agencyId || !creatorId) throw new Error('Indica a agência e a criadora.');
+      const result = await phase9Rpc('invite_agency_creator', {
+        _agency: agencyId,
+        _creator: creatorId,
+        _commission_rate_bps: Math.max(0, Math.min(10000, Math.round(Number(commission) * 100))),
+        _permissions: { analytics: true, content: true },
+      });
+      void result;
+      await load();
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : 'Não foi possível enviar o convite.');
+    }
+  };
+  return <PageFrame icon={UsersThree} title="Modo agência" intro="A agência só vê o painel agregado autorizado. Dinheiro, levantamentos, palavras-passe, KYC e mensagens privadas permanecem fora do alcance da agência.">
+    <ErrorBox message={error} />
+    <Ficha className="p-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome da agência" className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50" />
+        <select value={agencyId} onChange={(event) => { setAgencyId(event.target.value); void load(); }} className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50"><option value="">Agência</option>{agencies.map((agency) => <option key={agency.id} value={agency.id}>{agency.name}</option>)}</select>
+        <Botao onClick={() => void create()}>Criar agência</Botao>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <input value={creatorId} onChange={(event) => setCreatorId(event.target.value)} placeholder="UUID da criadora" className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50" />
+        <input value={commission} onChange={(event) => setCommission(event.target.value)} inputMode="decimal" placeholder="Comissão %" className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50" />
+        <Botao variant="outline" onClick={() => void invite()} disabled={!agencyId || !creatorId}>Convidar</Botao>
+      </div>
+    </Ficha>
+    <div className="mt-4 grid gap-3">{members.map((member) => <Ficha key={member.creator_id}><p className="text-bone-50">@{member.creator_id.slice(0, 8)}</p><p className="mt-1 text-xs text-bone-500">{member.status} · {member.commission_rate_bps / 100}% · consentimento {member.consent_at ? 'registado' : 'pendente'}</p></Ficha>)}</div>
+  </PageFrame>;
 }
