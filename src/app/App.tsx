@@ -15,6 +15,7 @@ import { RecoveryPage } from '@/pages/RecoveryPage';
 import { VerificationPage } from '@/pages/VerificationPage';
 import { SecuritySettingsPage } from '@/pages/SecuritySettingsPage';
 import { AdminMfaPage } from '@/pages/AdminMfaPage';
+import { FeatureFlagsAdminPage } from '@/pages/FeatureFlagsAdminPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AdminKycPage } from '@/pages/AdminKycPage';
 import { AdminMediaQueuePage } from '@/pages/AdminMediaQueuePage';
@@ -324,7 +325,7 @@ export function App() {
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
           <Route path="/admin/arquivo" element={<Phase8CompliancePage />} />
           <Route path="/admin/config" element={<Phase9AdminBusinessPage />} />
-          <Route path="/admin/feature-flags" element={<Phase9AdminBusinessPage />} />
+          <Route path="/admin/feature-flags" element={<FeatureFlagsAdminPage />} />
           <Route path="/admin/comissoes" element={<Phase9AdminBusinessPage />} />
           <Route path="/admin/selos" element={<Phase9AdminBusinessPage />} />
           <Route path="/admin/presentes" element={<Phase9AdminBusinessPage />} />

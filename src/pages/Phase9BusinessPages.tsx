@@ -5,7 +5,7 @@ import { EstadoVazio } from '@/design/EstadoVazio';
 import { Ficha } from '@/design/Ficha';
 import { PageFrame } from '@/pages/PageFrame';
 
-import { featureFlags } from '@/config/featureFlags';
+import { useFeatureFlags } from '@/features/feature-flags/useFeatureFlags';
 import { supabase, requireSupabase } from '@/lib/supabase';
 import { phase9Edge, phase9Rpc, phase9Rows } from '@/lib/phase9Api';
 import { formatMznFromCents } from '@/lib/money';
@@ -310,7 +310,8 @@ export function Phase9ClientGiftsPage() {
 }
 
 export function Phase9BusinessIntegrationsPage() {
-  const states=[{key:'translation',enabled:featureFlags.translation,label:'Tradução de mensagens'},{key:'ai_response_assistant',enabled:featureFlags.aiResponseAssistant,label:'Assistente de respostas IA'},{key:'auto_captions',enabled:featureFlags.autoCaptions,label:'Legendas automáticas'},{key:'face_blur',enabled:featureFlags.faceBlur,label:'Face blur'},{key:'advanced_media_processing',enabled:featureFlags.advancedMediaProcessing,label:'Processamento avançado de media'},{key:'referral',enabled:featureFlags.referral,label:'Referral'},{key:'agency',enabled:featureFlags.agency,label:'Agência'}];
+  const { flags } = useFeatureFlags();
+  const states=[{key:'translation',enabled:flags.translation,label:'Tradução de mensagens'},{key:'ai_response_assistant',enabled:flags.aiResponseAssistant,label:'Assistente de respostas IA'},{key:'auto_captions',enabled:flags.autoCaptions,label:'Legendas automáticas'},{key:'face_blur',enabled:flags.faceBlur,label:'Face blur'},{key:'advanced_media_processing',enabled:flags.advancedMediaProcessing,label:'Processamento avançado de media'},{key:'referral',enabled:flags.referral,label:'Referral'},{key:'agency',enabled:flags.agency,label:'Agência'}];
   return <PageFrame icon={Sparkle} eyebrow="Control Room · Integrações" title="Integrações condicionadas" intro="Estas superfícies existem com contratos reais, mas ficam desligadas até existirem providers aprovados e secrets válidas."><div className="grid gap-4 md:grid-cols-2">{states.map(s=><Ficha key={s.key}><div className="flex items-start justify-between gap-4"><div><p className="text-bone-50">{s.label}</p><p className="mt-2 text-sm text-bone-400">Flag: {s.enabled?'activa':'desligada'}</p></div><ShieldCheck size={22}/></div><p className="mt-3 text-xs text-bone-500">{s.enabled?'Provider a validar.':'Desligada sem provider certificado.'}</p></Ficha>)}</div></PageFrame>;
 }
 
