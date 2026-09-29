@@ -83,6 +83,7 @@ import {
 import { Phase10ProductionReadinessPage } from '@/pages/Phase10ProductionReadinessPage';
 import { ClientDiscoverCorePage, ClientFeedCorePage, ClientProfileCorePage, ClientPurchasesCorePage, ClientWishlistCorePage, ClientAccountCorePage, ClientLimitsCorePage, ClientDiscreetCorePage, ClientStoriesCorePage } from '@/pages/ClientCorePages';
 import { CreatorSafetyControlsPage } from '@/pages/CreatorSafetyControlsPage';
+import { SupportPage } from '@/pages/SupportPage';
 import {
   Phase9AdminBusinessPage,
   Phase9AgencyPage,
@@ -290,7 +291,7 @@ export function App() {
             <Route path="/estudio/nao-mostrar" element={<CreatorSafetyControlsPage />} />
             <Route path="/estudio/levantamentos" element={<Phase6CreatorEarningsPage />} />
             <Route path="/estudio/recibos" element={<Phase6CreatorEarningsPage />} />
-            <Route path="/estudio/suporte" element={<Phase8EmergenciesPage />} />
+            <Route path="/estudio/suporte" element={<SupportPage />} />
           </Route>
         </Route> : null}
 
@@ -322,8 +323,8 @@ export function App() {
           <Route path="/admin/comissoes" element={<Phase9AdminBusinessPage />} />
           <Route path="/admin/selos" element={<Phase9AdminBusinessPage />} />
           <Route path="/admin/presentes" element={<Phase9AdminBusinessPage />} />
-          <Route path="/admin/suporte" element={<Phase8EmergenciesPage />} />
-          <Route path="/admin/tickets" element={<Phase8EmergenciesPage />} />
+          <Route path="/admin/suporte" element={<SupportPage admin />} />
+          <Route path="/admin/tickets" element={<SupportPage admin />} />
           <Route path="/admin/relatorios" element={<Phase8CompliancePage />} />
         </Route>
 
