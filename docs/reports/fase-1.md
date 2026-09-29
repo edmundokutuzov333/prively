@@ -2,12 +2,13 @@
 
 ## 1. Resumo executivo
 
-A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Environment e checkout do SHA testado. O caminho Vercel duplicado foi removido e as versões de Supabase CLI/Vercel foram fixadas. Foi criado o lockfile, adicionada validação de migrações e todas as 23 Edge Functions passaram a declarar `verify_jwt`. O cliente Supabase passou a usar configuração por ambiente. A baseline JavaScript ficou verde: typecheck, lint, 10 testes, audit e build. O reset local Supabase e as suites SQL continuam por provar porque o ambiente não tem CLI nem Docker.
+A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Environment e checkout do SHA testado. O caminho Vercel duplicado foi removido e as versões de Supabase CLI/Vercel foram fixadas. Foi criado o lockfile, adicionada validação de migrações, corrigido o drift forward-only e todas as 23 Edge Functions passaram a declarar `verify_jwt`. O último quality gate CI passou; o reset do zero passou, mas a suite SQL canónica ainda falha em fixtures/contratos funcionais existentes.
 
 ## 2. Commits e tag
 
 - `a753c31` — `fase-1: pipeline: gate production delivery behind CI`
-- Segundo commit desta fase: correções de reprodutibilidade, configuração, ambiente, CORS e baseline.
+- `ae13cdb`, `b25a0f9`, `9397607c`, `a5ae7a2`, `fa587782`, `b4893f5a`, `3b763104`, `c069eef1`, `00994bca` — foundation, migrações forward-only, flags e reparação de blobs completos.
+- Verificação final no SHA do dono `55db00b`: quality CI verde; `supabase db reset` verde; suite SQL canónica ainda vermelha.
 - Tag: `fase-1-concluida` criada localmente; a publicação remota está pendente porque a conexão GitHub disponível nesta sessão não expõe criação de refs de tags e o terminal não tem credencial de push.
 
 ## 3. Evidências
@@ -18,10 +19,11 @@ A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Env
 - `npm run test`: ✅ 4 ficheiros / 10 testes.
 - `npm run audit:production`: ✅ 72 ficheiros browser / 26 Edge Functions.
 - `npm run build`: ✅; warnings não bloqueantes de bundle grande e comentários em Zod.
-- `npm run check:migrations`: ✅ `156 migrações, sem versões duplicadas (61 marcadores históricos)`.
+- `npm run check:migrations`: ✅ `161 migrações, sem versões duplicadas (61 marcadores históricos)`.
 - `npm run check:supabase-config`: ✅ `23 funções com verify_jwt explícito`.
-- `supabase db reset`: ⚠️ a primeira execução CI falhou em `20260929021500` por falta de `public.comments`/`public.reactions`; foi adicionada a migração `20260929021400_phase7_social_tables.sql` e a reexecução é necessária.
-- `supabase test db`, suites nativas e Playwright: ⚠️ não verificáveis neste host sem Supabase CLI/Docker e sem ambiente E2E preparado.
+- `supabase db reset`: ✅ CI run `36572751842` chegou à suite canónica depois de reconstruir as 161 migrações; dependências históricas ausentes foram restauradas forward-only.
+- `supabase test db`: ❌ 14 ficheiros / 91 testes; falhas em fixture de creator terms, creator pending da fase 3, verificação de criadora/media da fase 5, plano da suite hardening e 4 critérios da fase 7.
+- Suites nativas: ⚠️ não executadas porque `supabase test db` falhou primeiro. Playwright: ⚠️ ainda em execução no momento do fecho deste relatório.
 
 ## 4. Critérios de aceitação da fase
 
@@ -30,11 +32,11 @@ A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Env
 - ✅ `package-lock.json` criado e workflows usam `npm ci`.
 - ✅ CLI Supabase `2.118.0` e Vercel `61.0.0` fixados.
 - ✅ Versões de migração duplicadas eliminadas no checkout local e guarda adicionada ao CI.
-- ⚠️ Reset do zero: primeira tentativa CI falhou por dependência de tabelas sociais ausentes; correção forward-only publicada, reexecução pendente.
+- ✅ Reset do zero: CI confirmou reconstrução até às suites SQL; dependências ausentes foram restauradas por migrações forward-only.
 - ✅ As 23 funções têm `verify_jwt` explícito; webhooks/crons estão `false` para autenticação própria.
 - ✅ Cliente Supabase lê `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - ⚠️ Staging separado: projeto Supabase/Vercel ainda não existe na conta ligada.
-- ⚠️ Flags por BD e `/admin/feature-flags`: existentes parcialmente no repositório, não foram ampliadas nesta contenção de fundação.
+- ⚠️ Flags por BD: RPC pública segura, RPC administrativa auditada, hook React Query (staleTime 60s) e `/admin/feature-flags` foram adicionados; algumas decisões de routing ainda usam defaults estáticos.
 - ⚠️ CORS: wildcard removido e allowlist introduzida; migração completa para passar o `Request` em todos os caminhos fica pendente.
 - ✅ Baseline documentada; README não foi reescrito porque não foram encontrados resíduos `fileciteturn`/`citeturn` no checkout atual.
 
@@ -44,9 +46,9 @@ O scoreboard completo está em `docs/platform-status.md`. O estado global desta 
 
 ## 6. Achados F-xx
 
-- Resolvidos: F-01 (duplicidade local), F-03 (deploy direto), F-04 (lockfile/npm ci/versões fixas), F-05 (configuração explícita), F-11 (env frontend), F-15 (wildcard removido), F-21 (baseline separada/documentada).
-- Adiados: F-02 (histórico remoto divergente exige reset/reconcile com backup), F-12 (fonte única de flags exige RPC/hook/admin), F-23 (dependências não-código).
-- Novos: N-01 host local sem Node 24/CLI/Docker; N-02 Vercel Prively ausente; N-03 staging Supabase ausente; N-04 dependência social ausente na reconstrução local, com correção adicionada.
+- Resolvidos: F-01 (duplicidade local), F-03 (deploy direto), F-04 (lockfile/npm ci/versões fixas), F-05 (configuração explícita), F-11 (env frontend), F-12 (primeira implementação de flags por BD), F-15 (wildcard removido), F-21 (baseline separada/documentada).
+- Adiados: F-02 (histórico remoto divergente exige reset/reconcile com backup), F-23 (dependências não-código).
+- Novos: N-01 host local sem Node 24/CLI/Docker; N-02 Vercel Prively ausente; N-03 staging Supabase ausente; N-04/N-05 dependências históricas ausentes no reset, corrigidas forward-only; N-06 suite SQL canónica com 91 testes e falhas funcionais.
 
 ## 7. UI · UX · CX · SD
 
@@ -57,7 +59,7 @@ O scoreboard completo está em `docs/platform-status.md`. O estado global desta 
 
 ## 8. Riscos e dívida técnica
 
-Sem Docker/CLI não há prova de reconstrução do banco. Ainda não há Vercel Prively nem staging. O CORS ainda precisa receber o `Request` em todos os handlers. A UI mantém algumas páginas grandes e avisos de bundle; providers de media, pagamentos, KYC, push e LiveKit permanecem externos.
+O reset de zero já foi provado no CI, mas as suites SQL ainda não estão verdes. Ainda não há Vercel Prively nem staging. O CORS ainda precisa receber o `Request` em todos os handlers. A UI mantém algumas páginas grandes e avisos de bundle; providers de media, pagamentos, KYC, push e LiveKit permanecem externos.
 
 ## 9. Pedidos ao Dono do Produto
 

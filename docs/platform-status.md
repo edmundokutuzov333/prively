@@ -24,6 +24,6 @@
 | Suporte | PARCIAL | Tickets/schema presentes; operação não verificada | 35 |
 | i18n | PARCIAL | pt-MZ/en/fr existentes; paridade automática ainda não criada | 65 |
 | PWA/Discreto | PARCIAL | PWA compila; PIN seguro ainda não implementado | 45 |
-| CI/CD | REAL·FLAG | CI verde local; Supabase/Docker e Environment reviewer pendentes | 75 |
+| CI/CD | PARCIAL | Quality CI verde e `supabase db reset` verde no run `36572751842`; suite SQL canónica falha; Environment reviewer, Vercel e staging pendentes | 65 |
 | Observabilidade | PARCIAL | health/client-error ativos; alertas e SLO não verificados | 40 |
 | Backups | NÃO VERIFICADO | Não houve recovery drill nesta sessão | 0 |
