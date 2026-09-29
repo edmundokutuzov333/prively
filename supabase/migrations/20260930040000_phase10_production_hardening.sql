@@ -155,7 +155,7 @@ $$;
 insert into public.platform_settings(key,value)
 values
   ('production.launch_enabled','false'::jsonb),
-  ('production.environment','production'::jsonb),
+  ('production.environment','"production"'::jsonb),
   ('production.external_security_tested','false'::jsonb),
   ('production.legal_reviewed','false'::jsonb),
   ('production.terms_published','false'::jsonb),
