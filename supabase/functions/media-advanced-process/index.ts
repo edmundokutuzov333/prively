@@ -24,7 +24,7 @@ Deno.serve(async(req)=>{
     if(!["caption","face_blur","advanced_media"].includes(operation))return json({code:"invalid_operation"},400);
 
     const flagKey=operation==="caption"?"feature_flags.auto_captions":operation==="face_blur"?"feature_flags.face_blur":"feature_flags.advanced_media_processing";
-    const {data:flag}=await client.from("platform_settings").select("value").eq("key",flagKey).maybeSingle();
+    const {data:flag}=await admin.from("platform_settings").select("value").eq("key",flagKey).maybeSingle();
     if(flag?.value!==true)return json({code:"feature_disabled"},503);
     if(!Deno.env.get("MEDIA_PROCESSOR_ENDPOINT"))return json({code:"processor_not_configured"},503);
 
