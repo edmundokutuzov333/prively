@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { PinPad } from '@/design/PinPad';
 import { Ficha } from '@/design/Ficha';
 
@@ -8,7 +8,7 @@ function hashPin(pin: string): Promise<string> {
   );
 }
 
-export function DiscreetGate({ children }: { children: React.ReactNode }) {
+export function DiscreetGate({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState(false);
   const [ready, setReady] = useState(false);
   const [enabled, setEnabled] = useState(false);
