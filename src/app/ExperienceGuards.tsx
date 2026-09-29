@@ -13,6 +13,7 @@ export function ExperienceGuard() {
   const [accountState, setAccountState] = useState<string | null>(null);
   const [selfExcludedUntil, setSelfExcludedUntil] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [creatorTermsAccepted, setCreatorTermsAccepted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -23,14 +24,16 @@ export function ExperienceGuard() {
           setAccountState(null);
           setSelfExcludedUntil(null);
           setKycStatus(null);
+          setCreatorTermsAccepted(false);
           setChecking(false);
         }
         return;
       }
       const sb = requireSupabase();
-      const [rolesResult, securityResult] = await Promise.all([
+      const [rolesResult, securityResult, creatorTermsResult] = await Promise.all([
         sb.from('user_roles').select('role').eq('user_id', user.id),
-        sb.rpc('get_security_overview')
+        sb.rpc('get_security_overview'),
+        sb.rpc('get_creator_terms_status')
       ]);
       if (!active) return;
       setRoles((rolesResult.data ?? []).map((item) => item.role));
@@ -40,6 +43,8 @@ export function ExperienceGuard() {
         setSelfExcludedUntil(state.self_excluded_until ?? null);
         setKycStatus(state.kyc_status ?? null);
       }
+      const creatorTermsStatus = Array.isArray(creatorTermsResult.data) ? creatorTermsResult.data[0] : null;
+      setCreatorTermsAccepted(Boolean(!creatorTermsResult.error && creatorTermsStatus?.accepted));
       setChecking(false);
     };
     void load();
@@ -65,6 +70,10 @@ export function ExperienceGuard() {
 
   if (location.pathname.startsWith('/estudio') && !roles.includes('creator')) {
     return <Navigate to="/estado/acesso-negado" replace />;
+  }
+
+  if (location.pathname.startsWith('/estudio') && !creatorTermsAccepted) {
+    return <Navigate to={'/legal/termos-criadoras?returnTo=' + encodeURIComponent(location.pathname)} replace />;
   }
 
   return <Outlet />;
