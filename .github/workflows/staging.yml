@@ -7,8 +7,35 @@ permissions:
   contents: read
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      supabase_ready: ${{ steps.config.outputs.supabase_ready }}
+      vercel_ready: ${{ steps.config.outputs.vercel_ready }}
+    steps:
+      - id: config
+        env:
+          SUPABASE_STAGING_ACCESS_TOKEN: ${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+          VERCEL_STAGING_TOKEN: ${{ secrets.VERCEL_STAGING_TOKEN }}
+          VERCEL_STAGING_ORG_ID: ${{ secrets.VERCEL_STAGING_ORG_ID }}
+          VERCEL_STAGING_PROJECT_ID: ${{ secrets.VERCEL_STAGING_PROJECT_ID }}
+        run: |
+          if [ -n "$SUPABASE_STAGING_ACCESS_TOKEN" ] && [ -n "$SUPABASE_STAGING_PROJECT_REF" ] && [ -n "$SUPABASE_STAGING_DB_PASSWORD" ]; then
+            echo "supabase_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "supabase_ready=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$VERCEL_STAGING_TOKEN" ] && [ -n "$VERCEL_STAGING_ORG_ID" ] && [ -n "$VERCEL_STAGING_PROJECT_ID" ]; then
+            echo "vercel_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "vercel_ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
   staging-supabase:
-    if: \${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN != '' && secrets.SUPABASE_STAGING_PROJECT_REF != '' }}
+    needs: prepare
+    if: ${{ needs.prepare.outputs.supabase_ready == 'true' }}
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -18,19 +45,20 @@ jobs:
           version: latest
       - name: Link staging project
         env:
-          SUPABASE_ACCESS_TOKEN: \${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: \${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
-          SUPABASE_DB_PASSWORD: \${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
-        run: |
-          test -n "$SUPABASE_DB_PASSWORD"
-          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
       - name: Lint staging migrations
         run: supabase db lint
       - name: Push staging migrations
         run: supabase db push
+      - name: Deploy staging functions
+        run: supabase functions deploy --all
 
   staging-vercel:
-    if: \${{ secrets.VERCEL_STAGING_TOKEN != '' && secrets.VERCEL_STAGING_ORG_ID != '' && secrets.VERCEL_STAGING_PROJECT_ID != '' }}
+    needs: prepare
+    if: ${{ needs.prepare.outputs.vercel_ready == 'true' }}
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -42,7 +70,21 @@ jobs:
       - run: npm run build
       - name: Deploy staging
         env:
-          VERCEL_TOKEN: \${{ secrets.VERCEL_STAGING_TOKEN }}
-          VERCEL_ORG_ID: \${{ secrets.VERCEL_STAGING_ORG_ID }}
-          VERCEL_PROJECT_ID: \${{ secrets.VERCEL_STAGING_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_STAGING_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_STAGING_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STAGING_PROJECT_ID }}
         run: npx vercel@latest deploy --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+
+  staging-status:
+    needs: [prepare, staging-supabase, staging-vercel]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate staging
+        env:
+          SUPABASE_RESULT: ${{ needs.staging-supabase.result }}
+          VERCEL_RESULT: ${{ needs.staging-vercel.result }}
+        run: |
+          if [ "$SUPABASE_RESULT" = "failure" ] || [ "$SUPABASE_RESULT" = "cancelled" ]; then exit 1; fi
+          if [ "$VERCEL_RESULT" = "failure" ] || [ "$VERCEL_RESULT" = "cancelled" ]; then exit 1; fi
+          echo "Staging workflow completed. Unconfigured providers remain explicitly skipped."
