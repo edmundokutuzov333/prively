@@ -12,6 +12,14 @@ import { ReportButton } from '@/features/safety/ReportButton';
 const dt = (value: string) => new Date(value).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
 const toIso = (value: string) => new Date(value).toISOString();
 
+type SafetyIncidentRow = {
+  panic_id: string | null;
+  checkin_id: string | null;
+  panic_created_at: string | null;
+  checkin_alerted_at: string | null;
+  panic_share_location: boolean | null;
+};
+
 export function Phase8MyReportsPage() {
   const { user } = useAuth();
   const { data = [], isLoading } = useQuery({
@@ -318,7 +326,7 @@ export function Phase8SafeVenuesPage() {
 
 export function Phase8EmergenciesPage() {
   const queryClient = useQueryClient();
-  const { data = [], isLoading } = useQuery({
+  const { data = [], isLoading } = useQuery<SafetyIncidentRow[]>({
     queryKey: ['phase8', 'incidents'],
     queryFn: async () => {
       const { data, error } = await requireSupabase().rpc('get_safety_incidents', { _limit: 100 });
@@ -484,6 +492,7 @@ export function Phase8CreatorSafetyPage() {
 export function Phase8CreatorMeetingsPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [channelId, setChannelId] = useState('');
   const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
   const [endsAt, setEndsAt] = useState(() => new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString().slice(0, 16));
   const [areaLabel, setAreaLabel] = useState('');
