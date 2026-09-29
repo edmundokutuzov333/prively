@@ -24,6 +24,7 @@ with checks as (
     not exists(select 1 from public.balances where account='wallet' and balance<0)
   union all select 'rate_limits_table_private',
     (select relrowsecurity from pg_class where oid='public.security_rate_limits'::regclass)
+    and exists(select 1 from pg_policies where schemaname='public' and tablename='security_rate_limits' and policyname='security_rate_limits_client_deny')
     and not has_table_privilege('anon','public.security_rate_limits','SELECT')
     and not has_table_privilege('authenticated','public.security_rate_limits','SELECT')
   union all select 'rate_limit_triggers',
@@ -47,9 +48,10 @@ with checks as (
     not has_function_privilege('authenticated','public.credit_topup(text,text,bigint,text)','EXECUTE')
     and to_regprocedure('public.request_payout(bigint,text,jsonb,text)') is not null
   union all select 'audit_append_only',
-    exists(select 1 from pg_trigger where tgrelid='public.audit_log'::regclass and tgname like '%no_update%')
+    exists(select 1 from pg_trigger where tgrelid='public.audit_log'::regclass and tgname='audit_log_immutable')
   union all select 'client_error_private',
     (select relrowsecurity from pg_class where oid='public.client_error_events'::regclass)
+    and exists(select 1 from pg_policies where schemaname='public' and tablename='client_error_events' and policyname='client_error_events_client_deny')
     and not has_table_privilege('anon','public.client_error_events','SELECT')
   union all select 'production_gate_off',
     coalesce((select value='false'::jsonb from public.platform_settings where key='production.launch_enabled'),false)
@@ -62,7 +64,7 @@ with checks as (
     and to_regprocedure('public.start_call(uuid,text,text)') is not null
   union all select 'phase8_regression_contract',
     to_regprocedure('public.submit_report(text,uuid,text,text)') is not null
-    and to_regprocedure('public.get_safety_incidents(uuid,integer)') is not null
+    and to_regprocedure('public.get_safety_incidents(integer)') is not null
   union all select 'phase9_regression_contract',
     to_regprocedure('public.create_custom_request(uuid,text,bigint,text)') is not null
     and to_regprocedure('public.create_auction_v2(uuid,text,text,bigint,bigint,timestamptz,timestamptz,uuid)') is not null
