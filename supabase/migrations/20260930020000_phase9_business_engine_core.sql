@@ -244,15 +244,6 @@ create index if not exists featured_channels_active_idx
   on public.featured_channels(placement, starts_at, ends_at)
   where status='active';
 
-do $$
-begin
-  alter table public.channels
-    add column if not exists agency_id uuid references public.agencies;
-exception
-  when undefined_table then
-    null;
-end $$;
-
 create table if not exists public.agencies (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles on delete cascade,
@@ -263,14 +254,12 @@ create table if not exists public.agencies (
   updated_at timestamptz not null default now()
 );
 
+alter table public.channels add column if not exists agency_id uuid;
 do $$
 begin
-  alter table public.channels
-    add constraint channels_agency_fk
-    foreign key (agency_id) references public.agencies on delete set null;
+  execute 'alter table public.channels add constraint channels_agency_fk foreign key (agency_id) references public.agencies on delete set null';
 exception
   when duplicate_object then null;
-  when undefined_table then null;
 end $$;
 
 create table if not exists public.agency_members (
