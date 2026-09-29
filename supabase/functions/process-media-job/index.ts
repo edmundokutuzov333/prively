@@ -38,6 +38,18 @@ function optionalEnv(name: string): string | null {
   return Deno.env.get(name) ?? null;
 }
 
+async function hmacHex(body: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function derivativeRoot(asset: Record<string, unknown>): string {
   const storagePath = String(asset.storage_path ?? "");
   const assetId = String(asset.id ?? "");
@@ -127,27 +139,36 @@ async function executeProviderJob(
       ? optionalEnv("MEDIA_SCAN_TOKEN")
       : optionalEnv("MEDIA_PROCESSOR_TOKEN");
 
+  const hmacSecret =
+    jobType === "moderation"
+      ? optionalEnv("MEDIA_SCAN_HMAC_SECRET")
+      : optionalEnv("MEDIA_PROCESSOR_HMAC_SECRET");
+
+  if (!token || !hmacSecret) throw new Error("processor_not_configured");
+
   const sourceUrl = await signedSourceUrl(admin, String(asset.storage_path));
   await auditProcessingRead(admin, String(asset.id), jobType);
 
+  const payload = JSON.stringify({
+    contractVersion: "1",
+    jobId: job.id,
+    assetId: asset.id,
+    jobType,
+    sourceUrl,
+    kind: asset.kind,
+    mimeType: asset.mime_type,
+    fileSizeBytes: asset.file_size_bytes,
+    sha256: asset.sha256,
+    watermarkText: asset.watermark_text,
+  });
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
+      "x-prively-signature": await hmacHex(payload, hmacSecret),
     },
-    body: JSON.stringify({
-      contractVersion: "1",
-      jobId: job.id,
-      assetId: asset.id,
-      jobType,
-      sourceUrl,
-      kind: asset.kind,
-      mimeType: asset.mime_type,
-      fileSizeBytes: asset.file_size_bytes,
-      sha256: asset.sha256,
-      watermarkText: asset.watermark_text,
-    }),
+    body: payload,
   });
 
   if (!response.ok) throw new Error(`processor_http_${response.status}`);
