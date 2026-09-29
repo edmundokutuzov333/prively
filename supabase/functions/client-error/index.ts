@@ -5,7 +5,7 @@ const env=(name:string)=>{const value=Deno.env.get(name);if(!value)throw new Err
 
 const clean=(value:unknown,max:number)=>{
   const text=typeof value==="string"?value:"";
-  return text.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,max);
+  return text.replace(/[\x00-\x1F\x7F]/g," ").trim().slice(0,max);
 };
 
 Deno.serve(async(req)=>{
