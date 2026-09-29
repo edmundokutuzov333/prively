@@ -648,7 +648,7 @@ $$;
 
 create or replace function public.refresh_rankings()
 returns void language plpgsql security definer set search_path=public
-as $$
+as $phase9$
 declare w date:=date_trunc('week',current_date)::date;
 creator_count integer:=0;
 begin
@@ -690,7 +690,7 @@ begin
   where not p.fan_ranking_opt_out;
 
   null;
-end $;
+end $phase9$;
 
 create or replace function public.refresh_creator_analytics()
 returns void language plpgsql security definer set search_path=public
