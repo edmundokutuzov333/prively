@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Auction, ChartLine, Compass, Crown, Gift, Gavel, Package, ShieldCheck, ShoppingBag, Sparkle, Tag, Target, Trophy, UserList, UsersThree } from '@phosphor-icons/react';
+import { ChartLine, Compass, Crown, Gift, Gavel, Package, ShieldCheck, ShoppingBag, Sparkle, Tag, Target, Trophy, UserList, UsersThree } from '@phosphor-icons/react';
 import { Botao } from '@/design/Botao';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { Ficha } from '@/design/Ficha';
 import { PageFrame } from '@/pages/PageFrame';
+
 import { featureFlags } from '@/config/featureFlags';
 import { supabase, requireSupabase } from '@/lib/supabase';
 import { phase9Edge, phase9Rpc, phase9Rows } from '@/lib/phase9Api';
@@ -29,10 +30,6 @@ function ErrorBox({ message }: { message: string | null }) {
 
 function LoadingLine() {
   return <div className="h-px w-24 animate-pulse bg-crimson-500/60" aria-label="A carregar" />;
-}
-
-function BusinessDisabled({ title, body }: { title: string; body: string }) {
-  return <PageFrame icon={ShieldCheck} title={title} intro={body}><Ficha><EstadoVazio title="Funcionalidade não disponível" body={body} /></Ficha></PageFrame>;
 }
 
 export function Phase9ClientRequestsPage() {
