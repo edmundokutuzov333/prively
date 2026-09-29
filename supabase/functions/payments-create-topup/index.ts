@@ -1,13 +1,13 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
 import {
-  amountToCentavos,
   assertHttps,
   nestedString,
   parseProviderJson,
   requiredEnv,
   updateTopup,
 } from "../_shared/payments.ts";
+import { amountUnit, centavosToProviderAmount, providerAmountToCentavos } from "../_shared/money.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return optionsResponse();
@@ -33,7 +33,8 @@ Deno.serve(async (request) => {
       return jsonResponse({ code: "invalid_topup_request" }, 400);
     }
 
-    const amount = Math.round(body.amount * 100);
+    const amount = providerAmountToCentavos(body.amount, 'major');
+    const unit = amountUnit();
     const method = body.method.toLowerCase();
 
     const { data: intent, error: intentError } = await client.rpc("create_topup_intent", {
@@ -84,7 +85,7 @@ Deno.serve(async (request) => {
       },
       body: JSON.stringify({
         reference: topup.internal_reference,
-        amount: topup.amount / 100,
+        amount: centavosToProviderAmount(topup.amount, unit),
         currency: "MZN",
         method: topup.method,
         customer_contact: contact,
@@ -135,10 +136,11 @@ Deno.serve(async (request) => {
       "data.checkoutUrl",
     ]);
 
-    const reportedAmount = amountToCentavos(
+    const reportedAmount = providerAmountToCentavos(
       provider.data && typeof provider.data === "object"
         ? (provider.data as Record<string, unknown>).amount
         : provider.amount,
+      unit,
     );
 
     if (reportedAmount !== null && reportedAmount !== topup.amount) {

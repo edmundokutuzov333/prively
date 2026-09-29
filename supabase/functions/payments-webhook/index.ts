@@ -1,12 +1,12 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { serviceClient } from "../_shared/auth.ts";
 import {
-  amountToCentavos,
   nestedString,
   parseProviderJson,
   requiredEnv,
   verifyHmac,
 } from "../_shared/payments.ts";
+import { amountUnit, providerAmountToCentavos } from "../_shared/money.ts";
 
 function normalizeStatus(value: string | null): "paid" | "failed" | "pending" | "processing" | "cancelled" | "expired" | "reversed" | null {
   const normalized = (value ?? "").toLowerCase();
@@ -18,6 +18,11 @@ function normalizeStatus(value: string | null): "paid" | "failed" | "pending" | 
   if (["reversed", "reversal"].includes(normalized)) return "reversed";
   if (["pending", "created"].includes(normalized)) return "pending";
   return null;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 Deno.serve(async (request) => {
@@ -33,18 +38,10 @@ Deno.serve(async (request) => {
     request.headers.get(eventHeader) ??
     request.headers.get(eventHeader.toLowerCase()) ??
     request.headers.get("x-paysuite-event-id") ??
-    crypto.randomUUID();
+    await sha256Hex(rawBody);
   const headerEvent =
     request.headers.get(eventTypeHeader) ??
     request.headers.get(eventTypeHeader.toLowerCase());
-
-  const secret = requiredEnv("PAYSUITE_WEBHOOK_SECRET");
-  const mode = (Deno.env.get("PAYSUITE_HMAC_MODE") ?? "raw") as "raw" | "timestamp.raw";
-
-  const signatureValid = await verifyHmac(rawBody, signature, secret, mode);
-  if (!signatureValid) {
-    return jsonResponse({ code: "invalid_signature" }, 401);
-  }
 
   let payload: Record<string, unknown>;
   try {
@@ -59,6 +56,18 @@ Deno.serve(async (request) => {
     "unknown";
 
   const admin = serviceClient();
+  let amountUnitValue: ReturnType<typeof amountUnit>;
+  try {
+    const secret = requiredEnv("PAYSUITE_WEBHOOK_SECRET");
+    const mode = (Deno.env.get("PAYSUITE_HMAC_MODE") ?? "raw") as "raw" | "timestamp.raw";
+    const signatureResult = await verifyHmac(rawBody, signature, secret, mode);
+    if (!signatureResult.valid) return jsonResponse({ code: "invalid_signature" }, 401);
+    if (mode === "timestamp.raw" && (!signatureResult.timestamp || Math.abs(Math.floor(Date.now() / 1000) - signatureResult.timestamp) > 300)) return jsonResponse({ code: "signature_expired" }, 401);
+    amountUnitValue = amountUnit();
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "provider_not_configured";
+    return jsonResponse({ code }, code.startsWith('missing_env:') ? 503 : 401);
+  }
 
   const { data: existingEvent, error: existingEventError } = await admin
     .from("payment_webhook_events")
@@ -168,10 +177,10 @@ Deno.serve(async (request) => {
     }
 
     if (!providerRef) throw new Error("topup_reference_missing");
-    const amount = amountToCentavos(
+    const amount = providerAmountToCentavos(
       data.amount ?? data.value ?? payload.amount ?? payload.value,
+      amountUnitValue,
     );
-    if (amount === null) throw new Error("topup_amount_missing");
     if (!status) throw new Error("topup_status_unknown");
 
     const { error: rpcError } = await admin.rpc("credit_topup", {
@@ -192,13 +201,13 @@ Deno.serve(async (request) => {
     return jsonResponse({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "webhook_processing_failed";
-
-    await admin
-      .from("payment_webhook_events")
-      .update({ status: "failed", error_message: message })
-      .eq("provider", "paysuite")
-      .eq("event_id", eventId);
-
+    const permanent = ["unknown_topup", "amount_mismatch", "unsupported_topup_status", "topup_reference_missing", "topup_amount_missing", "topup_status_unknown", "invalid_amount_format", "invalid_amount", "payout_not_found", "payout_reference_missing"].some((code) => message.includes(code));
+    if (permanent) {
+      await admin.from("payment_webhook_events").update({ status: "quarantined", error_message: message }).eq("provider", "paysuite").eq("event_id", eventId);
+      await admin.from('financial_alerts').insert({ kind: 'payment_webhook_quarantined', severity: 'high', message, metadata: { eventId, providerRef } });
+      return jsonResponse({ ok: true, quarantined: true });
+    }
+    await admin.from("payment_webhook_events").update({ status: "failed", error_message: message }).eq("provider", "paysuite").eq("event_id", eventId);
     return jsonResponse({ code: message }, 500);
   }
 });

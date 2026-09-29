@@ -39,20 +39,6 @@ export function nestedString(body: Record<string, unknown>, paths: string[]): st
   return null;
 }
 
-export function amountToCentavos(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Number.isInteger(value) ? value : Math.round(value * 100);
-  }
-  if (typeof value === "string" && value.trim()) {
-    const normalized = value.replace(",", ".").trim();
-    const parsed = Number(normalized);
-    if (Number.isFinite(parsed)) {
-      return normalized.includes(".") ? Math.round(parsed * 100) : parsed;
-    }
-  }
-  return null;
-}
-
 function toHex(bytes: ArrayBuffer): string {
   return [...new Uint8Array(bytes)]
     .map((value) => value.toString(16).padStart(2, "0"))
@@ -75,12 +61,13 @@ export async function verifyHmac(
   headerValue: string,
   secret: string,
   mode: "raw" | "timestamp.raw" = "raw",
-): Promise<boolean> {
-  if (!headerValue) return false;
+): Promise<{ valid: boolean; timestamp: number | null }> {
+  if (!headerValue) return { valid: false, timestamp: null };
 
   let supplied = headerValue.trim();
   let payload = rawBody;
 
+  let parsedTimestamp: number | null = null;
   if (supplied.includes(",")) {
     const parts = Object.fromEntries(
       supplied.split(",").map((part) => {
@@ -89,6 +76,7 @@ export async function verifyHmac(
       }),
     );
     const timestamp = parts.t ?? parts.timestamp;
+    parsedTimestamp = timestamp && /^\d+$/.test(timestamp) ? Number(timestamp) : null;
     const signature = parts.v1 ?? parts.sig ?? parts.signature;
     if (signature) supplied = signature;
     if (timestamp && mode === "timestamp.raw") payload = `${timestamp}.${rawBody}`;
@@ -102,7 +90,7 @@ export async function verifyHmac(
     ["sign"],
   );
   const digest = toHex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
-  return safeEqual(digest, supplied);
+  return { valid: safeEqual(digest, supplied), timestamp: parsedTimestamp };
 }
 
 export async function updateTopup(
