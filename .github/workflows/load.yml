@@ -7,8 +7,24 @@ permissions:
   contents: read
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.config.outputs.ready }}
+    steps:
+      - id: config
+        env:
+          PRIVELY_LOAD_BASE_URL: ${{ secrets.PRIVELY_LOAD_BASE_URL }}
+        run: |
+          if [ -n "$PRIVELY_LOAD_BASE_URL" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
   load:
-    if: \${{ secrets.PRIVELY_LOAD_BASE_URL != '' }}
+    needs: prepare
+    if: ${{ needs.prepare.outputs.ready == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,5 +33,17 @@ jobs:
         uses: grafana/setup-k6-action@v1
       - name: Run 200 user smoke load
         env:
-          BASE_URL: \${{ secrets.PRIVELY_LOAD_BASE_URL }}
+          BASE_URL: ${{ secrets.PRIVELY_LOAD_BASE_URL }}
         run: k6 run -e BASE_URL="$BASE_URL" tests/load/k6.js
+
+  load-status:
+    needs: [prepare, load]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate load workflow
+        env:
+          LOAD_RESULT: ${{ needs.load.result }}
+        run: |
+          if [ "$LOAD_RESULT" = "failure" ] || [ "$LOAD_RESULT" = "cancelled" ]; then exit 1; fi
+          echo "Load workflow completed. A 200 VU run is skipped until PRIVELY_LOAD_BASE_URL is configured."
