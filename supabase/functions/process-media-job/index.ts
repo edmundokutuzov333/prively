@@ -1,6 +1,39 @@
 import { createSHA256 } from "npm:hash-wasm@4.12.0";
-import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
-import { requireUser, serviceClient } from "../_shared/auth.ts";
+import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin":"*",
+  "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods":"POST, OPTIONS",
+};
+function jsonResponse(body: unknown,status=200): Response {
+  return new Response(JSON.stringify(body),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
+}
+function optionsResponse(): Response {
+  return new Response("ok",{headers:corsHeaders});
+}
+function env(name:string): string {
+  const value=Deno.env.get(name);
+  if(!value) throw new Error(`missing_env:${name}`);
+  return value;
+}
+function userClient(request:Request): SupabaseClient {
+  return createClient(env("SUPABASE_URL"),env("SUPABASE_ANON_KEY"),{
+    global:{headers:{Authorization:request.headers.get("Authorization")??""}},
+    auth:{persistSession:false,autoRefreshToken:false},
+  });
+}
+async function requireUser(request:Request):Promise<{client:SupabaseClient;user:User}> {
+  const client=userClient(request);
+  const {data,error}=await client.auth.getUser();
+  if(error||!data.user) throw new Error("unauthorized");
+  return {client,user:data.user};
+}
+function serviceClient():SupabaseClient {
+  return createClient(env("SUPABASE_URL"),env("SUPABASE_SERVICE_ROLE_KEY"),{
+    auth:{persistSession:false,autoRefreshToken:false},
+  });
+}
 
 function env(name: string, required = true): string | null {
   const value = Deno.env.get(name);
