@@ -12,6 +12,7 @@ import { formatMznFromCents } from '@/lib/money';
 import { featureFlags } from '@/config/featureFlags';
 import { getVapidPublicKey, registerPushForCurrentUser } from '@/lib/push';
 import { PageFrame } from '@/pages/PageFrame';
+import { ReportButton } from '@/features/safety/ReportButton';
 
 const PRIVACY_NOTICE = 'As tuas conversas são privadas. Ficam protegidas com cifragem em trânsito e em repouso, e no dia-a-dia só as pessoas na conversa as vêem. Para segurança e cumprimento da lei, a equipa de moderação pode analisar conteúdo denunciado ou sinalizado, e a Prively pode ser obrigada a partilhar dados com as autoridades.';
 
@@ -145,6 +146,7 @@ function MessageBubble({
       <div className="mt-2 flex items-center justify-end gap-2 text-[11px] text-bone-500">
         <span>{new Date(message.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
         {own ? <span>{message.read_at ? 'Visto' : 'Enviado'}</span> : null}
+        {!own ? <ReportButton targetType="message" targetId={message.id} label="Denunciar mensagem" /> : null}
       </div>
     </div>
   </div>;
