@@ -20,9 +20,9 @@ create or replace function public._apply_promotion(
 language plpgsql security definer set search_path=public
 as $$
 declare p public.promotions;
-declare used_count bigint;
-declare total_used bigint;
-declare discount bigint;
+used_count bigint;
+total_used bigint;
+discount bigint;
 begin
   if nullif(trim(_code),'') is null then
     return;
@@ -370,7 +370,7 @@ begin
   from public._apply_promotion(b.channel_id,_promotion_code,auth.uid(),b.price,'bundle') p;
 
   final_price:=b.price-coalesce(discount,0);
-  txn:=public._spend_on_channel(auth.uid(),b.channel_id,final_price,'bundle','bundle',b.id,'bundle:'||b.id::text||':'||coalesce(_idem,crypto_random_uuid()::text));
+  txn:=public._spend_on_channel(auth.uid(),b.channel_id,final_price,'bundle','bundle',b.id,'bundle:'||b.id::text||':'||coalesce(_idem,gen_random_uuid()::text));
   insert into public.bundle_purchases(id,buyer_id,bundle_id,price_paid,txn_id,discount_amount,promotion_id)
     values(id,auth.uid(),b.id,final_price,txn,coalesce(discount,0),promo_id);
 
@@ -416,7 +416,7 @@ create or replace function public.create_order_v2(
 ) returns uuid language plpgsql security definer set search_path=public
 as $$
 declare row_item jsonb; p public.products; oid uuid; channel uuid; subtotal bigint:=0; total bigint; qty integer;
-declare promo_id uuid; discount bigint:=0; promo record; eid uuid;
+promo_id uuid; discount bigint:=0; promo record; eid uuid;
 begin
   if not public.is_age_verified(auth.uid()) then raise exception 'age_not_verified'; end if;
   if jsonb_typeof(_items)<>'array' or jsonb_array_length(_items)=0 then raise exception 'order_items_required'; end if;
@@ -498,8 +498,8 @@ create or replace function public.release_due_business_escrows()
 returns integer language plpgsql security definer set search_path=public
 as $$
 declare e public.escrow_records; released_count integer:=0;
-declare hold_hours integer:=coalesce((select (value#>>'{}')::integer from public.platform_settings where key='hold_hours'),72);
-declare ready boolean;
+hold_hours integer:=coalesce((select (value#>>'{}')::integer from public.platform_settings where key='hold_hours'),72);
+ready boolean;
 begin
   for e in
     select * from public.escrow_records
@@ -611,7 +611,7 @@ create or replace function public.purchase_badge(_badge uuid,_idem text)
 returns uuid language plpgsql security definer set search_path=public
 as $$
 declare b public.badges; txn uuid; id uuid:=gen_random_uuid();
-declare platform constant uuid:='00000000-0000-0000-0000-000000000000';
+platform constant uuid:='00000000-0000-0000-0000-000000000000';
 begin
   select * into b from public.badges where id=_badge and active and price is not null for update;
   if not found then raise exception 'badge_not_purchasable'; end if;
@@ -650,7 +650,7 @@ create or replace function public.refresh_rankings()
 returns void language plpgsql security definer set search_path=public
 as $$
 declare w date:=date_trunc('week',current_date)::date;
-declare creator_count integer:=0;
+creator_count integer:=0;
 begin
   delete from public.creator_rankings_weekly where week_start=w;
   with metrics as (
@@ -893,7 +893,7 @@ create or replace function public.purchase_premium_feature(_feature uuid,_channe
 returns uuid language plpgsql security definer set search_path=public
 as $$
 declare f public.premium_features; txn uuid:=gen_random_uuid(); id uuid:=gen_random_uuid(); ends timestamptz;
-declare platform constant uuid:='00000000-0000-0000-0000-000000000000';
+platform constant uuid:='00000000-0000-0000-0000-000000000000';
 begin
   select * into f from public.premium_features where id=_feature and active for update;
   if not found then raise exception 'premium_feature_unavailable'; end if;
@@ -906,10 +906,10 @@ begin
   if not public.is_age_verified(auth.uid()) then raise exception 'age_not_verified'; end if;
   perform public.assert_spend_limit(auth.uid(),f.price);
   insert into public.idempotency_keys(owner_id,key,txn_id)
-    values(auth.uid(),'premium:'||f.id::text||':'||coalesce(_idem,crypto_random_uuid()::text),txn)
+    values(auth.uid(),'premium:'||f.id::text||':'||coalesce(_idem,gen_random_uuid()::text),txn)
     on conflict(owner_id,key) do nothing;
   select txn_id into txn from public.idempotency_keys
-    where owner_id=auth.uid() and key='premium:'||f.id::text||':'||coalesce(_idem,crypto_random_uuid()::text);
+    where owner_id=auth.uid() and key='premium:'||f.id::text||':'||coalesce(_idem,gen_random_uuid()::text);
   insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id,metadata)
   values
     (txn,'wallet',auth.uid(),-f.price,'premium','premium_feature',f.id,jsonb_build_object('feature',f.code,'channel_id',_channel)),
