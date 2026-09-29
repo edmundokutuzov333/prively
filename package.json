@@ -12,7 +12,10 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "vercel:build": "npm run build"
+    "vercel:build": "npm run build",
+    "audit:production": "node scripts/production-audit.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@fontsource/instrument-serif": "^5.2.5",
@@ -53,7 +56,9 @@
     "vite-plugin-pwa": "^1.0.3",
     "vitest": "^3.2.4",
     "workbox-core": "^7.3.0",
-    "workbox-precaching": "^7.3.0"
+    "workbox-precaching": "^7.3.0",
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
   },
   "engines": {
     "node": ">=24 <25"
