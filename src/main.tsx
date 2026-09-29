@@ -23,7 +23,8 @@ const queryClient = new QueryClient({
 
 createRoot(rootElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <ProductionErrorBoundary>
+      <QueryClientProvider client={queryClient}>
       <App />
       </QueryClientProvider>
     </ProductionErrorBoundary>
