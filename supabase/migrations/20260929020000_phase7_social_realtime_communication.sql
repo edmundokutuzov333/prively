@@ -165,6 +165,31 @@ revoke all on function public.can_view_post(uuid,uuid) from public,anon,authenti
 revoke all on function public.can_view_post(uuid) from public,anon,authenticated;
 grant execute on function public.can_view_post(uuid) to authenticated;
 
+
+create or replace function public.notify_user(
+  _user uuid,
+  _kind text,
+  _payload jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=public
+as $phase7_notify$
+declare
+  n uuid:=gen_random_uuid();
+begin
+  if _user is null then
+    return null;
+  end if;
+
+  insert into public.notifications(id,user_id,kind,payload)
+  values(n,_user,_kind,coalesce(_payload,'{}'::jsonb));
+
+  return n;
+end;
+$phase7_notify$;
+
 -- ---------------------------------------------------------------------------
 -- Client-safe RPC surface
 -- UI mutates through guarded RPCs. Internal helpers remain server-only.
