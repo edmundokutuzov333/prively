@@ -429,12 +429,12 @@ Após o hardening:
 Ainda existem avisos explícitos e conhecidos:
 - extension_in_public: 1
 - auth_leaked_password_protection: 1
-- authenticated_security_definer_function_executable: 146
+- authenticated_security_definer_function_executable: 153
 - multiple_permissive_policies: 72
 - unindexed_foreign_keys: 55
-- unused_index: 123
+- unused_index: 130
 
-Os 146 SECURITY DEFINER correspondem sobretudo a RPCs autenticados intencionalmente, com search_path definido e autorização server-side. Os 72 avisos de policies permissivas resultam principalmente da camada histórica de acesso administrativo que ainda suporta o Control Room. Estes avisos não foram mascarados nem convertidos artificialmente em OK. A lista de exceções está documentada em docs/production-security-exceptions.md.
+Os 153 SECURITY DEFINER correspondem sobretudo a RPCs autenticados intencionalmente, com search_path definido e autorização server-side. Os RPCs SECURITY DEFINER anteriormente executáveis como anon foram endurecidos e o advisor já não reporta esse finding. Os 72 avisos de policies permissivas resultam principalmente da camada histórica de acesso administrativo que ainda suporta o Control Room. Estes avisos não foram mascarados nem convertidos artificialmente em OK. A lista de exceções está documentada em docs/production-security-exceptions.md.
 
 ### Deploy
 
