@@ -13,7 +13,11 @@ export const featureFlags = {
   translation: false,
   live: false,
   meetings: false,
-  moderation: false,
+  moderation: true,
+  aiModeration: false,
+  meetings: true,
+  safetyAlerts: false,
+  dmca: true,
   agency: false
 } as const;
 
