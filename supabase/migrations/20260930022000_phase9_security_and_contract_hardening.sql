@@ -135,8 +135,8 @@ create or replace function public.purchase_premium_feature(
 ) returns uuid language plpgsql security definer set search_path=public
 as $$
 declare f public.premium_features; txn uuid; id uuid:=gen_random_uuid(); ends timestamptz; idem_key text;
-declare platform constant uuid:='00000000-0000-0000-0000-000000000000';
-declare existing_txn uuid; existing_id uuid;
+platform constant uuid:='00000000-0000-0000-0000-000000000000';
+existing_txn uuid; existing_id uuid;
 begin
   select * into f from public.premium_features where id=_feature and active for update;
   if not found then raise exception 'premium_feature_unavailable'; end if;
