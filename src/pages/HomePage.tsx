@@ -85,7 +85,7 @@ export function HomePage() {
 
           <div className="relative mx-auto w-full max-w-xl">
             <motion.div
-              initial={{ opacity: 0, y: reduced ? 0 : 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduced ? 0.12 : 0.8, delay: 0.08 }}
               className="relative min-h-[28rem] overflow-hidden rounded-[4px] border border-bone-50/10 bg-ink-900 shadow-[0_30px_100px_hsl(var(--ink-950)/.55)]"
