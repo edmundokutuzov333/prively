@@ -84,7 +84,6 @@ const creatorProtectedRoutes = [
   '/estudio/actividades',
   '/estudio/agenda-avancada',
   '/estudio/metas',
-  '/estudio/referral',
   '/estudio/promocoes',
   '/estudio/integracoes',
   '/estudio/definicoes',
@@ -105,6 +104,17 @@ const creatorProtectedRoutes = [
   '/estudio/suporte',
 ];
 
+
+const disabledProviderRoutes = [
+  '/estudio/referral',
+  '/admin/agencia',
+  '/lives',
+  '/live-privada',
+  '/chamadas',
+  '/estudio/lives',
+  '/estudio/chamadas',
+];
+
 const adminRoutes = [
   '/admin',
   '/admin/utilizadores',
@@ -117,7 +127,6 @@ const adminRoutes = [
   '/admin/emergencias',
   '/admin/negocio',
   '/admin/integracoes-negocio',
-  '/admin/agencia',
   '/admin/production',
   '/admin/auditoria',
   '/admin/arquivo',
@@ -158,6 +167,13 @@ test.describe('platform route contract', () => {
     test(`admin route is protected: ${route}`, async ({ page }) => {
       await page.goto(route);
       await expect(page).toHaveURL(/\/admin\/entrar|\/estado\/acesso-negado/);
+    });
+  }
+
+  for (const route of disabledProviderRoutes) {
+    test(`disabled external-provider route stays hidden: ${route}`, async ({ page }) => {
+      await page.goto(route);
+      await expect(page).toHaveURL(/\/404$/);
     });
   }
 
