@@ -1,4 +1,47 @@
-import { requireUser, serviceClient } from "../_shared/auth.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+function env(name: string): string {
+  const value = Deno.env.get(name);
+  if (!value) throw new Error("missing_env:" + name);
+  return value;
+}
+
+export function serviceClient() {
+  return createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+export async function requireUser(request: Request) {
+  const client = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), {
+    global: { headers: { Authorization: request.headers.get("Authorization") ?? "" } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.getUser();
+  if (error || !data.user) throw new Error("unauthorized");
+  return { client, user: data.user };
+}
+
+export const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Content-Type": "application/json",
+    },
+  });
+
+export const optionsResponse = () =>
+  new Response("ok", {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+    },
+  });
+\nimport { requireUser, serviceClient } from "../_shared/auth.ts";
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 
 async function signBody(body: string, secret: string): Promise<string> {
