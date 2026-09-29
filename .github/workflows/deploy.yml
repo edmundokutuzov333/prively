@@ -1,0 +1,73 @@
+name: Prively Production Delivery
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-supabase:
+    if: \${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.SUPABASE_PROJECT_REF != '' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link production project
+        env:
+          SUPABASE_ACCESS_TOKEN: \${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: \${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: \${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "SUPABASE_DB_PASSWORD is required for a production migration push."
+            exit 1
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Validate migrations
+        run: supabase db lint
+      - name: Push migrations
+        run: supabase db push
+      - name: Record deployment metadata
+        run: echo "Supabase migration deployment completed for $SUPABASE_PROJECT_REF"
+
+  deploy-vercel:
+    if: \${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build
+        run: npm run build
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: \${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: \${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+
+  post-deploy-health:
+    if: \${{ secrets.PRIVELY_HEALTH_URL != '' }}
+    needs: [deploy-supabase, deploy-vercel]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Health check
+        env:
+          PRIVELY_HEALTH_URL: \${{ secrets.PRIVELY_HEALTH_URL }}
+        run: curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 20 "$PRIVELY_HEALTH_URL"
