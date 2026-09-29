@@ -41,7 +41,8 @@ export const optionsResponse = () =>
       "Access-Control-Allow-Methods": "POST, OPTIONS",
     },
   });
-\nimport { requireUser, serviceClient } from "../_shared/auth.ts";
+
+import { requireUser, serviceClient } from "../_shared/auth.ts";
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 
 async function signBody(body: string, secret: string): Promise<string> {
