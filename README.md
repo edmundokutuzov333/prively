@@ -148,9 +148,70 @@ Ainda dependem de configuração externa real:
 - origem oficial de FX;
 - OTP telefónico específico para levantamentos, que não existia nas fases anteriores e não foi fingido como implementado.
 
+## Fase 8 · Safety, Moderation & Trust
+
+A Fase 8 foi implementada na `main` com backend real e sem transformar encontros sociais em produto monetário. O documento define Reports, fila de moderação, IA e moderação humana, Appeals, Audit Trail, Compliance Access, Admin Access Log, Safety Check-in, Trusted Contacts, Panic Button, Meeting Availability, Meeting Requests, Safe Venues, Location Expiry, Emergency Alerts, DMCA, Anti-leak, Watermark Tracking e Legal Holds. fileciteturn172file0L691-L751
+
+### Moderação
+- `reports` recebe denúncias de perfil, post, mensagem, comentário, media e encontro, com prioridade server-side para categorias críticas.
+- `moderation_queue` e `moderation_actions` formam a fila operacional e o trilho de decisões humanas.
+- `submit_appeal()` permite recurso após decisão e mantém o caso auditável.
+- `moderation-scan` é uma Edge Function real. Só chama fornecedor externo quando `feature_flags.ai_moderation=true` e as secrets do provider existem. Sem provider não inventa classificação.
+- Conteúdo sinalizado pela IA pode ser removido/blocked automaticamente e fica disponível para decisão humana posterior.
+
+### Compliance View e auditoria
+- `audit_log` é append-only e tem hash chain entre eventos.
+- `admin_access_log` regista quem acedeu a conteúdo privado, o alvo, o tipo de acesso, o motivo e a aprovação secundária.
+- `compliance_access_requests` exige motivo escrito, expiração de 30 minutos e segunda pessoa para DMs quando não existe ordem judicial.
+- `compliance_read_message()` só funciona com um access request aprovado e gera novo evento no audit log.
+- Policies administrativas genéricas foram removidas das superfícies sensíveis da Fase 7 e a Fase 8 mantém essa fronteira.
+
+### Segurança física
+- `trusted_contacts`, `safety_checkins`, `panic_events` e `safety_location_shares` foram implementados com RLS.
+- A localização é opcional e expira/purga automaticamente depois de 24 horas.
+- `safety-alert-dispatch` notifica o suporte dentro da plataforma e integra contactos externos através de webhook HMAC quando o provider de segurança estiver configurado.
+- O sistema nunca apresenta uma notificação falsa de SMS enviado. Sem provider, o estado é `not_configured`.
+- O painel de Emergências lê incidentes através de RPC server-side e permite resolução auditada.
+
+### Encontros sociais
+A especificação determina explicitamente a separação entre encontro social e transacção. fileciteturn172file0L737-L751
+
+- `availability_slots` fornece janelas de disponibilidade.
+- `meeting_requests` permite pedido, aceitação, recusa, cancelamento e expiração.
+- `safe_venues` aceita apenas `cafe`, `restaurante` e `centro_comercial`.
+- `meeting_requests`, `availability_slots` e `safe_venues` não têm campos de preço, pagamento, comissão ou escrow.
+- Não existem hotéis ou alojamentos neste módulo.
+- O pedido de encontro continua ligado ao DM normal e não cria qualquer transacção financeira.
+
+### DMCA e anti-leak
+- `dmca_requests` recebe pedidos públicos de remoção com validação básica e fila jurídica/moderação.
+- `legal_holds` bloqueia retenção de evidência até libertação explícita pela conformidade.
+- `watermark_events` regista a utilização da marca de água por asset, utilizador, contexto e token hash.
+- A plataforma mantém a dissuasão e rastreabilidade, sem prometer bloqueio de screenshots. Isso está alinhado com a regra da especificação. fileciteturn172file0L1154-L1156
+
+### UI/UX/CX/SD
+- As rotas de cliente incluem `Encontros sociais` e `Denúncias`.
+- A criadora tem `Segurança`, `Check-in`, `Pânico` e `Encontros sociais` funcionais.
+- Admin tem `Moderação`, `Conformidade`, `Legal Holds`, `Locais seguros` e `Emergências`.
+- Perfil, post e mensagem têm acção de denúncia real ligada ao backend.
+- O DMCA público usa formulário real, não placeholder.
+- As cópias respeitam o tom pt-MZ do documento e evitam promessas falsas de segurança. fileciteturn172file0L1031-L1108
+
+### Testes e regressão
+- `supabase/tests/database/phase8_safety_moderation_meetings_test.sql`: **16/16 critérios aprovados** directamente no projecto Supabase.
+- `supabase/tests/database/phase7_social_realtime_test.sql`: **24/24 critérios aprovados** novamente depois da Fase 8.
+- Regressão do núcleo financeiro confirmou ledger, balances, topups, payouts, escrow e os contratos públicos/internos sem alterações indevidas.
+- O hardening final removeu execução pública de helpers internos da Fase 8 e corrigiu policies e índices que afectavam `moderation_scans` e `financial_audit_log`.
+
+### Integrações externas ainda condicionadas
+- IA de moderação: `feature_flags.ai_moderation=false` até existir provider aprovado e secrets configuradas.
+- Alertas SMS/contactos: `feature_flags.safety_alerts=false` até existir provider/webhook seguro.
+- LiveKit, Push e tradução continuam controlados pelas flags das fases anteriores quando as credenciais externas não estão disponíveis.
+- O código não apresenta nenhuma destas integrações como activa enquanto o provider real não estiver configurado.
+
 ## Próxima fase
 
-A Fase 6 começa no núcleo financeiro real: wallet, ledger append-only, partidas dobradas, idempotência, subscriptions, refunds, escrow, payouts, FX e os adaptadores reais de pagamento previstos pela especificação. O trabalho financeiro não deve começar a partir de saldos simulados.
+A próxima fase é a **Fase 9, Business Engine & Advanced Monetization**, que deve reaproveitar os contratos de segurança, social, meetings e compliance já estabilizados. A especificação posiciona aqui Custom Requests, Escrow, Auctions, Anti-sniping, Bundles, Promotions, Gifts, Product Store, Orders, Giveaways, Loyalty, Rankings, Creator Analytics, Fan CRM, Goals, Referral, Agency, Premium Features, Recommendation Engine, Translation, AI Response Assistant, Auto Captions, Face Blur e processamento avançado. fileciteturn172file0L753-L823
 
 ## Validação antes de produção pública
 
