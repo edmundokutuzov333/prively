@@ -1,10 +1,10 @@
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { createClient from "npm:@supabase/supabase-js@2";
 
 const cors={ "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods":"POST, OPTIONS" };
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const env=(n:string)=>{const v=Deno.env.get(n);if(!v)throw new Error("missing_env:"+n);return v;};
 const b64=(bytes:Uint8Array)=>{let s="";for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(s);};
-const decodeKey=(value:string)=>{try{const raw=Uint8Array.from(atob(value),c=>c.charCodeAt(0));if(raw.length===32)return raw;}catch{};const raw=new TextEncoder().encode(value);if(raw.length!==32)throw new Error("shipping_key_invalid");return raw;};
+const decodeKey=(value:string)=>{try{const raw=Uint8Array.from(atob(value),c=>c.charCodeAt(0));if(raw.length===32)return raw;}catch{/* invalid base64, fall back to raw key */};const raw=new TextEncoder().encode(value);if(raw.length!==32)throw new Error("shipping_key_invalid");return raw;};
 const userClient=(token:string)=>createClient(env("SUPABASE_URL"),env("SUPABASE_ANON_KEY"),{global:{headers:{Authorization:token}},auth:{persistSession:false,autoRefreshToken:false}});
 const serviceClient=()=>createClient(env("SUPABASE_URL"),env("SUPABASE_SERVICE_ROLE_KEY"),{auth:{persistSession:false,autoRefreshToken:false}});
 
