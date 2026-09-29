@@ -35,10 +35,8 @@ function serviceClient():SupabaseClient {
   });
 }
 
-function env(name: string, required = true): string | null {
-  const value = Deno.env.get(name);
-  if (!value && required) throw new Error(`missing_env:${name}`);
-  return value ?? null;
+function optionalEnv(name: string): string | null {
+  return Deno.env.get(name) ?? null;
 }
 
 function derivativeRoot(asset: Record<string, unknown>): string {
@@ -120,15 +118,15 @@ async function executeProviderJob(
   const jobType = String(job.job_type);
   const endpoint =
     jobType === "moderation"
-      ? env("MEDIA_SCAN_ENDPOINT", false)
-      : env("MEDIA_PROCESSOR_ENDPOINT", false);
+      ? optionalEnv("MEDIA_SCAN_ENDPOINT")
+      : optionalEnv("MEDIA_PROCESSOR_ENDPOINT");
 
   if (!endpoint) throw new Error("processor_not_configured");
 
   const token =
     jobType === "moderation"
-      ? env("MEDIA_SCAN_TOKEN", false)
-      : env("MEDIA_PROCESSOR_TOKEN", false);
+      ? optionalEnv("MEDIA_SCAN_TOKEN")
+      : optionalEnv("MEDIA_PROCESSOR_TOKEN");
 
   const sourceUrl = await signedSourceUrl(admin, String(asset.storage_path));
   await auditProcessingRead(admin, String(asset.id), jobType);
