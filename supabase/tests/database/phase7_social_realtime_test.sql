@@ -76,9 +76,9 @@ select ok(
 );
 
 select ok(
-  not has_function_privilege('authenticated','public.credit_topup(text,text,bigint)','EXECUTE')
-  and not has_function_privilege('authenticated','public.spend_on_channel(uuid,uuid,bigint,text,text,uuid,text)','EXECUTE'),
-  'money mutations remain internal'
+  not has_function_privilege('authenticated','public.credit_topup(text,text,bigint,text)','EXECUTE')
+  and not has_function_privilege('authenticated','public._spend_on_channel(uuid,uuid,bigint,text,text,uuid,text)','EXECUTE'),
+  'trusted money primitives remain internal'
 );
 
 select ok(
