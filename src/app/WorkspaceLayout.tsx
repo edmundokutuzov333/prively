@@ -68,5 +68,5 @@ export function WorkspaceLayout({ variant }: { variant: WorkspaceVariant }) {
         </nav>
       </div>
     </div>
-  </div>;
+  </div></DiscreetGate>;
 }
