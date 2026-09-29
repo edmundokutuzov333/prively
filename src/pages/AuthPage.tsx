@@ -9,11 +9,12 @@ import { Ficha } from '@/design/Ficha';
 import { Botao } from '@/design/Botao';
 import { Escudo } from '@/design/Escudo';
 import { requireSupabase } from '@/lib/supabase';
+import { CREATOR_TERMS_VERSION, creatorTermDeclarations, type CreatorTermDeclarationKey } from '@/content/creatorTerms';
 
 type Mode = 'signIn' | 'signUp';
 type Portal = 'client' | 'creator' | 'admin';
 type AuthPageProps = { mode: Mode; portal?: Portal };
-type Values = { email: string; password: string; handle?: string; ageConfirmed?: boolean; termsAccepted?: boolean; privacyAccepted?: boolean };
+type Values = { email: string; password: string; handle?: string; ageConfirmed?: boolean; termsAccepted?: boolean; privacyAccepted?: boolean } & Partial<Record<CreatorTermDeclarationKey, boolean>>;
 
 export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const role = searchParams.get('role') === 'creator' ? 'creator' : effectivePortal;
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const isCreatorSignup = mode === 'signUp' && role === 'creator';
 
   const schema = z.object({
     email: z.string().email(),
@@ -37,11 +39,20 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['handle'], message: 'invalid_handle' });
     }
     if (mode === 'signUp' && !values.ageConfirmed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ageConfirmed'], message: 'age_required' });
-    if (mode === 'signUp' && !values.termsAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['termsAccepted'], message: 'terms_required' });
-    if (mode === 'signUp' && !values.privacyAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['privacyAccepted'], message: 'privacy_required' });
+    if (mode === 'signUp' && !isCreatorSignup) {
+      if (!values.termsAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['termsAccepted'], message: 'terms_required' });
+      if (!values.privacyAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['privacyAccepted'], message: 'privacy_required' });
+    }
+    if (isCreatorSignup) {
+      for (const declaration of creatorTermDeclarations) {
+        if (!values[declaration.key]) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: [declaration.key], message: 'creator_terms_required' });
+        }
+      }
+    }
   });
 
-  const { register, handleSubmit, formState: { isSubmitting, errors } } = useForm<Values>({
+  const { register, handleSubmit, watch, formState: { isSubmitting, errors } } = useForm<Values>({
     resolver: zodResolver(schema)
   });
 
@@ -129,16 +140,24 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       }
 
       const consent = await sb.rpc('record_consent', { _consent_type: 'age_gate', _version: '1.0' });
-      const terms = await sb.rpc('record_legal_acceptance', { _document_type: 'terms', _version: '1.0' });
-      const privacy = await sb.rpc('record_legal_acceptance', { _document_type: 'privacy', _version: '1.0' });
-      if (consent.error || terms.error || privacy.error) {
+      const legalResult = isCreatorSignup
+        ? await sb.rpc('accept_creator_terms', {
+            _version: CREATOR_TERMS_VERSION,
+            _declarations: Object.fromEntries(creatorTermDeclarations.map(({ key }) => [key, true])),
+            _source: 'registration',
+            _metadata: { route: window.location.pathname, acceptance_flow: 'creator_registration' },
+          })
+        : null;
+      const terms = isCreatorSignup ? null : await sb.rpc('record_legal_acceptance', { _document_type: 'terms', _version: '1.0' });
+      const privacy = isCreatorSignup ? null : await sb.rpc('record_legal_acceptance', { _document_type: 'privacy', _version: '1.0' });
+      if (consent.error || legalResult?.error || terms?.error || privacy?.error) {
         await sb.auth.signOut({ scope: 'local' });
-        setError(consent.error?.message ?? terms.error?.message ?? privacy.error?.message ?? t('auth.legalAcceptanceError'));
+        setError(consent.error?.message ?? legalResult?.error?.message ?? terms?.error?.message ?? privacy?.error?.message ?? t('auth.legalAcceptanceError'));
         return;
       }
 
       setMessage(t(signupRole === 'creator' ? 'auth.creatorRegistered' : 'auth.clientRegistered'));
-      navigate(signupRole === 'creator' ? '/estudio' : '/descobrir', { replace: true });
+      navigate(signupRole === 'creator' ? '/verificacao' : '/descobrir', { replace: true });
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : t('auth.genericError'));
     }
@@ -154,7 +173,8 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       ? t('auth.creatorSignUpTitle')
       : t('auth.signUpTitle');
 
-  const submit = mode === 'signIn' ? t('auth.signIn') : t('auth.signUp');
+  const creatorDeclarationsChecked = creatorTermDeclarations.every(({ key }) => Boolean(watch(key)));
+  const submit = mode === 'signIn' ? t('auth.signIn') : isCreatorSignup ? 'Concordo e quero criar conta' : t('auth.signUp');
 
   return <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg items-center px-5 py-12 md:px-8">
     <Ficha variant="focus" className="w-full p-7 md:p-10">
@@ -187,9 +207,17 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
 
         {mode === 'signUp' ? <div className="space-y-3 rounded-md border border-bone-50/8 bg-ink-850 p-4">
           <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('ageConfirmed')} className="mt-1 accent-crimson-500"/><span>{t('auth.ageConfirmed')}</span></label>
-          <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('termsAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.termsAccepted')}</span></label>
-          <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('privacyAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.privacyAccepted')}</span></label>
-          {errors.ageConfirmed || errors.termsAccepted || errors.privacyAccepted ? <p className="text-xs text-danger">{t('auth.acceptanceRequired')}</p> : null}
+          {isCreatorSignup ? <>
+            <p className="text-xs leading-5 text-bone-500">Termos e Condições para Criadoras · versão {CREATOR_TERMS_VERSION}. Leia o documento completo em <Link to="/legal/termos-criadoras" className="text-bone-50 underline underline-offset-4">/legal/termos-criadoras</Link>.</p>
+            <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
+              {creatorTermDeclarations.map((declaration, index) => <label key={declaration.key} className="flex items-start gap-3 rounded-md border border-bone-50/8 bg-ink-900 p-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register(declaration.key)} className="mt-1 accent-crimson-500"/><span><strong className="mr-1 text-bone-500">{index + 1}.</strong>{declaration.text}</span></label>)}
+            </div>
+            {creatorTermDeclarations.some(({ key }) => Boolean(errors[key])) || errors.ageConfirmed ? <p className="text-xs text-danger">Todas as 16 declarações e a confirmação de idade são obrigatórias.</p> : null}
+          </> : <>
+            <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('termsAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.termsAccepted')}</span></label>
+            <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('privacyAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.privacyAccepted')}</span></label>
+            {errors.ageConfirmed || errors.termsAccepted || errors.privacyAccepted ? <p className="text-xs text-danger">{t('auth.acceptanceRequired')}</p> : null}
+          </>}
         </div> : null}
 
         <label className="block">
@@ -203,7 +231,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
 
         {error ? <p role="alert" className="border border-danger/35 bg-danger/5 p-3 text-sm leading-6 text-bone-50">{error}</p> : null}
         {message ? <p role="status" className="border border-ok/30 bg-ok/5 p-3 text-sm leading-6 text-bone-50">{message}</p> : null}
-        <Botao type="submit" loading={isSubmitting} className="w-full">{submit}</Botao>
+        <Botao type="submit" loading={isSubmitting} disabled={isCreatorSignup && !creatorDeclarationsChecked} className="w-full">{submit}</Botao>
         {mode === 'signIn' && effectivePortal !== 'admin' ? <Link to="/recuperar" className="block text-center text-sm text-bone-500 underline decoration-bone-50/20 underline-offset-4">{t('auth.recoverAccount')}</Link> : null}
       </form>
 
