@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 12246)
-Total output lines: 1403
-
 -- Phase 6: Wallet, Ledger & Payments Core
 -- Production financial hardening and payment orchestration.
 
@@ -693,7 +690,27 @@ begin
     where owner_id=auth.uid() and idempotency_key=_idem
   );
 
-  select id into existing from public.payouts where …246 tokens truncated…,jsonb_build_object('amount',_amount,'method',_method));
+  select id into existing from public.payouts where owner_id=auth.uid() and idempotency_key=_idem;
+  if existing<>payout_id then return existing; end if;
+
+  select balance into bal
+  from public.balances
+  where owner_id=auth.uid() and account='creator_available'
+  for update;
+
+  if coalesce(bal,0)<_amount then raise exception 'insufficient_available_earnings'; end if;
+
+  insert into public.idempotency_keys(owner_id,key,txn_id)
+  values(auth.uid(),'payout:'||_idem,txn)
+  on conflict do nothing;
+
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id,metadata)
+  values
+    (txn,'creator_available',auth.uid(),-_amount,'payout_hold','payout',payout_id,jsonb_build_object('payout_id',payout_id)),
+    (txn,'escrow','00000000-0000-0000-0000-000000000000'::uuid,_amount,'payout_hold','payout',payout_id,jsonb_build_object('payout_id',payout_id));
+
+  insert into public.financial_audit_log(actor_id,action,entity_type,entity_id,metadata)
+  values(auth.uid(),'payout.requested','payout',payout_id::text,jsonb_build_object('amount',_amount,'method',_method));
 
   return payout_id;
 end

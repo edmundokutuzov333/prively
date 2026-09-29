@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 14380)
-Total output lines: 919
-
 create or replace function public.protect_profile_security_fields()
 returns trigger language plpgsql security definer set search_path=public as $$
 begin
@@ -402,7 +399,158 @@ begin
     total:=total+(p.price*qty);
   end loop;
   oid:=gen_random_uuid();
-  insert into public.orders(id,buyer_id,channel_id,total,idempotency_key,shipping) values(oid,auth.uid(),channel,total,_idem,coalesce(_shipping,…2380 tokens truncated…s(32),'hex'),status='drawn' where id=g.id returning * into g;
+  insert into public.orders(id,buyer_id,channel_id,total,idempotency_key,shipping) values(oid,auth.uid(),channel,total,_idem,coalesce(_shipping,'{}'::jsonb));
+  for row_item in select * from jsonb_array_elements(_items)
+  loop
+    qty:=(row_item->>'quantity')::int;
+    select * into p from public.products where id=(row_item->>'product_id')::uuid for update;
+    insert into public.order_items(order_id,product_id,quantity,unit_price) values(oid,p.id,qty,p.price);
+    update public.products set stock=stock-qty where id=p.id;
+  end loop;
+  eid:=public._hold_escrow(auth.uid(),(select owner_id from public.channels where id=channel),total,'product',oid,'order:'||oid::text);
+  update public.orders set escrow_id=eid where id=oid;
+  return oid;
+end $$;
+
+create or replace function public.update_order(_order uuid,_status text)
+returns void language plpgsql security definer set search_path=public as $$
+declare o public.orders;
+begin
+  select * into o from public.orders where id=_order for update;
+  if not found or not public.is_creator_of_channel(auth.uid(),o.channel_id) or _status not in('accepted','shipped','delivered') then raise exception 'forbidden'; end if;
+  update public.orders set status=_status where id=_order;
+end $$;
+
+create or replace function public.confirm_order(_order uuid)
+returns void language plpgsql security definer set search_path=public as $$
+declare o public.orders;
+begin
+  select * into o from public.orders where id=_order for update;
+  if not found or o.buyer_id<>auth.uid() or o.status<>'delivered' or o.escrow_id is null then raise exception 'order_not_ready'; end if;
+  perform public._release_escrow(o.escrow_id,'product');
+  update public.orders set status='released' where id=_order;
+end $$;
+
+create or replace function public.create_live_session(_channel uuid,_mode text,_title text,_description text,_price bigint,_scheduled_at timestamptz)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare id uuid:=gen_random_uuid();
+begin
+  if not public.is_creator_of_channel(auth.uid(),_channel) then raise exception 'forbidden'; end if;
+  if _mode='paid' and coalesce(_price,0)<=0 then raise exception 'paid_live_requires_price'; end if;
+  insert into public.live_sessions(id,channel_id,mode,title,description,price,scheduled_at,status,room_name)
+  values(id,_channel,_mode,trim(_title),nullif(trim(_description),''),nullif(_price,0),_scheduled_at,case when _scheduled_at is null or _scheduled_at<=now() then 'live' else 'scheduled' end,'prively-live-'||id::text);
+  return id;
+end $$;
+
+create or replace function public.buy_live_ticket(_session uuid,_idem text)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare s public.live_sessions; id uuid; txn uuid;
+begin
+  select * into s from public.live_sessions where id=_session for update;
+  if not found or s.mode<>'paid' or s.status not in('scheduled','live') then raise exception 'live_not_available'; end if;
+  select id into id from public.live_tickets where live_session_id=_session and buyer_id=auth.uid();
+  if id is not null then return id; end if;
+  id:=gen_random_uuid();
+  txn:=public._spend_on_channel(auth.uid(),s.channel_id,s.price,'live_ticket','live_session',s.id,'live:'||s.id::text||':'||_idem);
+  insert into public.live_tickets(id,live_session_id,buyer_id,price_paid,txn_id) values(id,s.id,auth.uid(),s.price,txn);
+  return id;
+end $$;
+
+create or replace function public.update_call_rates(_channel uuid,_audio bigint,_video bigint)
+returns void language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_creator_of_channel(auth.uid(),_channel) or (_audio is not null and _audio<=0) or (_video is not null and _video<=0) then raise exception 'invalid_call_rates'; end if;
+  update public.channels set call_audio_price=_audio,call_video_price=_video where id=_channel;
+end $$;
+
+create or replace function public.create_call_session(_channel uuid,_kind text)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare id uuid:=gen_random_uuid(); owner uuid; rate bigint;
+begin
+  if not public.is_age_verified(auth.uid()) or _kind not in('audio','video') then raise exception 'forbidden'; end if;
+  select owner_id,case when _kind='audio' then call_audio_price else call_video_price end into owner,rate from public.channels where id=_channel;
+  if owner is null or rate is null then raise exception 'call_price_not_configured'; end if;
+  insert into public.call_sessions(id,channel_id,client_id,kind,per_minute_price,room_name)
+  values(id,_channel,auth.uid(),_kind,rate,'prively-call-'||id::text);
+  return id;
+end $$;
+
+create or replace function public.issue_live_access(_session uuid)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare s public.live_sessions; c public.call_sessions; uid uuid:=auth.uid();
+begin
+  if not public.is_age_verified(uid) then raise exception 'age_not_verified'; end if;
+  select * into s from public.live_sessions where id=_session;
+  if found then
+    if s.status not in('scheduled','live') or (s.scheduled_at is not null and s.scheduled_at>now()) then raise exception 'live_not_available'; end if;
+    if (select owner_id from public.channels where id=s.channel_id)<>uid and s.mode='paid'
+       and not exists(select 1 from public.live_tickets where live_session_id=s.id and buyer_id=uid) then
+      raise exception 'live_ticket_required';
+    end if;
+    update public.live_sessions set status='live',started_at=coalesce(started_at,now()) where id=s.id;
+    return jsonb_build_object('kind','live','session_id',s.id,'room_name',s.room_name,'mode',s.mode,'role',case when (select owner_id from public.channels where id=s.channel_id)=uid then 'host' else 'viewer' end);
+  end if;
+  select * into c from public.call_sessions where id=_session;
+  if found then
+    if c.status in('ended','cancelled') or (c.client_id<>uid and not public.is_creator_of_channel(uid,c.channel_id)) then raise exception 'call_not_available'; end if;
+    if c.client_id=uid and coalesce((select balance from public.balances where owner_id=uid and account='wallet'),0)<c.per_minute_price then raise exception 'insufficient_funds'; end if;
+    update public.call_sessions set status='active',started_at=coalesce(started_at,now()) where id=c.id;
+    return jsonb_build_object('kind','call','session_id',c.id,'room_name',c.room_name,'mode',c.kind,'role',case when c.client_id=uid then 'caller' else 'host' end,'per_minute_price',c.per_minute_price);
+  end if;
+  raise exception 'session_not_found';
+end $$;
+
+create or replace function public.bill_active_calls()
+returns integer language plpgsql security definer set search_path=public as $$
+declare c public.call_sessions; minutes int; m int; billed int:=0;
+begin
+  for c in select * from public.call_sessions where status='active' and started_at is not null for update
+  loop
+    minutes:=floor(extract(epoch from(now()-c.started_at))/60);
+    if minutes<=c.billed_minutes then continue; end if;
+    begin
+      for m in c.billed_minutes+1..minutes loop
+        perform public._spend_on_channel(c.client_id,c.channel_id,c.per_minute_price,'call_minute','call_session',c.id,'call:'||c.id::text||':minute:'||m::text);
+        billed:=billed+1;
+      end loop;
+      update public.call_sessions set billed_minutes=minutes where id=c.id;
+    exception when others then
+      update public.call_sessions set status='ended',ended_at=now() where id=c.id;
+    end;
+  end loop;
+  return billed;
+end $$;
+
+create or replace function public.enter_giveaway(_giveaway uuid)
+returns void language plpgsql security definer set search_path=public as $$
+declare g public.giveaways;
+begin
+  select * into g from public.giveaways where id=_giveaway for update;
+  if not found or now()<g.starts_at or now()>=g.ends_at or g.status not in('scheduled','open') then raise exception 'giveaway_not_open'; end if;
+  if g.requires_subscription and not public.has_active_subscription(auth.uid(),g.channel_id) then raise exception 'subscription_required'; end if;
+  update public.giveaways set status='open' where id=g.id and status='scheduled';
+  insert into public.giveaway_entries(giveaway_id,user_id) values(g.id,auth.uid()) on conflict do nothing;
+end $$;
+
+create or replace function public.create_giveaway(_channel uuid,_title text,_description text,_starts timestamptz,_ends timestamptz,_winner_count smallint,_requires_subscription boolean)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare id uuid:=gen_random_uuid();
+begin
+  if not public.is_creator_of_channel(auth.uid(),_channel) or _ends<=_starts or _winner_count<1 then raise exception 'invalid_giveaway'; end if;
+  insert into public.giveaways(id,channel_id,title,description,starts_at,ends_at,winner_count,requires_subscription,status)
+  values(id,_channel,trim(_title),nullif(trim(_description),''),_starts,_ends,_winner_count,_requires_subscription,case when _starts<=now() then 'open' else 'scheduled' end);
+  return id;
+end $$;
+
+create or replace function public.draw_giveaway(_giveaway uuid)
+returns setof uuid language plpgsql security definer set search_path=public as $$
+declare g public.giveaways;
+begin
+  select * into g from public.giveaways where id=_giveaway for update;
+  if not found or not public.is_creator_of_channel(auth.uid(),g.channel_id) then raise exception 'forbidden'; end if;
+  if now()<g.ends_at then raise exception 'giveaway_not_finished'; end if;
+  if g.status='drawn' then return query select user_id from public.giveaway_entries where giveaway_id=g.id and winner; return; end if;
+  update public.giveaways set draw_seed=encode(extensions.gen_random_bytes(32),'hex'),status='drawn' where id=g.id returning * into g;
   with ranked as(select user_id,row_number() over(order by digest(g.draw_seed||user_id::text,'sha256')) rn from public.giveaway_entries where giveaway_id=g.id)
   update public.giveaway_entries e set winner=(r.rn<=g.winner_count) from ranked r where e.giveaway_id=g.id and e.user_id=r.user_id;
   return query select user_id from public.giveaway_entries where giveaway_id=g.id and winner;
