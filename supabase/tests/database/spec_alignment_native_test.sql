@@ -52,7 +52,7 @@ with checks as (
   )
   union all
   select 'wallet.non_negative', not exists (
-    select 1 from public.wallets where balance < 0
+    select 1 from public.balances where balance < 0
   )
   union all
   select 'storage.private', not exists (
