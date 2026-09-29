@@ -26,7 +26,9 @@ createRoot(rootElement).render(
   <StrictMode>
     <ProductionErrorBoundary>
       <QueryClientProvider client={queryClient}>
-      <App />
+        <DiscreetGate>
+          <App />
+        </DiscreetGate>
       </QueryClientProvider>
     </ProductionErrorBoundary>
   </StrictMode>,
