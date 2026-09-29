@@ -118,6 +118,7 @@ export function CreatorSafetyControlsPage() {
       </div>
       {hidden.length ? <p className="mt-3 text-xs text-bone-500">{hidden.length} perfil(is) escondido(s).</p> : null}
       {muted.length ? <p className="mt-1 text-xs text-bone-500">{muted.length} utilizador(es) silenciado(s).</p> : null}
+      {users.length ? <div className="mt-4 space-y-2">{users.map((item) => <div key={item.id} className="rounded-md border border-bone-50/8 p-3"><p className="text-sm text-bone-50">{item.display_name || item.handle}</p><p className="text-xs text-bone-500">@{item.handle}</p></div>)}</div> : null}
     </Ficha>
   </PageFrame>;
 }
