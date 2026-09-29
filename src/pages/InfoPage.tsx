@@ -117,7 +117,7 @@ const legalByLanguage: Record<string, Record<string, LegalDoc>> = {
       sections: [
         { title: 'Immutable records', paragraphs: ['Payments, reversals, refunds and disputes are represented as new ledger records. Historical entries are not rewritten.'] },
         { title: 'Escrow', paragraphs: ['For custom requests, auctions and product orders, funds remain held until delivery is confirmed or 72 hours pass without a dispute. Disputed cases are decided by support.'] },
-        { title: 'Subscriptions', paragraphs: ['Clients may cancel at any time and keep access until the paid period ends. Automatic renewal depends on available wallet funds.'] },
+        { title: 'Subscriptions', paragraphs: ['Clients may cancel whenever they choose and keep access until the paid period ends. Automatic renewal depends on available wallet funds.'] },
       ],
     },
     cookies: {
