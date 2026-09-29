@@ -13,10 +13,11 @@ Deno.serve(async(req)=>{
     const auth=req.headers.get("Authorization")??"";
     if(!auth.startsWith("Bearer "))return json({code:"unauthorized"},401);
     const client=clientFor(auth);
+    const admin=adminFor();
     const {data:{user},error:userError}=await client.auth.getUser();
     if(userError||!user)return json({code:"unauthorized"},401);
 
-    const {data:flag}=await client.from("platform_settings").select("value").eq("key","feature_flags.ai_response_assistant").maybeSingle();
+    const {data:flag}=await admin.from("platform_settings").select("value").eq("key","feature_flags.ai_response_assistant").maybeSingle();
     if(flag?.value!==true)return json({code:"ai_response_assistant_disabled"},503);
     if((Deno.env.get("AI_RESPONSE_PROVIDER_APPROVED")??"").toLowerCase()!=="true")return json({code:"ai_provider_not_approved"},503);
 
