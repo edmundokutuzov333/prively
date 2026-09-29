@@ -71,7 +71,7 @@ O dispatcher automático de jobs foi mantido desligado nesta fase porque não fo
 
 ## Estado de deploy
 
-O repositório está ligado ao pipeline Vercel. O check de deployment é criado automaticamente para commits na `main`; um commit funcional desta fase foi validado pelo Vercel com estado `success`. No encerramento desta implementação, o deployment do commit documental mais recente encontrava-se em `pending`, pelo que o estado desse deployment não é apresentado como concluído até o próprio Vercel o finalizar.
+O repositório está ligado ao pipeline Vercel e os commits anteriores desta implementação receberam validação de deployment com estado `success`. Para o último commit desta fase, o endpoint de status do GitHub ainda não devolveu um check Vercel, por isso esse deployment específico não é apresentado como concluído sem confirmação do próprio Vercel.
 
 A configuração Vercel permanece versionada no repositório com `npm run build`, output `dist` e rewrite SPA. O domínio existente não foi alterado nesta fase.
 
