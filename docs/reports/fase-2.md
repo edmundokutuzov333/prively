@@ -12,6 +12,7 @@ O fornecedor KYC continua desligado até existirem credenciais e validação con
 ## 2. Commits e tag
 
 - `de6ed83` — `fase-2: auth: remove email bypass and harden identity`
+- `036172c` — `fase-2: tests: assert email auto-confirm is absent`
 - Tag local: `fase-2-concluida`
 - Publicação remota: pendente de atualização autenticada da `main`; não foi usado force push.
 
