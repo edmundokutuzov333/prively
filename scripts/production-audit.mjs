@@ -15,28 +15,52 @@ async function walk(directory) {
   return files;
 }
 
-const sourceFiles = [
-  ...await walk(path.join(root, 'src')),
-  ...await walk(path.join(root, 'supabase', 'functions')),
-  ...await walk(path.join(root, 'scripts')),
-].filter((file) => /\.(ts|tsx|mjs)$/.test(file));
+const browserFiles = (await walk(path.join(root, 'src')))
+  .filter((file) => /\.(ts|tsx)$/.test(file));
+
+const edgeFiles = (await walk(path.join(root, 'supabase', 'functions')))
+  .filter((file) => /\.ts$/.test(file));
 
 const violations = [];
-for (const file of sourceFiles) {
-  const text = await readFile(file, 'utf8');
-  const relative = path.relative(root, file);
-  const checks = [
-    [/\bTODO\b/, 'TODO'],
-    [/\bFIXME\b/, 'FIXME'],
-    [/console\.log\s*\(/, 'console.log'],
-    [/dangerouslySetInnerHTML/, 'dangerouslySetInnerHTML'],
-    [/\bany\b/, 'explicit any'],
-    [/SUPABASE_SERVICE_ROLE_KEY/, 'service-role key reference in source'],
-    [/PAYSUITE_API_KEY/, 'payment provider secret reference in source'],
-    [/sk-[A-Za-z0-9_-]{12,}/, 'hardcoded provider secret pattern'],
-  ];
-  for (const [pattern, label] of checks) {
-    if (pattern.test(text)) violations.push(`${relative}: ${label}`);
+
+const browserChecks = [
+  [/\bTODO\b/, 'TODO'],
+  [/\bFIXME\b/, 'FIXME'],
+  [/console\.log\s*\(/, 'console.log'],
+  [/dangerouslySetInnerHTML/, 'dangerouslySetInnerHTML'],
+  [/\bany\b/, 'explicit any'],
+  [/SUPABASE_SERVICE_ROLE_KEY/, 'service-role key reference in browser source'],
+  [/PAYSUITE_API_KEY/, 'payment provider secret reference in browser source'],
+  [/sk-[A-Za-z0-9_-]{12,}/, 'hardcoded provider secret pattern'],
+];
+
+const edgeChecks = [
+  [/\bTODO\b/, 'TODO'],
+  [/\bFIXME\b/, 'FIXME'],
+  [/console\.log\s*\(/, 'console.log'],
+  [/dangerouslySetInnerHTML/, 'dangerouslySetInnerHTML'],
+  [/\bany\b/, 'explicit any'],
+  [/sk-[A-Za-z0-9_-]{12,}/, 'hardcoded provider secret pattern'],
+  [/-----BEGIN (?:RSA|EC|PRIVATE) KEY-----/, 'embedded private key'],
+];
+
+for (const [directoryFiles, checks] of [
+  [browserFiles, browserChecks],
+  [edgeFiles, edgeChecks],
+]) {
+  for (const file of directoryFiles) {
+    const text = await readFile(file, 'utf8');
+    const relative = path.relative(root, file);
+    for (const [pattern, label] of checks) {
+      if (pattern.test(text)) violations.push(`${relative}: ${label}`);
+    }
+  }
+}
+
+const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+for (const requiredScript of ['typecheck', 'lint', 'test', 'build', 'audit:production', 'e2e']) {
+  if (typeof packageJson.scripts?.[requiredScript] !== 'string') {
+    violations.push(`package.json: missing script ${requiredScript}`);
   }
 }
 
@@ -66,4 +90,4 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log(`Production audit passed: ${sourceFiles.length} source files inspected.`);
+console.log(`Production audit passed: ${browserFiles.length} browser files and ${edgeFiles.length} Edge Function files inspected.`);
