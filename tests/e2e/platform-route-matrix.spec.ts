@@ -11,6 +11,7 @@ const publicRoutes = [
   '/sobre',
   '/ajuda',
   '/legal/termos',
+  '/legal/termos-criadoras',
   '/legal/privacidade',
   '/legal/conteudo-proibido',
   '/legal/reembolsos',
