@@ -421,6 +421,32 @@ begin
 end;
 $phase7_wishlist_remove$;
 
+create table if not exists public.message_locked_content (
+  id uuid primary key default gen_random_uuid(),
+  message_id uuid not null references public.messages(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now(),
+  unique(message_id)
+);
+
+create table if not exists public.message_unlocks (
+  id uuid primary key default gen_random_uuid(),
+  message_id uuid not null references public.messages(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  txn_id uuid not null,
+  created_at timestamptz not null default now(),
+  unique(message_id,user_id)
+);
+
+alter table public.messages
+  add column if not exists price bigint check (price is null or price>0);
+
+alter table public.messages
+  add column if not exists locked_content_id uuid references public.message_locked_content(id) on delete set null;
+
+alter table public.message_locked_content enable row level security;
+alter table public.message_unlocks enable row level security;
+
 create table if not exists public.message_attachments (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references public.conversations(id) on delete cascade,
@@ -537,6 +563,94 @@ begin
   return public.send_message_v2(_conversation,_body,'text',null,null);
 end;
 $phase7_send_message$;
+
+create or replace function public.create_locked_message(
+  _conversation uuid,
+  _body text,
+  _price bigint,
+  _idem text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path=public
+as $phase7_locked$
+declare
+  c public.conversations;
+  owner_id uuid;
+  m uuid:=gen_random_uuid();
+  content_id uuid:=gen_random_uuid();
+begin
+  select * into c from public.conversations where id=_conversation;
+  if not found then raise exception 'conversation_not_found'; end if;
+
+  select ch.owner_id into owner_id from public.channels ch where ch.id=c.channel_id;
+  if owner_id<>auth.uid() then raise exception 'forbidden'; end if;
+  if _price is null or _price<=0 then raise exception 'invalid_message_price'; end if;
+  if char_length(trim(_body))<1 or char_length(_body)>10000 then raise exception 'invalid_message'; end if;
+  if public.is_blocked(c.client_id,c.creator_id) then raise exception 'user_blocked'; end if;
+
+  insert into public.messages(id,conversation_id,sender_id,kind,price,locked_content_id)
+  values(m,_conversation,auth.uid(),'text',_price,content_id);
+
+  insert into public.message_locked_content(id,message_id,body)
+  values(content_id,m,_body);
+
+  perform public.notify_user(
+    c.client_id,
+    'message',
+    jsonb_build_object('conversation_id',_conversation,'message_id',m)
+  );
+
+  return m;
+end;
+$phase7_locked$;
+
+create or replace function public.unlock_message(_message uuid,_idem text)
+returns uuid
+language plpgsql
+security definer
+set search_path=public
+as $phase7_unlock$
+declare
+  m public.messages;
+  c public.conversations;
+  txn uuid;
+begin
+  select * into m from public.messages where id=_message for share;
+  if not found then raise exception 'message_not_found'; end if;
+  if m.locked_content_id is null or m.price is null then raise exception 'message_not_locked'; end if;
+
+  select * into c from public.conversations where id=m.conversation_id;
+  if not exists(select 1 from public.conversation_members where conversation_id=m.conversation_id and user_id=auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  if m.sender_id=auth.uid() then return m.id; end if;
+  if public.is_blocked(c.client_id,c.creator_id) then raise exception 'user_blocked'; end if;
+
+  select u.txn_id into txn
+  from public.message_unlocks u
+  where u.message_id=_message and u.user_id=auth.uid();
+
+  if txn is not null then return txn; end if;
+
+  txn:=public._spend_on_channel(
+    auth.uid(),
+    c.channel_id,
+    m.price,
+    'message',
+    'message',
+    _message,
+    coalesce(nullif(trim(_idem),''),'unlock:'||_message::text)
+  );
+
+  insert into public.message_unlocks(message_id,user_id,txn_id)
+  values(_message,auth.uid(),txn)
+  on conflict(message_id,user_id) do nothing;
+
+  return txn;
+end;
+$phase7_unlock$;
 
 create or replace function public.mark_message_read(_message uuid)
 returns void
