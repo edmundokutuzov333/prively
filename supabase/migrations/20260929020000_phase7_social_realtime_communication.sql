@@ -421,6 +421,15 @@ begin
 end;
 $phase7_wishlist_remove$;
 
+create table if not exists public.chat_rate_limits (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  window_started_at timestamptz not null default now(),
+  message_count integer not null default 0,
+  attachment_count integer not null default 0
+);
+
+alter table public.chat_rate_limits enable row level security;
+
 create table if not exists public.message_locked_content (
   id uuid primary key default gen_random_uuid(),
   message_id uuid not null references public.messages(id) on delete cascade,
@@ -1140,6 +1149,43 @@ grant execute on function public.bill_private_live_sessions() to service_role;
 -- Rate-limit state is server-only; mutation helper is exposed only to guarded RPCs.
 alter table public.chat_rate_limits enable row level security;
 revoke all on public.chat_rate_limits from anon,authenticated;
+
+create or replace function public.assert_chat_rate_limit(_is_attachment boolean default false)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $phase7_rate$
+declare
+  r public.chat_rate_limits;
+  now_ts timestamptz:=now();
+  max_messages integer:=60;
+  max_attachments integer:=20;
+begin
+  insert into public.chat_rate_limits(user_id,window_started_at,message_count,attachment_count)
+  values(auth.uid(),now_ts,0,0)
+  on conflict(user_id) do nothing;
+
+  select * into r from public.chat_rate_limits where user_id=auth.uid() for update;
+
+  if r.window_started_at<now_ts-interval '1 minute' then
+    update public.chat_rate_limits
+    set window_started_at=now_ts,message_count=0,attachment_count=0
+    where user_id=auth.uid();
+    r.window_started_at:=now_ts;
+    r.message_count:=0;
+    r.attachment_count:=0;
+  end if;
+
+  if _is_attachment then
+    if r.attachment_count>=max_attachments then raise exception 'chat_rate_limited'; end if;
+    update public.chat_rate_limits set attachment_count=attachment_count+1 where user_id=auth.uid();
+  else
+    if r.message_count>=max_messages then raise exception 'chat_rate_limited'; end if;
+    update public.chat_rate_limits set message_count=message_count+1 where user_id=auth.uid();
+  end if;
+end;
+$phase7_rate$;
 
 revoke all on function public.assert_chat_rate_limit(boolean) from public,anon,authenticated;
 grant execute on function public.assert_chat_rate_limit(boolean) to authenticated;
