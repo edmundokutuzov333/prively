@@ -39,7 +39,22 @@ begin
   limit 1;
 
   if creator_uid is null then
-    raise exception 'FAIL: no creator test user available';
+    creator_uid := 'c7000000-0000-0000-0000-000000000001'::uuid;
+    perform set_config('app.internal_write','on',true);
+    insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data,email_confirmed_at,created_at,updated_at)
+    values(
+      creator_uid,'authenticated','authenticated','creator.terms.native@example.test','test',
+      jsonb_build_object('handle','creator_terms_native'),now(),now(),now()
+    )
+    on conflict(id) do nothing;
+    insert into public.profiles(id,handle,display_name,status,age_verified_at)
+    values(creator_uid,'creator_terms_native','Creator Terms Native','active',now())
+    on conflict(id) do nothing;
+    insert into public.user_roles(user_id,role) values(creator_uid,'creator')
+    on conflict do nothing;
+    insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
+    values(creator_uid,'native-test','approved','native:'||creator_uid::text,now())
+    on conflict do nothing;
   end if;
 
   insert into _creator_terms_test_meta values ('creator_uid', creator_uid::text);
