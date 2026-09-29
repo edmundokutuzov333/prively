@@ -1,12 +1,41 @@
-# Prively decisions
+# ADRs da Auditoria Prively
 
-## Phase 1
+## ADR-001: Não fazer deploy durante a auditoria
+**Contexto:** o mandato exige aprovação humana antes de qualquer deployment de produção.  
+**Decisão:** nenhuma alteração persistente foi aplicada via Supabase e nenhum deploy Vercel foi iniciado.  
+**Consequência:** alguns estados permanecem PARCIAL até CI e staging confirmarem as correcções.
 
-### 2026-09-29: GitHub Actions is the single production delivery path
-Production delivery is owned by `.github/workflows/deploy.yml`. The previous standalone Vercel workflow was removed to avoid duplicate production deploy paths. Delivery is triggered only after the `Prively CI` workflow succeeds (or by an explicitly approved manual dispatch), checks out the exact tested SHA, previews Supabase migrations, and runs behind the `production` Environment. The repository owner must configure required reviewers on that Environment before enabling production secrets.
+## ADR-002: Correcções forward-only
+**Contexto:** não é permitido alterar migrações já aplicadas.  
+**Decisão:** todo hardening foi criado em novas migrações com timestamp posterior.  
+**Consequência:** é necessário reconciliar os 175 ficheiros locais com as 123 versões remotas antes de aplicar a sequência.
 
-### 2026-09-28: Interface Kernel before full backend
-The project is being built in a custom ten-phase execution sequence. Phase 1 establishes the reusable production frontend kernel and design system before the domain backends are introduced in later phases.
+## ADR-003: Fail-closed para tabelas públicas sem policy
+**Contexto:** RLS activo sem policy pode deixar a intenção de acesso ambígua.  
+**Decisão:** a migração nova cria uma policy `USING(false)` / `WITH CHECK(false)` quando uma tabela pública não tem policy.  
+**Consequência:** uma tabela sem contracto explícito fica negada por defeito.
 
-This does not make the interface a prototype. Components, routing, i18n, validation, PWA configuration, accessibility primitives and the Supabase authentication client are production code. Capabilities that require backend authority are not exposed as completed product features until their backend phases are implemented.
+## ADR-004: search_path seguro em SECURITY DEFINER
+**Contexto:** funções SECURITY DEFINER com `search_path=public` não satisfazem o hardening exigido.  
+**Decisão:** normalizar para `public, pg_temp`.  
+**Consequência:** menor superfície de resolução insegura de objectos.
 
+## ADR-005: AAL2 no compliance
+**Contexto:** `phase8_can_compliance_read` verificava apenas papel.  
+**Decisão:** acesso de compliance e administração sensível exige `auth.jwt()->>'aal'='aal2'`.  
+**Consequência:** sessão AAL1 deixa de ser suficiente para o perímetro de compliance.
+
+## ADR-006: E2E deve usar configuração real não secreta
+**Contexto:** o cliente Supabase requer URL e publishable key no browser.  
+**Decisão:** injectar estes valores no job E2E.  
+**Consequência:** elimina falha de bootstrap sem expor SERVICE_ROLE.
+
+## ADR-007: Vercel rate limit é blocker, não deve ser contornado
+**Contexto:** os checks Vercel devolvem `Deployment rate limited - retry in 24 hours`.  
+**Decisão:** não criar deploy alternativo nem contornar o provider durante esta sessão.  
+**Consequência:** verificação final do frontend permanece pendente.
+
+## ADR-008: Integrações externas não são simuladas
+**Contexto:** não existe evidência sandbox para todos os fornecedores.  
+**Decisão:** estados ficam NÃO VERIFICADO, REAL·FLAG ou BLOQUEADO·EXTERNO conforme a evidência disponível.  
+**Consequência:** nenhuma credencial fictícia ou fixture externa é usada para declarar sucesso.

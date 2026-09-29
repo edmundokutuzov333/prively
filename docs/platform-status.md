@@ -1,31 +1,44 @@
-# Estado da plataforma — 2026-09-29
+# Estado da Plataforma Prively
 
-Os scores abaixo reflectem código e testes locais. As migrações F2–F5 ainda aguardam aplicação e verificação no Supabase remoto nesta execução; por isso nenhum módulo externo é declarado como produção sem essa evidência.
+**Data:** 29 de Setembro de 2026  
+**Regra da percentagem:** só é indicada quando existe uma fracção objectivamente verificável. `N/D` significa que dar um número seria inventar precisão.
 
-| Módulo | Estado | Evidência | % |
-| --- | --- | --- | ---: |
-| Contas | PARCIAL | Auth endurecida, sem auto-confirmação; E2E remoto pendente | 75 |
-| Age/KYC | BLOQUEADO·EXTERNO | KYC assinado e idempotente; fornecedor/credenciais ausentes | 50 |
-| Perfis | PARCIAL | Handles e papéis limitados no servidor | 60 |
-| Conteúdo/Media | PARCIAL | Dispatcher, worker assinado e preview testada; staging/storage derivados pendentes | 75 |
-| Cortina/Acesso | PARCIAL | Gate e URLs assinados existentes; E2E incompleto | 65 |
-| Carteira/Top-up | BLOQUEADO·EXTERNO | Unidade, quarentena, limites e reconciliação; Paysuite ausente e flag off | 60 |
-| Assinaturas/PPV | PARCIAL | Ledger/RPCs existentes; dinheiro real bloqueado | 50 |
-| Escrow/Pedidos/Leilões | PARCIAL | Funções e ledger existentes; fluxo crítico não verificado | 50 |
-| Levantamentos | BLOQUEADO·EXTERNO | Payout webhook endurecido; provider ausente | 35 |
-| Chat | PARCIAL | Realtime/anexos/privacy/translation UI; E2E com dois JWTs pendente | 60 |
-| Lives/Chamadas | BLOQUEADO·EXTERNO | Token, webhook, cobrança e enforcement no código; LiveKit/staging ausentes | 45 |
-| Push | BLOQUEADO·EXTERNO | Payload neutro, preferências e limpeza 404/410; VAPID/provider não verificados | 35 |
-| Tradução/IA | BLOQUEADO·EXTERNO | Botão/cache/flag preparados; fornecedor e orçamento não aprovados | 30 |
-| Descoberta/Feed | PARCIAL | Rotas/UI existentes; dados reais não verificados | 45 |
-| Moderação | BLOQUEADO·EXTERNO | Pipeline fail-closed; scanner externo ausente | 45 |
-| Segurança física/Pânico | PARCIAL | RPC/Edge Functions presentes; operação não verificada | 45 |
-| Encontros | PARCIAL | Schema/rotas presentes; fluxo não verificado | 35 |
-| Conformidade/Arquivo | PARCIAL | Aceites e trilhos novos; operação de retenção não verificada | 55 |
-| Admin/Finanças | PARCIAL | Alertas, guards e RPCs; produção não verificada | 60 |
-| Suporte | PARCIAL | Tickets/schema presentes; operação não verificada | 35 |
-| i18n | PARCIAL | pt-MZ/en/fr existentes; paridade automática não criada | 65 |
-| PWA/Discreto | PARCIAL | PWA compila; PIN v2 testado localmente | 65 |
-| CI/CD | PARCIAL | Checks locais verdes; CI, deploy e staging pendentes | 68 |
-| Observabilidade | PARCIAL | Alertas financeiros persistidos; SLO e recovery não verificados | 48 |
-| Backups | NÃO VERIFICADO | Não houve recovery drill nesta sessão | 0 |
+| Módulo | Estado | Evidência | % verificável |
+|---|---|---|---:|
+| Contas | PARCIAL | Auth/config real; E2E de rotas falhou na baseline | N/D |
+| Age/KYC | PARCIAL | KYC RPCs, RLS, AAL2 indirecto via `has_permission`; sandbox não validado | N/D |
+| Perfis | PARCIAL | Profiles + RLS + admin users RPC | N/D |
+| Conteúdo/Media | PARCIAL | upload, processing, access, worker contracts; E2E não repetido | N/D |
+| Cortina/Acesso | REAL·FLAG | `can_view_post`, age gate e media processing gates presentes | N/D |
+| Carteira/Top-up | PARCIAL | reconcile=0, zero saldos negativos, webhook/idempotência no código | N/D |
+| Assinaturas/PPV | PARCIAL | contratos financeiros e testes Phase 6 presentes | N/D |
+| Escrow/Pedidos/Leilões | PARCIAL | suite Phase 9 baseline passou | 100% dos 18 checks Phase 9 nativos observados |
+| Levantamentos | PARCIAL | `approve_payout` e `payout-process` com AAL2; sandbox não validado | N/D |
+| Chat | PARCIAL | RLS, RPCs, privacy wrapper e correcção do core | N/D |
+| Lives/Chamadas | PARCIAL | LiveKit token/webhook, billing e heartbeat contracts | N/D |
+| Push | REAL·FLAG | worker activo; flag false | N/D |
+| Tradução/IA | REAL·FLAG | functions activas; flags false | N/D |
+| Descoberta/Feed | PARCIAL | recomendações/featured e guards presentes | N/D |
+| Moderação | REAL·FLAG | moderation-scan activo; fornecedor não verificado | N/D |
+| Segurança física/Pânico | REAL·FLAG | RPC + safety-alert-dispatch; flag false | N/D |
+| Encontros | REAL·FLAG | suite Phase 8 passou; feature meetings=true | N/D |
+| Conformidade/Arquivo | PARCIAL | append-only audit + legal hold + compliance flow | N/D |
+| Admin/Finanças | PARCIAL | roles, permissions, finance AAL2 e RLS | N/D |
+| Suporte | PARCIAL | support RPCs e RLS | N/D |
+| i18n | NÃO VERIFICADO | não houve suite de paridade executada | 0% verificável nesta sessão |
+| PWA/Discreto | PARCIAL | testes do PIN presentes; E2E incompleto | N/D |
+| CI/CD | PARCIAL | quality verde na baseline; DB/E2E vermelhos; novo CI não executado | N/D |
+| Observabilidade | PARCIAL | Supabase logs consultáveis; Vercel não verificável | N/D |
+| Backups | NÃO VERIFICADO | não houve prova operacional de restore nesta sessão | N/D |
+
+## Gate actual
+
+**Não pronto para produção.**
+
+Bloqueadores:
+- CI do commit de correcção ainda não executado.
+- Drift de migrações.
+- Vercel rate-limited.
+- E2E não revalidado após correcção.
+- carga/concorrência não executadas.
+- integrações externas não validadas em sandbox.
