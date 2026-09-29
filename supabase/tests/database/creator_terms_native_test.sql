@@ -51,7 +51,8 @@ select 'commission.subscription', public.commission_rate(null, 'subscription')::
 union all select 'commission.ppv', public.commission_rate(null, 'ppv')::text
 union all select 'commission.message', public.commission_rate(null, 'message')::text
 union all select 'commission.live', public.commission_rate(null, 'live_ticket')::text
-union all select 'commission.tip', public.commission_rate(null, 'tip')::text;
+union all select 'commission.tip', public.commission_rate(null, 'tip')::text
+union all select 'commission.meeting', public.commission_rate(null, 'meeting')::text;
 
 do $$
 declare
