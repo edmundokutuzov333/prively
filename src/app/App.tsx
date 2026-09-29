@@ -1,5 +1,5 @@
 import { Globe, Palette, SignIn, UserPlus } from '@phosphor-icons/react';
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { featureFlags } from '@/config/featureFlags';
