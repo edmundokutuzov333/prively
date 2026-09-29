@@ -17,13 +17,14 @@ import { ReportButton } from '@/features/safety/ReportButton';
 const PRIVACY_NOTICE = 'As tuas conversas são privadas. Ficam protegidas com cifragem em trânsito e em repouso, e no dia-a-dia só as pessoas na conversa as vêem. Para segurança e cumprimento da lei, a equipa de moderação pode analisar conteúdo denunciado ou sinalizado, e a Prively pode ser obrigada a partilhar dados com as autoridades.';
 
 function PrivacyNotice() {
+  const { user } = useAuth();
   const [visible, setVisible] = useState(() => window.localStorage.getItem('prively.chat.privacy-notice') !== '1');
   if (!visible) return null;
   return <Ficha variant="flat" className="mb-4 border-crimson-400/20 bg-wine-900/35 p-4">
     <p className="m-0 text-sm leading-6 text-bone-300">
       {PRIVACY_NOTICE} <Link to="/legal/privacidade" className="text-bone-50 underline underline-offset-4">Saber mais</Link>
     </p>
-    <button type="button" onClick={() => { window.localStorage.setItem('prively.chat.privacy-notice', '1'); setVisible(false); }} className="mt-3 min-h-11 rounded-control border border-bone-50/10 px-3 text-sm text-bone-50">
+    <button type="button" onClick={() => { window.localStorage.setItem('prively.chat.privacy-notice', '1'); if (user) void requireSupabase().rpc('accept_communication_privacy', { _surface: 'conversation', _version: '1.0' }); setVisible(false); }} className="mt-3 min-h-11 rounded-control border border-bone-50/10 px-3 text-sm text-bone-50">
       Fechar aviso
     </button>
   </Ficha>;
@@ -114,12 +115,16 @@ function MessageBubble({
   own,
   onUnlock,
   onAttachment,
+  onTranslate,
 }: {
   message: ChatMessage;
   own: boolean;
   onUnlock: () => void;
   onAttachment: (attachment: ChatAttachment) => void;
+  onTranslate: () => Promise<string | null>;
 }) {
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
   const isLocked = Boolean(message.price && message.locked_content_id && !message.locked_body && !own);
   const displayBody = message.locked_content_id ? (message.locked_body ?? null) : message.body;
 
@@ -132,7 +137,7 @@ function MessageBubble({
           <span className="mt-1 block font-display text-xl text-bone-50">{formatMznFromCents(message.price as number)}</span>
           <span className="mt-1 block text-xs text-bone-500">Desbloquear para ler</span>
         </span>
-      </button> : <p className="m-0 whitespace-pre-wrap text-sm leading-6 text-bone-50">{displayBody ?? ''}</p>}
+      </button> : <><p className="m-0 whitespace-pre-wrap text-sm leading-6 text-bone-50">{translation ?? displayBody ?? ''}</p>{displayBody ? <button type="button" className="mt-2 min-h-11 text-xs text-bone-400 underline" disabled={translating} onClick={() => { if (translation) { setTranslation(null); return; } setTranslating(true); void onTranslate().then(setTranslation).finally(() => setTranslating(false)); }}>{translation ? 'Ver original' : translating ? 'A traduzir…' : 'Traduzir'}</button> : null}</>}
 
       {message.attachments?.map((attachment) => <button
         key={attachment.id}
@@ -293,6 +298,11 @@ export function Phase7MessagePage() {
         own={message.sender_id === user.id}
         onUnlock={() => void unlock(message)}
         onAttachment={(attachment) => void openAttachment(attachment)}
+        onTranslate={async () => {
+          const result = await supabase.functions.invoke('translate-message', { body: { messageId: message.id, language: 'pt-MZ' } });
+          if (result.error) { setErrorCode(result.error.message); return null; }
+          return typeof result.data?.translation === 'string' ? result.data.translation : null;
+        }}
       />)}
       {!messages.length ? <EstadoVazio title="Ainda não há mensagens." body="Envia uma mensagem quando a conversa estiver pronta." /> : null}
       {typingUsers.length ? <p className="m-0 text-xs text-bone-500">A escrever</p> : null}

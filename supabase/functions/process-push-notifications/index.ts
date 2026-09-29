@@ -42,23 +42,24 @@ Deno.serve(async (request) => {
   for (const notification of notifications) {
     const { data: subscriptions } = await supabase
       .from("push_subscriptions")
-      .select("id,endpoint,p256dh,auth")
+      .select("id,endpoint,p256dh,auth,preferences,quiet_start,quiet_end,discreet_mode")
       .eq("user_id", notification.user_id)
       .eq("enabled", true);
 
     if (!subscriptions?.length) continue;
 
-    const title = notification.kind === "message" ? "Tens uma nova mensagem" : "Actividade na tua conta";
-    const payload = JSON.stringify({
-      title,
-      body: "Abre a Prively para veres a actividade.",
-      url: notification.kind === "message" ? "/mensagens" : "/",
-      tag: "prively-" + notification.id,
-    });
-
     let delivered = false;
 
     for (const subscription of subscriptions) {
+      const preferences = subscription.preferences && typeof subscription.preferences === 'object' ? subscription.preferences as Record<string, unknown> : {};
+      const category = notification.kind === 'message' ? 'messages' : notification.kind === 'live' ? 'lives' : notification.kind === 'money' ? 'money' : 'news';
+      if (preferences[category] === false || preferences.all === false) continue;
+      const payload = JSON.stringify({
+        title: subscription.discreet_mode ? "Actividade" : "Prively",
+        body: notification.kind === "message" ? "Tens uma nova mensagem" : notification.kind === 'live' ? "Há actividade numa transmissão" : "Tens uma nova actividade",
+        url: "/notificacoes",
+        tag: "prively-neutral",
+      });
       try {
         await webpush.sendNotification(
           {

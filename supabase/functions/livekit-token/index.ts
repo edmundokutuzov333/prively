@@ -20,13 +20,13 @@ Deno.serve(async (request) => {
     const row = data as { room_name?: unknown; role?: unknown; kind?: unknown; mode?: unknown; per_minute_price?: unknown; session_id?: unknown };
     if (typeof row.room_name !== "string" || typeof row.role !== "string" || typeof row.kind !== "string") return jsonResponse({ code: "LIVE_ACCESS_INVALID" }, 500);
 
-    const token = new AccessToken(env("LIVEKIT_API_KEY"), env("LIVEKIT_API_SECRET"), { identity: user.id, ttl: "10m" });
+    const token = new AccessToken(env("LIVEKIT_API_KEY"), env("LIVEKIT_API_SECRET"), { identity: user.id, ttl: "5m" });
     token.addGrant(new VideoGrant({
       room: row.room_name,
       roomJoin: true,
       canPublish: row.role === "host" || row.role === "caller",
       canSubscribe: true,
-      canPublishData: false,
+      canPublishData: true,
     }));
 
     return new Response(JSON.stringify({
