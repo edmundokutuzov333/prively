@@ -54,7 +54,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
     if (mode === 'signUp' && !values.handle?.match(/^[a-z0-9_]{3,24}$/)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['handle'], message: 'invalid_handle' });
     }
-    if (mode === 'signUp' && !values.ageConfirmed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ageConfirmed'], message: 'age_required' });
+    if (mode === 'signUp' && !isCreatorSignup && !values.ageConfirmed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ageConfirmed'], message: 'age_required' });
     if (mode === 'signUp' && !isCreatorSignup) {
       if (!values.termsAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['termsAccepted'], message: 'terms_required' });
       if (!values.privacyAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['privacyAccepted'], message: 'privacy_required' });
@@ -228,7 +228,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
             <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
               {creatorTermDeclarations.map((declaration, index) => <label key={declaration.key} className="flex items-start gap-3 rounded-md border border-bone-50/8 bg-ink-900 p-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register(declaration.key)} className="mt-1 accent-crimson-500"/><span><strong className="mr-1 text-bone-500">{index + 1}.</strong>{declaration.text}</span></label>)}
             </div>
-            {creatorTermDeclarations.some(({ key }) => Boolean(errors[key])) || errors.ageConfirmed ? <p className="text-xs text-danger">Todas as 16 declarações e a confirmação de idade são obrigatórias.</p> : null}
+            {creatorTermDeclarations.some(({ key }) => Boolean(errors[key])) ? <p className="text-xs text-danger">Todas as 16 declarações obrigatórias são necessárias para continuar.</p> : null}
           </> : <>
             <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('termsAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.termsAccepted')}</span></label>
             <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('privacyAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.privacyAccepted')}</span></label>
