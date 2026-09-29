@@ -1,10 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import '@/lib/i18n';
 import { HomePage } from './HomePage';
 
 describe('HomePage', () => {
+  afterEach(cleanup);
+
   it('presents both real entry paths without showing explicit content', () => {
     render(<MemoryRouter><HomePage /></MemoryRouter>);
 

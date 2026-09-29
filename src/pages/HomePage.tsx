@@ -16,12 +16,14 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
-import { Botao } from '@/design/Botao';
 import { Cordao } from '@/design/Cordao';
 import { supportedLanguages } from '@/lib/i18n';
 import { homeCopy } from '@/content/homeCopy';
 
 const pillarIcons = [Sparkle, ChatsCircle, Wallet] as const;
+const linkButtonBase = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[2px] px-4 py-3 text-sm font-semibold no-underline transition-colors';
+const primaryLinkButton = `${linkButtonBase} border border-crimson-400/40 bg-crimson-500 text-white shadow-[0_0_32px_hsl(var(--wine-600)/.30)] hover:bg-crimson-400`;
+const outlineLinkButton = `${linkButtonBase} border border-bone-50/15 bg-transparent text-bone-50 hover:border-crimson-500/40 hover:bg-wine-900/30`;
 
 export function HomePage() {
   const { t, i18n } = useTranslation();
@@ -37,7 +39,7 @@ export function HomePage() {
         <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center gap-14 px-5 py-14 md:grid-cols-[1.08fr_.92fr] md:px-8 md:py-20">
           <div className="relative z-10 max-w-3xl">
             <motion.div
-              initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduced ? 0.12 : 0.45 }}
               className="mb-7 flex items-center gap-3 text-sm text-bone-300"
@@ -48,7 +50,7 @@ export function HomePage() {
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: reduced ? 0 : 18 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduced ? 0.12 : 0.55, delay: 0.04 }}
               className="max-w-3xl font-display text-[clamp(4rem,9vw,8.5rem)] leading-[.83] tracking-[-0.045em] text-bone-50"
@@ -57,7 +59,7 @@ export function HomePage() {
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               transition={{ duration: reduced ? 0.12 : 0.55, delay: 0.12 }}
               className="mt-8 max-w-xl text-base leading-7 text-bone-300 md:text-lg"
@@ -66,11 +68,11 @@ export function HomePage() {
             </motion.p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link to="/idade?role=client" className="no-underline">
-                <Botao><Keyhole size={19} weight="duotone" />{t('hero.clientAction')}<ArrowRight size={17} weight="duotone" /></Botao>
+              <Link to="/idade?role=client" className={primaryLinkButton}>
+                <Keyhole size={19} weight="duotone" />{t('hero.clientAction')}<ArrowRight size={17} weight="duotone" />
               </Link>
-              <Link to="/idade?role=creator" className="no-underline">
-                <Botao variant="outline"><Sparkle size={19} weight="duotone" />{t('hero.creatorAction')}</Botao>
+              <Link to="/idade?role=creator" className={outlineLinkButton}>
+                <Sparkle size={19} weight="duotone" />{t('hero.creatorAction')}
               </Link>
             </div>
 
@@ -262,11 +264,11 @@ export function HomePage() {
             <h2 className="mt-5 max-w-3xl font-display text-5xl leading-[.9] text-bone-50 md:text-7xl">{copy.finalTitle}</h2>
             <p className="mt-6 max-w-2xl text-base leading-7 text-bone-300">{copy.finalBody}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link to="/idade?role=client" className="no-underline">
-                <Botao><Keyhole size={19} weight="duotone" />{t('hero.clientAction')}</Botao>
+              <Link to="/idade?role=client" className={primaryLinkButton}>
+                <Keyhole size={19} weight="duotone" />{t('hero.clientAction')}
               </Link>
-              <Link to="/idade?role=creator" className="no-underline">
-                <Botao variant="outline"><Sparkle size={19} weight="duotone" />{t('hero.creatorAction')}</Botao>
+              <Link to="/idade?role=creator" className={outlineLinkButton}>
+                <Sparkle size={19} weight="duotone" />{t('hero.creatorAction')}
               </Link>
             </div>
           </div>
