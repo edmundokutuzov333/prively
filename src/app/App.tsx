@@ -107,7 +107,8 @@ import {
 } from '@/pages/Phase9BusinessPages';
 
 const phase2RoutesEnabled = featureFlags.phase2Experience || import.meta.env.DEV;
-const phase3RoutesEnabled = true;
+const phase3RoutesEnabled = featureFlags.phase3Monetization || featureFlags.phase9Business;
+const liveRoutesEnabled = featureFlags.live;
 const phase9RoutesEnabled = featureFlags.phase9Business;
 const stateSurfaceRoutes = [
   '/estado/403',
@@ -192,9 +193,11 @@ export function App() {
             <Route path="/carteira" element={featureFlags.phase6Financials ? <Phase6ClientWalletPage /> : phase3RoutesEnabled ? <ClientWalletRealPage /> : <ClientWalletPage />} />
             <Route path="/compras" element={<ClientPurchasesCorePage />} />
             <Route path="/desejos" element={<ClientWishlistCorePage />} />
-            {phase3RoutesEnabled ? <>
+            {liveRoutesEnabled ? <>
               <Route path="/lives" element={<ClientLiveListPage />} />
               <Route path="/live/:sessionId" element={<ClientLiveRoomPage />} />
+            </> : null}
+            {phase3RoutesEnabled ? <>
               <Route path="/leilao/:auctionId" element={<ClientAuctionPage />} />
               <Route path="/apoio" element={<ClientSupportCreatorPage />} />
               <Route path="/actividades" element={<ClientEngagementPage />} />
@@ -231,8 +234,10 @@ export function App() {
             <Route path="/notificacoes" element={<Phase7NotificationsPage />} />
             <Route path="/denuncias" element={<Phase8MyReportsPage />} />
             <Route path="/mensagens/bloqueadas" element={<Phase7MessagesPage />} />
-            <Route path="/live-privada" element={<ClientLiveListPage />} />
-            <Route path="/chamadas" element={<ClientLiveListPage />} />
+            {liveRoutesEnabled ? <>
+              <Route path="/live-privada" element={<ClientLiveListPage />} />
+              <Route path="/chamadas" element={<ClientLiveListPage />} />
+            </> : null}
             <Route path="/recarga" element={<Phase6ClientWalletPage />} />
             <Route path="/historico-carteira" element={<Phase6ClientWalletPage />} />
             <Route path="/recibos" element={<Phase6ClientWalletPage />} />
@@ -257,7 +262,7 @@ export function App() {
             <Route path="/estudio/analitica" element={phase9RoutesEnabled ? <Phase9CreatorAnalyticsPage /> : phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
             <Route path="/estudio/pedidos" element={phase9RoutesEnabled ? <Phase9CreatorRequestsPage /> : phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
             <Route path="/estudio/leiloes" element={phase9RoutesEnabled ? <Phase9CreatorAuctionsPage /> : phase3RoutesEnabled ? <CreatorAuctionsAdvancedPage /> : <CreatorAuctionsPage />} />
-            <Route path="/estudio/lives" element={phase3RoutesEnabled ? <CreatorLiveStudioPage /> : <CreatorLivesPage />} />
+            {liveRoutesEnabled ? <Route path="/estudio/lives" element={<CreatorLiveStudioPage />} /> : null}
             {phase3RoutesEnabled ? <>
               <Route path="/estudio/respostas" element={<CreatorAutoRepliesPage />} />
               <Route path="/estudio/bundles" element={<CreatorBundlesPage />} />
@@ -281,7 +286,7 @@ export function App() {
             <Route path="/estudio/mensagens" element={<Phase7MessagesPage />} />
             <Route path="/estudio/mensagens-pagas" element={<CreatorAutoRepliesPage />} />
             <Route path="/estudio/sorteios" element={<CreatorEngagementPage />} />
-            <Route path="/estudio/chamadas" element={<CreatorLiveStudioPage />} />
+            {liveRoutesEnabled ? <Route path="/estudio/chamadas" element={<CreatorLiveStudioPage />} /> : null}
             <Route path="/estudio/encontros" element={<Phase8CreatorMeetingsPage />} />
             <Route path="/estudio/seguranca" element={<CreatorSafetyControlsPage />} />
             <Route path="/estudio/check-in" element={<Phase8CreatorSafetyPage />} />
