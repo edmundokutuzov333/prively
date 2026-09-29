@@ -12,6 +12,7 @@ import { PageFrame } from '@/pages/PageFrame';
 import { SocialPostActions } from '@/features/social/SocialPostActions';
 import { requireSupabase } from '@/lib/supabase';
 import { formatMznFromCents } from '@/lib/money';
+import { ReportButton } from '@/features/safety/ReportButton';
 
 function DevSessionNote() {
   const { t } = useTranslation();
@@ -30,8 +31,28 @@ export function ClientFeedPage() { const { t } = useTranslation(); return <><Dev
 export function ClientProfilePage() {
   const { handle } = useParams();
   const { t } = useTranslation();
+  const [ownerId, setOwnerId] = useState<string | null>(null);
   const title = handle ? `@${handle}` : t('experience.pages.profile.title');
-  return <><DevSessionNote /><PageFrame icon={UsersThree} title={title} intro={t('experience.pages.profile.intro')} detail={t('experience.pages.profile.detail')} /></>;
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!handle) return;
+      const { data } = await requireSupabase().from('channels').select('owner_id').eq('handle', handle).maybeSingle();
+      if (active) setOwnerId(data?.owner_id ?? null);
+    };
+    void load();
+    return () => { active = false; };
+  }, [handle]);
+
+  return (
+    <>
+      <DevSessionNote />
+      <PageFrame icon={UsersThree} title={title} intro={t('experience.pages.profile.intro')} detail={t('experience.pages.profile.detail')}>
+        {ownerId ? <div className="mt-6"><ReportButton targetType="profile" targetId={ownerId} label="Denunciar perfil" /></div> : null}
+      </PageFrame>
+    </>
+  );
 }
 
 type PostDetail = {
