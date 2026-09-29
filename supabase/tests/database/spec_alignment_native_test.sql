@@ -76,7 +76,7 @@ with checks as (
   )
   union all
   select 'production.launch_disabled', coalesce((
-    select value = false from public.platform_settings where key='production.launch_enabled'
+    select value = 'false'::jsonb from public.platform_settings where key='production.launch_enabled'
   ), false)
 )
 select check_name, ok from checks order by check_name;
