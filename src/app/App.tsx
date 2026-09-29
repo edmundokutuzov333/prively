@@ -24,6 +24,7 @@ import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
 import { InfoPage } from '@/pages/InfoPage';
 import { SurfaceStatePage } from '@/pages/SurfacePages';
+import { CreatorTermsPage } from '@/pages/CreatorTermsPage';
 import {
   ClientPostPage,
   ClientPrivacyPage,
@@ -335,6 +336,7 @@ export function App() {
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/ajuda" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/termos" element={<InfoPage />} /> : null}
+        <Route path="/legal/termos-criadoras" element={<CreatorTermsPage />} />
         {phase2RoutesEnabled ? <Route path="/legal/privacidade" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/conteudo-proibido" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/reembolsos" element={<InfoPage />} /> : null}
