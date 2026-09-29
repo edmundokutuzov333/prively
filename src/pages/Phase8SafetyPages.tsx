@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle, Clock, Flag, MapPin, Phone, Plus, ShieldCheck, Trash, WarningCircle } from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
+import { Clock, Phone, Plus, ShieldCheck, Trash, WarningCircle } from '@phosphor-icons/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/app/session';
 import { Ficha } from '@/design/Ficha';
@@ -484,7 +484,6 @@ export function Phase8CreatorSafetyPage() {
 export function Phase8CreatorMeetingsPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [channelId, setChannelId] = useState('');
   const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
   const [endsAt, setEndsAt] = useState(() => new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString().slice(0, 16));
   const [areaLabel, setAreaLabel] = useState('');
@@ -642,7 +641,6 @@ export function Phase8ClientMeetingsPage() {
             <select value={slotId} onChange={(e) => {
               const slot = slots.find((item) => item.id === e.target.value);
               setSlotId(e.target.value);
-              setChannelId(slot?.channel_id ?? '');
               setProposedAt(slot?.starts_at.slice(0, 16) ?? '');
             }} className="mt-2 min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50">
               {slots.map((slot) => <option key={slot.id} value={slot.id}>{dt(slot.starts_at)} · {slot.area_label ?? 'Área a combinar'}</option>)}
