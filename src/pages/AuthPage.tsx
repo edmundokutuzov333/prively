@@ -29,7 +29,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
 
   const schema = z.object({
     email: z.string().email(),
-    password: z.string().min(8),
+    password: z.string().min(10),
     handle: z.string().optional(),
     ageConfirmed: z.boolean().optional(),
     termsAccepted: z.boolean().optional(),
@@ -51,7 +51,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
     suspension_termination: z.boolean().optional(),
     mozambique_law_maputo_forum: z.boolean().optional()
   }).superRefine((values, ctx) => {
-    if (mode === 'signUp' && !values.handle?.match(/^[a-z0-9_]{3,24}$/)) {
+    if (mode === 'signUp' && !values.handle?.match(/^[a-z0-9_.]{3,24}$/)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['handle'], message: 'invalid_handle' });
     }
     if (mode === 'signUp' && !isCreatorSignup && !values.ageConfirmed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ageConfirmed'], message: 'age_required' });
@@ -134,7 +134,13 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
           data: {
             handle: values.handle,
             display_name: values.handle,
-            signup_role: signupRole
+            signup_role: signupRole,
+            role: signupRole,
+            legal_acceptances: {
+              terms: { version: '1.0' },
+              privacy: { version: '1.0' },
+              creator_terms: isCreatorSignup ? { version: CREATOR_TERMS_VERSION, declarations: Object.fromEntries(creatorTermDeclarations.map(({ key }) => [key, true])) } : undefined,
+            }
           }
         }
       });
@@ -145,15 +151,8 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       }
 
       if (!data.session) {
-        const { data: signedIn, error: signInAfterSignupError } = await sb.auth.signInWithPassword({
-          email: values.email.trim().toLowerCase(),
-          password: values.password
-        });
-
-        if (signInAfterSignupError || !signedIn.session) {
-          setError(signInAfterSignupError?.message ?? t('auth.registrationNoSession'));
-          return;
-        }
+        setMessage('Confirma o teu email para concluir o registo. Depois volta para entrar.');
+        return;
       }
 
       const consent = await sb.rpc('record_consent', { _consent_type: 'age_gate', _version: '1.0' });

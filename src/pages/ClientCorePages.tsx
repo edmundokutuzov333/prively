@@ -8,6 +8,7 @@ import { PageFrame } from '@/pages/PageFrame';
 import { Cortina } from '@/design/Cortina';
 import { SocialPostActions } from '@/features/social/SocialPostActions';
 import { requireSupabase } from '@/lib/supabase';
+import { hasPin, setPin } from '@/lib/pin';
 import { formatMznFromCents } from '@/lib/money';
 import { useAuth } from '@/app/session';
 import i18n from '@/lib/i18n';
@@ -441,22 +442,20 @@ export function ClientLimitsCorePage() {
 
 export function ClientDiscreetCorePage() {
   const [enabled, setEnabled] = useState(() => window.localStorage.getItem('prively.discreet.enabled') === '1');
-  const [pin, setPin] = useState('');
-  const [hasPin, setHasPin] = useState(() => Boolean(window.localStorage.getItem('prively.discreet.pin')));
+  const [pin, setPinValue] = useState('');
+  const [hasStoredPin, setHasStoredPin] = useState(() => hasPin());
   const [error, setError] = useState<string | null>(null);
 
   const savePin = async () => {
-    if (!/^[0-9]{4}$/.test(pin)) {
-      setError('O PIN deve ter 4 dígitos.');
+    if (!/^[0-9]{6}$/.test(pin)) {
+      setError('O PIN deve ter 6 dígitos.');
       return;
     }
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
-    const hash = Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, '0')).join('');
-    window.localStorage.setItem('prively.discreet.pin', hash);
+    await setPin(pin);
     window.localStorage.setItem('prively.discreet.enabled', '1');
     setEnabled(true);
-    setHasPin(true);
-    setPin('');
+    setHasStoredPin(true);
+    setPinValue('');
     document.title = 'Actividade';
     window.dispatchEvent(new Event('prively:discreet-changed'));
   };
@@ -472,7 +471,7 @@ export function ClientDiscreetCorePage() {
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     <Ficha className="p-5">
       <label className="flex items-center justify-between gap-4 text-sm text-bone-300"><span><strong className="block text-bone-50">Modo discreto</strong><span className="text-bone-500">Título neutro e notificações já desenhadas para discrição.</span></span><input type="checkbox" checked={enabled} onChange={(event) => toggle(event.target.checked)} /></label>
-      <label className="mt-5 block text-sm text-bone-300">PIN de acesso de 4 dígitos<input value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} type="password" inputMode="numeric" maxLength={4} className="mt-2 min-h-11 w-full rounded-md bg-ink-800 px-3 text-bone-50" placeholder={hasPin ? '••••' : '0000'} /></label>
+      <label className="mt-5 block text-sm text-bone-300">PIN de acesso de 6 dígitos<input value={pin} onChange={(event) => setPinValue(event.target.value.replace(/\D/g, '').slice(0, 6))} type="password" inputMode="numeric" maxLength={6} className="mt-2 min-h-11 w-full rounded-md bg-ink-800 px-3 text-bone-50" placeholder={hasStoredPin ? '••••••' : '000000'} /></label>
       <Botao className="mt-4" onClick={() => void savePin()}>Guardar PIN</Botao>
     </Ficha>
   </PageFrame>;

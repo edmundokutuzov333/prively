@@ -1,15 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { PinPad } from '@/design/PinPad';
 import { Ficha } from '@/design/Ficha';
+import { hasPin, verifyPin } from '@/lib/pin';
+import { requireSupabase } from '@/lib/supabase';
 
 const STANDARD_TITLE = 'Prively | O teu Privê digital.';
 const NEUTRAL_TITLE = 'Actividade';
-
-function hashPin(pin: string): Promise<string> {
-  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin)).then((digest) =>
-    Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, '0')).join(''),
-  );
-}
 
 function applyDiscreetShell(enabled: boolean) {
   document.title = enabled ? NEUTRAL_TITLE : STANDARD_TITLE;
@@ -25,8 +21,7 @@ export function DiscreetGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     const evaluate = () => {
       const discreet = window.localStorage.getItem('prively.discreet.enabled') === '1';
-      const storedPin = window.localStorage.getItem('prively.discreet.pin');
-      const active = discreet && Boolean(storedPin);
+      const active = discreet && hasPin();
       setEnabled(active);
       setReady(true);
       applyDiscreetShell(discreet);
@@ -49,7 +44,7 @@ export function DiscreetGate({ children }: { children: ReactNode }) {
       idleTimer = window.setTimeout(() => setLocked(true), 5 * 60 * 1000);
     };
     const visibility = () => {
-      if (document.visibilityState !== 'visible' && window.localStorage.getItem('prively.discreet.enabled') === '1' && window.localStorage.getItem('prively.discreet.pin')) {
+      if (document.visibilityState !== 'visible' && window.localStorage.getItem('prively.discreet.enabled') === '1' && hasPin()) {
         setLocked(true);
       } else if (document.visibilityState === 'visible') {
         evaluate();
@@ -76,11 +71,13 @@ export function DiscreetGate({ children }: { children: ReactNode }) {
   if (!ready || !locked) return <>{children}</>;
 
   const unlock = async (pin: string) => {
-    const expected = window.localStorage.getItem('prively.discreet.pin');
-    if (!expected) return;
-    const supplied = await hashPin(pin);
-    if (supplied === expected) {
+    const result = await verifyPin(pin);
+    if (result === 'ok') {
       setLocked(false);
+    } else if (result === 'wiped') {
+      window.localStorage.setItem('prively.discreet.enabled', '0');
+      window.dispatchEvent(new Event('prively:discreet-changed'));
+      await requireSupabase().auth.signOut({ scope: 'local' });
     }
   };
 
