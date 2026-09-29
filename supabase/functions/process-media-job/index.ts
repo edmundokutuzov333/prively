@@ -289,7 +289,7 @@ Deno.serve(async (request) => {
     const isAdminWorker = !adminPermission.error && adminPermission.data === true;
 
     if (!isAdminWorker) {
-      if (!["integrity", "archive"].includes(String(requestedJob.job_type))) {
+      if (!["integrity", "archive", "caption", "face_blur", "advanced_media"].includes(String(requestedJob.job_type))) {
         return jsonResponse({ code: "forbidden" }, 403);
       }
 
@@ -458,6 +458,8 @@ Deno.serve(async (request) => {
       if (typeof output.hlsPath === "string") patch.hls_path = safeDerivativePath(asset, output.hlsPath);
       if (typeof output.thumbnailPath === "string") patch.thumb_blur_path = safeDerivativePath(asset, output.thumbnailPath);
       if (typeof output.watermarkPath === "string") patch.watermark_path = safeDerivativePath(asset, output.watermarkPath);
+      if (typeof output.captionPath === "string") patch.caption_path = safeDerivativePath(asset, output.captionPath);
+      if (typeof output.faceBlurPath === "string") patch.face_blur_path = safeDerivativePath(asset, output.faceBlurPath);
       if (typeof output.width === "number") patch.width = output.width;
       if (typeof output.height === "number") patch.height = output.height;
       if (typeof output.durationMs === "number") patch.duration_ms = output.durationMs;
