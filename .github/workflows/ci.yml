@@ -73,6 +73,7 @@ jobs:
           run_native supabase/tests/database/phase7_social_realtime_test.sql
           run_native supabase/tests/database/phase8_safety_moderation_meetings_test.sql
           run_native supabase/tests/database/phase9_business_engine_test.sql
+          run_native supabase/tests/database/spec_alignment_native_test.sql
       - name: Stop local Supabase
         if: always()
         run: supabase stop --no-backup
