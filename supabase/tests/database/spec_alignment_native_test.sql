@@ -274,7 +274,7 @@ security_checks as (
   union all
   select 'security.launch_gate_off',
     coalesce((
-      select value=false
+      select value='false'::jsonb
       from public.platform_settings
       where key='production.launch_enabled'
     ), false)
