@@ -18,9 +18,7 @@ create index if not exists message_unlocks_user_idx on public.message_unlocks(us
 
 create index if not exists message_attachments_conversation_idx on public.message_attachments(conversation_id);
 create index if not exists message_attachments_owner_idx on public.message_attachments(owner_id);
-create index if not exists message_attachments_message_idx2 on public.message_attachments(message_id);
 
-create index if not exists message_translations_message_idx2 on public.message_translations(message_id);
 
 create index if not exists notifications_user_created_idx on public.notifications(user_id,created_at desc);
 create index if not exists push_subscriptions_user_idx on public.push_subscriptions(user_id);
