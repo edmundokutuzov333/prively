@@ -293,6 +293,8 @@ export function SeCriadoraPage() {
     <div className="mx-auto mt-4 max-w-6xl rounded-xl border border-bone-50/8 bg-ink-900/50 p-5 text-sm text-bone-300">
       <span>{t('auth.haveAccount')} </span>
       <a href="/entrar?portal=creator" className="text-bone-50 underline underline-offset-4">{t('auth.creatorSignInTitle')}</a>
+      <span className="mx-2 text-bone-600">·</span>
+      <Link to="/legal/termos-criadoras" className="text-bone-50 underline underline-offset-4">Ler Termos e Condições para Criadoras</Link>
     </div>
   </section>;
 }
