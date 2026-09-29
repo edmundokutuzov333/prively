@@ -18,9 +18,10 @@ A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Env
 - `npm run test`: ✅ 4 ficheiros / 10 testes.
 - `npm run audit:production`: ✅ 72 ficheiros browser / 26 Edge Functions.
 - `npm run build`: ✅; warnings não bloqueantes de bundle grande e comentários em Zod.
-- `npm run check:migrations`: ✅ `155 migrações, sem versões duplicadas (61 marcadores históricos)`.
+- `npm run check:migrations`: ✅ `156 migrações, sem versões duplicadas (61 marcadores históricos)`.
 - `npm run check:supabase-config`: ✅ `23 funções com verify_jwt explícito`.
-- `supabase db reset`, `supabase test db`, suites nativas e Playwright: ⚠️ não verificáveis neste host sem Supabase CLI/Docker e sem ambiente E2E preparado.
+- `supabase db reset`: ⚠️ a primeira execução CI falhou em `20260929021500` por falta de `public.comments`/`public.reactions`; foi adicionada a migração `20260929021400_phase7_social_tables.sql` e a reexecução é necessária.
+- `supabase test db`, suites nativas e Playwright: ⚠️ não verificáveis neste host sem Supabase CLI/Docker e sem ambiente E2E preparado.
 
 ## 4. Critérios de aceitação da fase
 
@@ -29,7 +30,7 @@ A entrega colocou a produção atrás de CI bem-sucedido, com aprovação do Env
 - ✅ `package-lock.json` criado e workflows usam `npm ci`.
 - ✅ CLI Supabase `2.118.0` e Vercel `61.0.0` fixados.
 - ✅ Versões de migração duplicadas eliminadas no checkout local e guarda adicionada ao CI.
-- ⚠️ Reset do zero e suites SQL: não executados localmente por falta de CLI/Docker.
+- ⚠️ Reset do zero: primeira tentativa CI falhou por dependência de tabelas sociais ausentes; correção forward-only publicada, reexecução pendente.
 - ✅ As 23 funções têm `verify_jwt` explícito; webhooks/crons estão `false` para autenticação própria.
 - ✅ Cliente Supabase lê `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - ⚠️ Staging separado: projeto Supabase/Vercel ainda não existe na conta ligada.
@@ -45,7 +46,7 @@ O scoreboard completo está em `docs/platform-status.md`. O estado global desta 
 
 - Resolvidos: F-01 (duplicidade local), F-03 (deploy direto), F-04 (lockfile/npm ci/versões fixas), F-05 (configuração explícita), F-11 (env frontend), F-15 (wildcard removido), F-21 (baseline separada/documentada).
 - Adiados: F-02 (histórico remoto divergente exige reset/reconcile com backup), F-12 (fonte única de flags exige RPC/hook/admin), F-23 (dependências não-código).
-- Novos: N-01 host local sem Node 24/CLI/Docker; N-02 Vercel Prively ausente; N-03 staging Supabase ausente.
+- Novos: N-01 host local sem Node 24/CLI/Docker; N-02 Vercel Prively ausente; N-03 staging Supabase ausente; N-04 dependência social ausente na reconstrução local, com correção adicionada.
 
 ## 7. UI · UX · CX · SD
 

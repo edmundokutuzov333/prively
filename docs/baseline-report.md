@@ -14,7 +14,7 @@
 | --- | --- |
 | `npm install --package-lock-only --no-audit --no-fund` | ✅ lockfile criado |
 | `npm ci --no-audit --no-fund` | ✅ 613 pacotes instalados; avisos de engine por Node 26 |
-| `npm run check:migrations` | ✅ 155 migrações, 0 versões duplicadas, 61 marcadores históricos |
+| `npm run check:migrations` | ✅ 156 migrações, 0 versões duplicadas, 61 marcadores históricos |
 | `npm run check:supabase-config` | ✅ 23 funções com `verify_jwt` explícito |
 | `npm run typecheck` | ✅ |
 | `npm run lint` | ✅ 0 erros; 1 warning de Fast Refresh em `src/app/session.tsx` |
@@ -36,3 +36,4 @@
 - `N-01`: o ambiente de execução local não cumpre Node 24 e não tem Supabase CLI/Docker; a prova de reset da base de dados fica para CI/runner preparado.
 - `N-02`: falta criar/importar o projeto Vercel `prively` e configurar o Environment `production` com revisores obrigatórios.
 - `N-03`: falta um projeto Supabase de staging; não foi criado automaticamente porque é uma decisão/custo do dono do produto.
+- `N-04`: a primeira execução CI de `supabase db reset` falhou porque `public.comments` e `public.reactions` estavam ausentes antes da migração de grants; foi adicionada uma migração forward-only para restaurar as tabelas e a prova CI precisa ser repetida.
