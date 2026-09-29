@@ -6,6 +6,7 @@ const env=(n:string)=>{const v=Deno.env.get(n);if(!v)throw new Error("missing_en
 const b64=(bytes:Uint8Array)=>{let s="";for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(s);};
 const decodeKey=(value:string)=>{try{const raw=Uint8Array.from(atob(value),c=>c.charCodeAt(0));if(raw.length===32)return raw;}catch{};const raw=new TextEncoder().encode(value);if(raw.length!==32)throw new Error("shipping_key_invalid");return raw;};
 const userClient=(token:string)=>createClient(env("SUPABASE_URL"),env("SUPABASE_ANON_KEY"),{global:{headers:{Authorization:token}},auth:{persistSession:false,autoRefreshToken:false}});
+const serviceClient=()=>createClient(env("SUPABASE_URL"),env("SUPABASE_SERVICE_ROLE_KEY"),{auth:{persistSession:false,autoRefreshToken:false}});
 
 Deno.serve(async(req)=>{
   if(req.method==="OPTIONS")return json({ok:true});
@@ -16,7 +17,8 @@ Deno.serve(async(req)=>{
     const client=userClient(auth);
     const {data:{user},error:userError}=await client.auth.getUser();
     if(userError||!user)return json({code:"unauthorized"},401);
-    const {data:flag}=await client.from("platform_settings").select("value").eq("key","feature_flags.store").maybeSingle();
+    const admin=serviceClient();
+    const {data:flag}=await admin.from("platform_settings").select("value").eq("key","feature_flags.store").maybeSingle();
     if(flag?.value!==true)return json({code:"store_disabled"},503);
 
     const body=await req.json() as {items?:unknown;shipping?:unknown;promotionCode?:unknown;idempotencyKey?:unknown};
