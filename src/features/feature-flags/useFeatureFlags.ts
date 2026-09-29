@@ -10,6 +10,8 @@ const serverKeyByClientKey: Record<string, keyof typeof featureFlags> = {
   creator_analytics: 'creatorAnalytics', fan_crm: 'fanCrm', goals: 'creatorGoals', referral: 'referral', premium: 'premiumFeatures',
   featured_creators: 'featuredCreators', recommendations: 'recommendations', ai_response_assistant: 'aiResponseAssistant',
   auto_captions: 'autoCaptions', face_blur: 'faceBlur', advanced_media_processing: 'advancedMediaProcessing',
+  phase3_monetization: 'phase3Monetization', creator_studio: 'creatorStudio', phase6_financials: 'phase6Financials',
+  wallet: 'wallet', payments: 'payments',
 };
 
 type PublicFlag = { key: string; enabled: boolean };
