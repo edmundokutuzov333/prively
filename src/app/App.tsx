@@ -95,9 +95,32 @@ import {
   Phase6FinanceAdminPage,
   Phase6LimitsPage,
 } from '@/pages/Phase6FinancialPages';
+import {
+  Phase9AdminBusinessPage,
+  Phase9AgencyPage,
+  Phase9BusinessIntegrationsPage,
+  Phase9ClientAuctionsPage,
+  Phase9ClientBundlesPage,
+  Phase9ClientDiscoveryPage,
+  Phase9ClientGiveawaysPage,
+  Phase9ClientGiftsPage,
+  Phase9ClientLoyaltyPage,
+  Phase9ClientPremiumPage,
+  Phase9ClientRequestsPage,
+  Phase9ClientStorePage,
+  Phase9CreatorAnalyticsPage,
+  Phase9CreatorAuctionsPage,
+  Phase9CreatorFansPage,
+  Phase9CreatorGoalsPage,
+  Phase9CreatorPromotionsPage,
+  Phase9CreatorReferralPage,
+  Phase9CreatorRequestsPage,
+  Phase9CreatorStorePage,
+} from '@/pages/Phase9BusinessPages';
 
 const phase2RoutesEnabled = featureFlags.phase2Experience || import.meta.env.DEV;
 const phase3RoutesEnabled = featureFlags.phase3Monetization || import.meta.env.DEV;
+const phase9RoutesEnabled = featureFlags.phase9Business;
 const clientSurfaceRoutes = [
   '/onboarding',
   '/pesquisa',
@@ -235,7 +258,7 @@ export function App() {
 
         {phase2RoutesEnabled ? <Route element={<ExperienceGuard />}>
           <Route element={<WorkspaceLayout variant="client" />}>
-            <Route path="/descobrir" element={<ClientDiscoverPage />} />
+            <Route path="/descobrir" element={phase9RoutesEnabled ? <Phase9ClientDiscoveryPage /> : <ClientDiscoverPage />} />
             <Route path="/feed" element={<ClientFeedPage />} />
             <Route path="/c/:handle" element={<ClientProfilePage />} />
             <Route path="/post/:id" element={<ClientPostPage />} />
@@ -250,12 +273,19 @@ export function App() {
             {phase3RoutesEnabled ? <>
               <Route path="/lives" element={<ClientLiveListPage />} />
               <Route path="/live/:sessionId" element={<ClientLiveRoomPage />} />
-              <Route path="/pedidos" element={<ClientCustomRequestPage />} />
+              <Route path="/pedidos" element={phase9RoutesEnabled ? <Phase9ClientRequestsPage /> : <ClientCustomRequestPage />} />
               <Route path="/leilao/:auctionId" element={<ClientAuctionPage />} />
-              <Route path="/loja" element={<ClientStorePage />} />
-              <Route path="/recompensas" element={<ClientRewardsPage />} />
+              <Route path="/loja" element={phase9RoutesEnabled ? <Phase9ClientStorePage /> : <ClientStorePage />} />
+              {phase9RoutesEnabled ? <>
+                <Route path="/leiloes" element={<Phase9ClientAuctionsPage />} />
+                <Route path="/sorteios" element={<Phase9ClientGiveawaysPage />} />
+                <Route path="/presentes" element={<Phase9ClientGiftsPage />} />
+                <Route path="/fidelidade" element={<Phase9ClientLoyaltyPage />} />
+                <Route path="/premium" element={<Phase9ClientPremiumPage />} />
+              </> : null}
+              <Route path="/recompensas" element={phase9RoutesEnabled ? <Phase9ClientLoyaltyPage /> : <ClientRewardsPage />} />
               <Route path="/apoio" element={<ClientSupportCreatorPage />} />
-              <Route path="/bundles" element={<ClientBundlesPage />} />
+              <Route path="/bundles" element={phase9RoutesEnabled ? <Phase9ClientBundlesPage /> : <ClientBundlesPage />} />
               <Route path="/actividades" element={<ClientEngagementPage />} />
               <Route path="/rankings" element={<ClientRankingsPage />} />
             </> : null}
@@ -270,22 +300,22 @@ export function App() {
           <Route element={<WorkspaceLayout variant="creator" />}>
             <Route path="/estudio" element={<CreatorStudioPage />} />
             <Route path="/estudio/conteudo" element={<ContentStudioPage />} />
-            <Route path="/estudio/loja" element={phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
+            <Route path="/estudio/loja" element={phase9RoutesEnabled ? <Phase9CreatorStorePage /> : phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
             <Route path="/estudio/agenda" element={<CreatorAgendaPage />} />
-            <Route path="/estudio/fas" element={phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
+            <Route path="/estudio/fas" element={phase9RoutesEnabled ? <Phase9CreatorFansPage /> : phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
             <Route path="/estudio/mensagens" element={<Phase7MessagesPage />} />
             <Route path="/estudio/mensagens/:id" element={<Phase7MessagePage />} />
             <Route path="/estudio/encontros" element={<Phase8CreatorMeetingsPage />} />
             <Route path="/estudio/check-in" element={<Phase8CreatorSafetyPage />} />
             <Route path="/estudio/panico" element={<Phase8CreatorSafetyPage />} />
             <Route path="/estudio/ganhos" element={featureFlags.phase6Financials ? <Phase6CreatorEarningsPage /> : <CreatorEarningsPage />} />
-            <Route path="/estudio/analitica" element={phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
-            <Route path="/estudio/pedidos" element={phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
-            <Route path="/estudio/leiloes" element={phase3RoutesEnabled ? <CreatorAuctionsAdvancedPage /> : <CreatorAuctionsPage />} />
+            <Route path="/estudio/analitica" element={phase9RoutesEnabled ? <Phase9CreatorAnalyticsPage /> : phase3RoutesEnabled ? <CreatorAnalyticsAdvancedPage /> : <CreatorAnalyticsPage />} />
+            <Route path="/estudio/pedidos" element={phase9RoutesEnabled ? <Phase9CreatorRequestsPage /> : phase3RoutesEnabled ? <CreatorRequestsAdvancedPage /> : <CreatorRequestsPage />} />
+            <Route path="/estudio/leiloes" element={phase9RoutesEnabled ? <Phase9CreatorAuctionsPage /> : phase3RoutesEnabled ? <CreatorAuctionsAdvancedPage /> : <CreatorAuctionsPage />} />
             <Route path="/estudio/lives" element={phase3RoutesEnabled ? <CreatorLiveStudioPage /> : <CreatorLivesPage />} />
             {phase3RoutesEnabled ? <>
-              <Route path="/estudio/metas" element={<CreatorGoalsPage />} />
-              <Route path="/estudio/referral" element={<CreatorReferralPage />} />
+              <Route path="/estudio/metas" element={phase9RoutesEnabled ? <Phase9CreatorGoalsPage /> : <CreatorGoalsPage />} />
+              <Route path="/estudio/referral" element={phase9RoutesEnabled ? <Phase9CreatorReferralPage /> : <CreatorReferralPage />} />
               <Route path="/estudio/respostas" element={<CreatorAutoRepliesPage />} />
               <Route path="/estudio/bundles" element={<CreatorBundlesPage />} />
               <Route path="/estudio/actividades" element={<CreatorEngagementPage />} />
@@ -312,6 +342,11 @@ export function App() {
           <Route path="/admin/legal-holds" element={<Phase8LegalHoldsPage />} />
           <Route path="/admin/locais-seguros" element={<Phase8SafeVenuesPage />} />
           <Route path="/admin/emergencias" element={<Phase8EmergenciesPage />} />
+          {phase9RoutesEnabled ? <>
+            <Route path="/admin/negocio" element={<Phase9AdminBusinessPage />} />
+            <Route path="/admin/integracoes-negocio" element={<Phase9BusinessIntegrationsPage />} />
+            <Route path="/admin/agencia" element={<Phase9AgencyPage />} />
+          </> : null}
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
           {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria','/admin/financeiro'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
         </Route>
