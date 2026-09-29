@@ -165,7 +165,7 @@ export function Phase9CreatorAuctionsPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Não foi possível criar o leilão.'); }
     finally { setBusy(false); }
   };
-  return <PageFrame icon={Auction} eyebrow="Estúdio · Leilões" title="Criar leilão" intro="Define o incremento e um prazo. Os últimos minutos têm extensão automática anti-sniping.">
+  return <PageFrame icon={Gavel} eyebrow="Estúdio · Leilões" title="Criar leilão" intro="Define o incremento e um prazo. Os últimos minutos têm extensão automática anti-sniping.">
     <ErrorBox message={error}/><Ficha><form onSubmit={create} className="grid gap-4 md:grid-cols-2"><select value={channelId} onChange={(e)=>setChannelId(e.target.value)} className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50">{channels.map((channel)=><option key={channel.id} value={channel.id}>{channel.display_name}</option>)}</select><input value={title} onChange={(e)=>setTitle(e.target.value)} required minLength={3} maxLength={120} placeholder="Título do leilão" className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50"/><input value={minimum} onChange={(e)=>setMinimum(e.target.value)} required inputMode="decimal" placeholder="Lance mínimo em MT" className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50"/><input value={increment} onChange={(e)=>setIncrement(e.target.value)} required inputMode="decimal" placeholder="Incremento em MT" className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50"/><input type="datetime-local" value={endsAt} onChange={(e)=>setEndsAt(e.target.value)} required className="min-h-11 rounded-[2px] bg-ink-800 px-3 text-bone-50"/><Botao type="submit" loading={busy}>Publicar leilão</Botao></form></Ficha>
   </PageFrame>;
 }
