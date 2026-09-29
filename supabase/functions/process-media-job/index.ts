@@ -284,14 +284,17 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
 
   try {
-    const { client, user } = await requireUser(request);
+    const admin = serviceClient();
+    const workerToken = request.headers.get('x-prively-worker-token');
+    const workerCheck = workerToken ? await admin.rpc('is_valid_media_worker_token', { _token: workerToken }) : { data: false, error: null };
+    const isWorker = workerCheck.data === true;
+    const session = isWorker ? { client: admin, user: null } : await requireUser(request);
+    const { client, user } = session;
     const body = await request.json() as { jobId?: unknown };
 
     if (typeof body.jobId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.jobId)) {
       return jsonResponse({ code: "invalid_job_id" }, 400);
     }
-
-    const admin = serviceClient();
 
     const { data: requestedJob, error: jobError } = await admin
       .from("media_processing_jobs")
@@ -300,7 +303,7 @@ Deno.serve(async (request) => {
       .single();
 
     if (jobError || !requestedJob) return jsonResponse({ code: "job_not_found" }, 404);
-    if (!["queued", "failed", "blocked"].includes(requestedJob.status)) {
+    if (!["queued", "failed", "blocked", ...(isWorker ? ["processing"] : [])].includes(requestedJob.status)) {
       return jsonResponse({ code: "job_not_runnable", status: requestedJob.status }, 409);
     }
 
@@ -312,11 +315,11 @@ Deno.serve(async (request) => {
 
     if (assetError || !asset) return jsonResponse({ code: "asset_not_found" }, 404);
 
-    const adminPermission = await client.rpc("has_permission", {
+    const adminPermission = user ? await client.rpc("has_permission", {
       _uid: user.id,
       _permission: "admin.moderation",
-    });
-    const isAdminWorker = !adminPermission.error && adminPermission.data === true;
+    }) : { error: null, data: false };
+    const isAdminWorker = isWorker || (!adminPermission.error && adminPermission.data === true);
 
     if (!isAdminWorker) {
       if (!["integrity", "archive", "caption", "face_blur", "advanced_media"].includes(String(requestedJob.job_type))) {
@@ -329,7 +332,7 @@ Deno.serve(async (request) => {
         .eq("id", asset.channel_id)
         .maybeSingle();
 
-      if (creatorOwner?.owner_id !== user.id) {
+      if (!user || creatorOwner?.owner_id !== user.id) {
         return jsonResponse({ code: "forbidden" }, 403);
       }
     }
@@ -346,7 +349,7 @@ Deno.serve(async (request) => {
         error_message: null,
       })
       .eq("id", requestedJob.id)
-      .in("status", ["queued", "failed", "blocked"])
+      .in("status", isWorker ? ["queued", "failed", "blocked", "processing"] : ["queued", "failed", "blocked"])
       .select("*")
       .maybeSingle();
 
