@@ -122,6 +122,7 @@ required_functions(name, feature) as (
     ('record_consent','consent'),
     ('record_legal_acceptance','consent'),
     ('accept_creator_terms','creator_terms'),
+    ('has_current_creator_terms','creator_terms'),
     ('get_creator_terms_status','creator_terms'),
     ('submit_kyc','kyc'),
     ('get_kyc_status','kyc'),
