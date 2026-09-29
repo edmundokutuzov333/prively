@@ -180,7 +180,9 @@ select 'commission_10_tips',
 union all
 select 'valid_acceptance_path', true
 union all
-select 'invalid_declarations_rejected', true;
+select 'invalid_declarations_rejected', true
+union all
+select 'creator_terms_server_gate_helper_exists', to_regprocedure('public.has_current_creator_terms(uuid)') is not null;
 
 rollback;
 
