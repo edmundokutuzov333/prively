@@ -120,6 +120,8 @@ jobs:
             "phase8_safety_moderation_meetings_test.sql"
             "phase9_business_engine_test.sql"
             "phase10_production_hardening_test.sql"
+            "phase10_security_contract_test.sql"
+            "phase10_sensitive_access_aal2_test.sql"
             "creator_terms_native_test.sql"
             "spec_alignment_native_test.sql"
           )
