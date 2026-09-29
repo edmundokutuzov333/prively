@@ -458,12 +458,14 @@ export function ClientDiscreetCorePage() {
     setHasPin(true);
     setPin('');
     document.title = 'Actividade';
+    window.dispatchEvent(new Event('prively:discreet-changed'));
   };
 
   const toggle = (value: boolean) => {
     setEnabled(value);
     window.localStorage.setItem('prively.discreet.enabled', value ? '1' : '0');
     document.title = value ? 'Actividade' : 'Prively | O teu Privê digital.';
+    window.dispatchEvent(new Event('prively:discreet-changed'));
   };
 
   return <PageFrame icon={LockKey} title="Modo discreto e PIN" intro="Usa um título neutro e prepara o bloqueio local do espaço. O navegador não consegue impedir capturas de ecrã.">
