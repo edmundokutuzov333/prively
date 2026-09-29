@@ -1,4 +1,4 @@
-import { requireSupabase } from '@/lib/supabase';
+import { requireSupabase, supabase } from '@/lib/supabase';
 
 export type Phase9Scalar = string | number | boolean | null;
 export type Phase9Value = Phase9Scalar | Phase9Value[] | { [key: string]: Phase9Value };
@@ -11,7 +11,7 @@ export async function phase9Rpc<T>(name: string, args: Phase9Args = {}): Promise
   return data as T;
 }
 
-export async function phase9Rows<T>(client: typeof import('@/lib/supabase').supabase, table: string, select = '*'): Promise<T[]> {
+export async function phase9Rows<T>(client: typeof supabase, table: string, select = '*'): Promise<T[]> {
   if (!client) throw new Error('SUPABASE_NOT_CONFIGURED');
   const { data, error } = await client.from(table).select(select);
   if (error) throw new Error(error.code ?? error.message);
