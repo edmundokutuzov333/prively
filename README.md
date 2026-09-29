@@ -154,7 +154,7 @@ A Fase 8 foi implementada na `main` com backend real e sem transformar encontros
 
 ### Moderação
 - `reports` recebe denúncias de perfil, post, mensagem, comentário, media e encontro, com prioridade server-side para categorias críticas.
-- `moderation_queue` e `moderation_actions` formam a fila operacional e o trilho de decisões humanas.
+- `moderation_queue` e `moderation_actions` formam a fila operacional e o trilho de decisões humanas. A fila mantém referência exacta ao post, media, mensagem e appeal que originou o caso.
 - `submit_appeal()` permite recurso após decisão e mantém o caso auditável.
 - `moderation-scan` é uma Edge Function real. Só chama fornecedor externo quando `feature_flags.ai_moderation=true` e as secrets do provider existem. Sem provider não inventa classificação.
 - Conteúdo sinalizado pela IA pode ser removido/blocked automaticamente e fica disponível para decisão humana posterior.
@@ -163,13 +163,13 @@ A Fase 8 foi implementada na `main` com backend real e sem transformar encontros
 - `audit_log` é append-only e tem hash chain entre eventos.
 - `admin_access_log` regista quem acedeu a conteúdo privado, o alvo, o tipo de acesso, o motivo e a aprovação secundária.
 - `compliance_access_requests` exige motivo escrito, expiração de 30 minutos e segunda pessoa para DMs quando não existe ordem judicial.
-- `compliance_read_message()` só funciona com um access request aprovado e gera novo evento no audit log.
+- `compliance_read_message()` só funciona com um access request aprovado, valida o alvo exacto e regista o acesso efectivo em `admin_access_log` e `audit_log`.
 - Policies administrativas genéricas foram removidas das superfícies sensíveis da Fase 7 e a Fase 8 mantém essa fronteira.
 
 ### Segurança física
 - `trusted_contacts`, `safety_checkins`, `panic_events` e `safety_location_shares` foram implementados com RLS.
 - A localização é opcional e expira/purga automaticamente depois de 24 horas.
-- `safety-alert-dispatch` notifica o suporte dentro da plataforma e integra contactos externos através de webhook HMAC quando o provider de segurança estiver configurado.
+- `safety-alert-dispatch` notifica o suporte dentro da plataforma e integra contactos externos através de webhook HMAC quando o provider de segurança estiver configurado. Check-ins expirados também geram notificações internas pelo job server-side.
 - O sistema nunca apresenta uma notificação falsa de SMS enviado. Sem provider, o estado é `not_configured`.
 - O painel de Emergências lê incidentes através de RPC server-side e permite resolução auditada.
 
