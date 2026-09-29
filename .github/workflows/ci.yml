@@ -12,7 +12,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,20 +20,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
         run: npm run lint
-      - name: Test
+      - name: Unit tests
         run: npm run test
+      - name: Production source audit
+        run: npm run audit:production
       - name: Build
         run: npm run build
 
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,8 +46,53 @@ jobs:
           version: latest
       - name: Start local Supabase
         run: supabase start
-      - name: Run database tests
+      - name: Validate migrations and database lint
+        run: supabase db lint --local
+      - name: Run canonical database suite
         run: supabase test db
+      - name: Run native production regression suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          run_native() {
+            local file="$1"
+            local output
+            output="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -f "$file")"
+            printf '%s\n' "$output"
+            if printf '%s\n' "$output" | grep -Eq '(^|[[:space:]])f([[:space:]]|$)|false'; then
+              echo "Native SQL suite reported a failed boolean assertion: $file"
+              exit 1
+            fi
+            if printf '%s\n' "$output" | grep -Eq 'failed_checks[[:space:]]+[1-9]'; then
+              echo "Native SQL suite reported failed_checks > 0: $file"
+              exit 1
+            fi
+          }
+          run_native supabase/tests/database/phase6_financial_core_native_test.sql
+          run_native supabase/tests/database/phase10_production_hardening_test.sql
+          run_native supabase/tests/database/phase7_social_realtime_test.sql
+          run_native supabase/tests/database/phase8_safety_moderation_meetings_test.sql
+          run_native supabase/tests/database/phase9_business_engine_test.sql
       - name: Stop local Supabase
         if: always()
         run: supabase stop --no-backup
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E and accessibility checks
+        run: npm run e2e
