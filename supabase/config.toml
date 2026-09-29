@@ -3,24 +3,54 @@ project_id = "prively"
 [db]
 major_version = 17
 
-[functions.livekit-token]
+# Authenticated user requests: the gateway validates the JWT.
+[functions.ai-response-assistant]
 verify_jwt = true
-
-[functions.livekit-webhook]
-verify_jwt = false
-
+[functions.chat-attachment-upload-url]
+verify_jwt = true
+[functions.chat-attachment-url]
+verify_jwt = true
+[functions.create-order]
+verify_jwt = true
+[functions.financial-export]
+verify_jwt = true
+[functions.get-media-preview]
+verify_jwt = true
 [functions.get-media-url]
 verify_jwt = true
-
-[functions.track-analytics]
+[functions.livekit-token]
 verify_jwt = true
-
+[functions.media-advanced-process]
+verify_jwt = true
+[functions.moderation-scan]
+verify_jwt = true
+[functions.order-shipping-access]
+verify_jwt = true
+[functions.payments-create-topup]
+verify_jwt = true
+[functions.payout-process]
+verify_jwt = true
 [functions.process-media-job]
 verify_jwt = true
+[functions.safety-alert-dispatch]
+verify_jwt = true
+[functions.track-analytics]
+verify_jwt = true
+[functions.translate-message]
+verify_jwt = true
 
-
-[functions.health]
+# Provider/worker authentication is handled by the function itself.
+[functions.fx-refresh]
+verify_jwt = false
+[functions.livekit-webhook]
+verify_jwt = false
+[functions.payments-webhook]
+verify_jwt = false
+[functions.process-push-notifications]
 verify_jwt = false
 
+# Public probes still apply their own access policy in code.
 [functions.client-error]
+verify_jwt = false
+[functions.health]
 verify_jwt = false

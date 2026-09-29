@@ -1,10 +1,9 @@
 import { createSHA256 } from "npm:hash-wasm@4.12.0";
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
+import { corsFor } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin":"*",
-  "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods":"POST, OPTIONS",
+  ...corsFor(),
 };
 function jsonResponse(body: unknown,status=200): Response {
   return new Response(JSON.stringify(body),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});

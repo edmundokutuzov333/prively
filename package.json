@@ -12,6 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "check:migrations": "node scripts/check-migrations.mjs",
+    "check:supabase-config": "node scripts/check-supabase-config.mjs",
     "vercel:build": "npm run build",
     "audit:production": "node scripts/production-audit.mjs",
     "e2e": "playwright test",

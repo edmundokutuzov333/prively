@@ -3,12 +3,12 @@
 ## Phase 1 local setup
 
 1. Copy `.env.example` to `.env.local`.
-2. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the real Supabase project values.
-3. Run `npm install`.
+2. Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_APP_ENV` to the target environment values.
+3. Run `npm ci`.
 4. Run `npm run check`.
 5. Run `npm run dev` and inspect `/` and `/system` in a development build.
 
-No production secret belongs in `VITE_*` variables. Only the Supabase public URL and anonymous key may be exposed to the browser.
+No production secret belongs in `VITE_*` variables. Only the Supabase public URL and publishable key may be exposed to the browser.
 
 ## Phase 2
 

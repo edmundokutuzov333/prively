@@ -17,7 +17,7 @@ Vercel should build the browser application only. PostgreSQL, Auth, Storage and 
 Production and Preview:
 
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
 The browser must never receive:
 
@@ -39,7 +39,7 @@ Use:
 - Framework Preset: Vite
 - Build Command: `npm run build`
 - Output Directory: `dist`
-- Install Command: automatic npm install
+- Install Command: `npm ci`
 
 Connect the production branch according to the repository integration policy. The production code branch is main. No phase-specific branch should be created for normal implementation.
 

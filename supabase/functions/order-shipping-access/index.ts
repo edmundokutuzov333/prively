@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsFor } from "../_shared/cors.ts";
 
-const cors={ "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods":"POST, OPTIONS" };
+const cors = corsFor();
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 const env=(n:string)=>{const v=Deno.env.get(n);if(!v)throw new Error("missing_env:"+n);return v;};
 const userClient=(token:string)=>createClient(env("SUPABASE_URL"),env("SUPABASE_ANON_KEY"),{global:{headers:{Authorization:token}},auth:{persistSession:false,autoRefreshToken:false}});

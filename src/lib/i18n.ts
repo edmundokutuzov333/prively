@@ -7,7 +7,16 @@ import fr from '@/locales/fr/common';
 export const supportedLanguages = ['pt-MZ', 'en', 'fr'] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
 
-const storedLanguage = window.localStorage.getItem('prively.locale');
+function getStorage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+const storage = getStorage();
+const storedLanguage = storage?.getItem('prively.locale');
 const initialLanguage: SupportedLanguage = supportedLanguages.includes(storedLanguage as SupportedLanguage)
   ? (storedLanguage as SupportedLanguage)
   : 'pt-MZ';
@@ -27,10 +36,10 @@ void i18n.use(initReactI18next).init({
 });
 
 i18n.on('languageChanged', (language) => {
-  window.localStorage.setItem('prively.locale', language);
-  document.documentElement.lang = language;
+  storage?.setItem('prively.locale', language);
+  if (typeof document !== 'undefined') document.documentElement.lang = language;
 });
 
-document.documentElement.lang = initialLanguage;
+if (typeof document !== 'undefined') document.documentElement.lang = initialLanguage;
 
 export default i18n;

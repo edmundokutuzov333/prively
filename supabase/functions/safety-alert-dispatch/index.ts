@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsFor } from "../_shared/cors.ts";
 
 function env(name: string): string {
   const value = Deno.env.get(name);
@@ -26,20 +27,14 @@ export const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      ...corsFor(),
       "Content-Type": "application/json",
     },
   });
 
 export const optionsResponse = () =>
   new Response("ok", {
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-    },
+    headers: corsFor(),
   });
 
 
