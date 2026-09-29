@@ -1,0 +1,12 @@
+-- Phase 8 internal function execute hardening.
+revoke all on function public.phase8_audit(text,text,uuid,text,jsonb) from public,anon,authenticated;
+revoke all on function public.phase8_moderator_or_compliance(uuid) from public,anon,authenticated;
+revoke all on function public.phase8_can_compliance_read(uuid) from public,anon,authenticated;
+revoke all on function public.phase8_safety_staff(uuid) from public,anon,authenticated;
+revoke all on function public.phase8_retention_allows_delete(text,uuid) from public,anon,authenticated;
+revoke all on function public.expire_safety_locations() from public,anon,authenticated;
+revoke all on function public.expire_meeting_requests() from public,anon,authenticated;
+revoke all on function public.phase8_process_due_safety_alerts() from public,anon,authenticated;
+revoke all on function public.phase8_touch_updated_at() from public,anon,authenticated;
+revoke all on function public.phase8_set_audit_hash() from public,anon,authenticated;
+revoke all on function public.phase8_append_only() from public,anon,authenticated;
