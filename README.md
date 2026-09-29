@@ -549,7 +549,8 @@ A implementação inclui:
 - ligação da aceitação ao ledger jurídico `legal_acceptances`, incluindo `creator_terms`, `privacy` e `content_prohibited`;
 - gate server-side `has_current_creator_terms()` aplicado às principais operações de criadora;
 - acesso ao Estúdio bloqueado até a aceitação da versão vigente e KYC aprovado;
-- comissão configurada em 20% por defeito e 10% para gorjetas, conforme os Termos v1.0.0. Encontros presenciais não passam pelo motor financeiro;
+- comissão configurada em 20% por defeito e 10% para gorjetas, conforme os Termos v1.0.0. O cálculo server-side força 0% para encontros presenciais e estes não passam pelo motor financeiro;
+- cadastro de criadora exige confirmação explícita de maioridade além das 16 declarações obrigatórias; o botão de criação permanece bloqueado até ambas estarem concluídas;
 - mínimo de levantamento de 500 MZN mantido no motor financeiro;
 - suite SQL nativa `creator_terms_native_test.sql`, teste unitário do documento e extensão da matriz de alinhamento da especificação.
 

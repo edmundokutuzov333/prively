@@ -67,6 +67,8 @@ begin
   if v <> '0.20' then raise exception 'FAIL: live commission must be 20%%, got %', v; end if;
   select value into v from _creator_terms_test_meta where key='commission.tip';
   if v <> '0.10' then raise exception 'FAIL: tip commission must be 10%%, got %', v; end if;
+  select value into v from _creator_terms_test_meta where key='commission.meeting';
+  if v <> '0.00' then raise exception 'FAIL: meeting commission must be 0%%, got %', v; end if;
 end
 $$;
 

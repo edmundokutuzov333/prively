@@ -59,6 +59,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       if (!values.termsAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['termsAccepted'], message: 'terms_required' });
       if (!values.privacyAccepted) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['privacyAccepted'], message: 'privacy_required' });
     }
+    if (isCreatorSignup && !values.ageConfirmed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ageConfirmed'], message: 'age_required' });
     if (isCreatorSignup) {
       for (const declaration of creatorTermDeclarations) {
         if (!values[declaration.key]) {
@@ -189,7 +190,9 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       ? t('auth.creatorSignUpTitle')
       : t('auth.signUpTitle');
 
+  const creatorAgeConfirmed = Boolean(watch('ageConfirmed'));
   const creatorDeclarationsChecked = creatorTermDeclarations.every(({ key }) => Boolean(watch(key)));
+  const creatorSignupReady = creatorAgeConfirmed && creatorDeclarationsChecked;
   const submit = mode === 'signIn' ? t('auth.signIn') : isCreatorSignup ? 'Concordo e quero criar conta' : t('auth.signUp');
 
   return <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg items-center px-5 py-12 md:px-8">
@@ -228,7 +231,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
             <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
               {creatorTermDeclarations.map((declaration, index) => <label key={declaration.key} className="flex items-start gap-3 rounded-md border border-bone-50/8 bg-ink-900 p-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register(declaration.key)} className="mt-1 accent-crimson-500"/><span><strong className="mr-1 text-bone-500">{index + 1}.</strong>{declaration.text}</span></label>)}
             </div>
-            {creatorTermDeclarations.some(({ key }) => Boolean(errors[key])) ? <p className="text-xs text-danger">Todas as 16 declarações obrigatórias são necessárias para continuar.</p> : null}
+            {errors.ageConfirmed || creatorTermDeclarations.some(({ key }) => Boolean(errors[key])) ? <p className="text-xs text-danger">A confirmação de maioridade e as 16 declarações obrigatórias são necessárias para continuar.</p> : null}
           </> : <>
             <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('termsAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.termsAccepted')}</span></label>
             <label className="flex items-start gap-3 text-sm leading-6 text-bone-300"><input type="checkbox" {...register('privacyAccepted')} className="mt-1 accent-crimson-500"/><span>{t('auth.privacyAccepted')}</span></label>
@@ -247,7 +250,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
 
         {error ? <p role="alert" className="border border-danger/35 bg-danger/5 p-3 text-sm leading-6 text-bone-50">{error}</p> : null}
         {message ? <p role="status" className="border border-ok/30 bg-ok/5 p-3 text-sm leading-6 text-bone-50">{message}</p> : null}
-        <Botao type="submit" loading={isSubmitting} disabled={isCreatorSignup && !creatorDeclarationsChecked} className="w-full">{submit}</Botao>
+        <Botao type="submit" loading={isSubmitting} disabled={isCreatorSignup && !creatorSignupReady} className="w-full">{submit}</Botao>
         {mode === 'signIn' && effectivePortal !== 'admin' ? <Link to="/recuperar" className="block text-center text-sm text-bone-500 underline decoration-bone-50/20 underline-offset-4">{t('auth.recoverAccount')}</Link> : null}
       </form>
 
