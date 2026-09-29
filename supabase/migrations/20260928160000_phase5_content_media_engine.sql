@@ -543,7 +543,7 @@ begin
     'expiresAt',now()+interval '2 hours'
   );
 end
-$function$
+$function$;
 
 create or replace function public.finalize_media_upload(
   _upload uuid,
