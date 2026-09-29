@@ -97,6 +97,7 @@ import {
 } from '@/pages/Phase6FinancialPages';
 import { Phase10ProductionReadinessPage } from '@/pages/Phase10ProductionReadinessPage';
 import { ClientDiscoverCorePage, ClientFeedCorePage, ClientProfileCorePage, ClientPurchasesCorePage, ClientWishlistCorePage, ClientAccountCorePage, ClientLimitsCorePage, ClientDiscreetCorePage, ClientStoriesCorePage } from '@/pages/ClientCorePages';
+import { CreatorSafetyControlsPage } from '@/pages/CreatorSafetyControlsPage';
 import {
   Phase9AdminBusinessPage,
   Phase9AgencyPage,
@@ -121,7 +122,7 @@ import {
 } from '@/pages/Phase9BusinessPages';
 
 const phase2RoutesEnabled = featureFlags.phase2Experience || import.meta.env.DEV;
-const phase3RoutesEnabled = featureFlags.phase3Monetization || import.meta.env.DEV;
+const phase3RoutesEnabled = true;
 const phase9RoutesEnabled = featureFlags.phase9Business;
 const clientSurfaceRoutes = [
   '/onboarding',
@@ -357,7 +358,26 @@ export function App() {
             </> : null}
             <Route path="/estudio/definicoes" element={<CreatorSettingsPage />} />
             <Route path="/estudio/definicoes/seguranca" element={<SecuritySettingsPage />} />
-            {creatorSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+            <Route path="/estudio/onboarding" element={<ContentStudioPage />} />
+            <Route path="/estudio/vip" element={<ContentStudioPage />} />
+            <Route path="/estudio/mural" element={<ContentStudioPage />} />
+            <Route path="/estudio/stories" element={<ContentStudioPage />} />
+            <Route path="/estudio/ppv" element={<ContentStudioPage />} />
+            <Route path="/estudio/promocoes" element={<Phase9CreatorPromotionsPage />} />
+            <Route path="/estudio/mensagens" element={<Phase7MessagesPage />} />
+            <Route path="/estudio/mensagens-pagas" element={<CreatorAutoRepliesPage />} />
+            <Route path="/estudio/sorteios" element={<CreatorEngagementPage />} />
+            <Route path="/estudio/chamadas" element={<CreatorLiveStudioPage />} />
+            <Route path="/estudio/encontros" element={<Phase8CreatorMeetingsPage />} />
+            <Route path="/estudio/seguranca" element={<CreatorSafetyControlsPage />} />
+            <Route path="/estudio/check-in" element={<Phase8CreatorSafetyPage />} />
+            <Route path="/estudio/panico" element={<Phase8CreatorSafetyPage />} />
+            <Route path="/estudio/bloqueios" element={<CreatorSafetyControlsPage />} />
+            <Route path="/estudio/silenciados" element={<CreatorSafetyControlsPage />} />
+            <Route path="/estudio/nao-mostrar" element={<CreatorSafetyControlsPage />} />
+            <Route path="/estudio/levantamentos" element={<Phase6CreatorEarningsPage />} />
+            <Route path="/estudio/recibos" element={<Phase6CreatorEarningsPage />} />
+            <Route path="/estudio/suporte" element={<Phase8EmergenciesPage />} />
           </Route>
         </Route> : null}
 
@@ -383,7 +403,15 @@ export function App() {
             <Route path="/admin/production" element={<Phase10ProductionReadinessPage />} />
           </> : null}
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
-          {adminSurfaceRoutes.filter((path) => !['/admin','/admin/utilizadores','/admin/kyc','/admin/media','/admin/auditoria','/admin/financeiro'].includes(path)).map((path) => <Route key={path} path={path} element={<SurfacePage />} />)}
+          <Route path="/admin/arquivo" element={<Phase8CompliancePage />} />
+          <Route path="/admin/config" element={<Phase9AdminBusinessPage />} />
+          <Route path="/admin/feature-flags" element={<Phase9AdminBusinessPage />} />
+          <Route path="/admin/comissoes" element={<Phase9AdminBusinessPage />} />
+          <Route path="/admin/selos" element={<Phase9AdminBusinessPage />} />
+          <Route path="/admin/presentes" element={<Phase9AdminBusinessPage />} />
+          <Route path="/admin/suporte" element={<Phase8EmergenciesPage />} />
+          <Route path="/admin/tickets" element={<Phase8EmergenciesPage />} />
+          <Route path="/admin/relatorios" element={<Phase8CompliancePage />} />
         </Route>
 
         {phase2RoutesEnabled ? <Route path="/sobre" element={<InfoPage />} /> : null}
