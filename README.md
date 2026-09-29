@@ -235,7 +235,7 @@ A Fase 9 está implementada na \`main\` com contratos reais de negócio, monetiz
 
 ### Referral, Agency e Premium
 
-- Referral e Agency permanecem desligados por feature_flags até validação económica, jurídica e operacional.
+- Referral e Agency têm backend e superfícies de administração implementados. Qualquer activação pública continua subordinada às validações económicas, jurídicas e operacionais previstas no gate.
 - O módulo de Agency não expõe saldo, payout, credenciais, KYC privado ou DMs privadas e permite que a criadora saia da relação.
 - Premium Features e Featured Creators têm tabelas, RPCs, débito pelo ledger e duração configurável.
 - Selo pago mantém source=purchased, separado da verificação KYC, de acordo com a especificação. fileciteturn350file0L1162-L1169
@@ -256,7 +256,7 @@ Existem contratos reais para:
 
 Estas integrações permanecem desligadas até provider e secrets reais estarem configurados. A especificação exige que a política do fornecedor permita processar conteúdo adulto antes de enviar texto/media para serviços de IA. fileciteturn350file0L1166-L1170
 
-Flags actualmente desligadas por dependência externa ou validação: referral, agency, translation, ai_response_assistant, auto_captions, face_blur e advanced_media_processing. A plataforma não mostra estas superfícies como activas quando o provider não está certificado.
+Flags actualmente desligadas por dependência externa ou validação: translation, live, push, ai_response_assistant, auto_captions, face_blur e advanced_media_processing. Referral, Agency e as funcionalidades de negócio da Fase 9 estão activas no código porque os seus contratos backend e UI foram implementados; isto não elimina os bloqueios externos de lançamento. A plataforma não mostra estas superfícies como activas quando o provider não está certificado.
 
 ### Segurança e RLS
 
@@ -444,9 +444,25 @@ O frontend Vercel permanece não certificado para o commit final: a API de statu
 
 A especificação exige que o deploy só seja considerado pronto quando o caminho de CI/CD e os requisitos externos estiverem validados. fileciteturn651file0L827-L909
 
-## Próxima fase
+## Estado após a auditoria integral da especificação
 
-A próxima fase é a **Fase 9, Business Engine & Advanced Monetization**, que deve reaproveitar os contratos de segurança, social, meetings e compliance já estabilizados. A especificação posiciona aqui Custom Requests, Escrow, Auctions, Anti-sniping, Bundles, Promotions, Gifts, Product Store, Orders, Giveaways, Loyalty, Rankings, Creator Analytics, Fan CRM, Goals, Referral, Agency, Premium Features, Recommendation Engine, Translation, AI Response Assistant, Auto Captions, Face Blur e processamento avançado. fileciteturn172file0L753-L823
+A especificação oficial foi relida da página 1 à página 36, incluindo o Anexo A, o Anexo B e as tabelas e imagens incorporadas. A implementação foi confrontada com as fases 0 a 4, com a lista completa de funcionalidades e com as condições de abertura ao público. A suite `spec_alignment_native_test.sql` cobre contratos de tabelas, RPCs, segurança, RLS, Storage privado, carteira e flags de funcionalidades que dependem de providers externos.
+
+O backend remoto responde com os contratos necessários para identidade, consentimento, KYC, conteúdo, visibilidade, social graph, chat, monetização, escrow, loja, sorteios, fidelidade, rankings, analytics, CRM, metas, referral, agency, suporte, compliance, auditoria, watermark, recomendações e controlos de gasto. A UI expõe as superfícies correspondentes apenas quando o backend e as integrações necessárias existem.
+
+As funcionalidades que dependem de fornecedores externos ainda não certificados permanecem fechadas no produto: LiveKit, Push/VAPID, tradução automática, assistente IA, legendas automáticas, desfocagem de rostos e processamento avançado. Isto segue a regra da própria especificação de não mostrar botões que não funcionam nem superfícies fictícias.
+
+Foi também acrescentada uma matriz Playwright para rotas públicas, superfícies protegidas, PWA e selector de idioma. O PWA discreto ganhou shell neutro com título, manifesto e ícone próprios, além de bloqueio global por PIN e tempo de inactividade.
+
+### Regressão local de migrations
+
+A reprodução local de todas as migrations revelou dependências históricas na migration de reconciliação da Fase 7. Foram restaurados nessa migration os contratos `can_view_post`, `notify_user` e `unfollow_channel` antes dos `GRANT/REVOKE`, mantendo o mesmo comportamento do projecto remoto. Isto elimina diferenças entre o histórico local reconstruível e o schema remoto já existente.
+
+### Estado actual de lançamento
+
+O sistema tem código e backend substancialmente alinhados com a especificação, mas o estado **não é launchable**. Permanecem bloqueios externos que não podem ser falsificados em código: parecer jurídico, publicação final dos documentos legais, provider de KYC, provider de pagamentos compatível, detecção de conteúdo ilegal, equipa humana 24 horas, teste de segurança externo, validação de backups e recovery drill, e criadoras verificadas para a abertura inicial. O gate `get_production_readiness()` continua deliberadamente em `launchable=false`.
+
+A plataforma está portanto em estado de integração e validação final, não em estado de lançamento público. Isto é consistente com a especificação oficial, que diz que uma fase só termina quando a entrega funciona de ponta a ponta, está testada e ligada, e que as condições de abertura precisam de validação externa. fileciteturn854file0L814-L826
 
 ## Validação antes de produção pública
 
