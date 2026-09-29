@@ -19,13 +19,35 @@ const PRIVACY_NOTICE = 'As tuas conversas são privadas. Ficam protegidas com ci
 function PrivacyNotice() {
   const { user } = useAuth();
   const [visible, setVisible] = useState(() => window.localStorage.getItem('prively.chat.privacy-notice') !== '1');
+  const [accepting, setAccepting] = useState(false);
+  const [error, setError] = useState(false);
   if (!visible) return null;
+
+  const accept = async () => {
+    if (!user || accepting) return;
+    setAccepting(true);
+    setError(false);
+    const { error: rpcError } = await requireSupabase().rpc('accept_communication_privacy', {
+      _surface: 'conversation',
+      _version: '1.0',
+    });
+    if (rpcError) {
+      setError(true);
+      setAccepting(false);
+      return;
+    }
+    window.localStorage.setItem('prively.chat.privacy-notice', '1');
+    setVisible(false);
+    setAccepting(false);
+  };
+
   return <Ficha variant="flat" className="mb-4 border-crimson-400/20 bg-wine-900/35 p-4">
     <p className="m-0 text-sm leading-6 text-bone-300">
       {PRIVACY_NOTICE} <Link to="/legal/privacidade" className="text-bone-50 underline underline-offset-4">Saber mais</Link>
     </p>
-    <button type="button" onClick={() => { window.localStorage.setItem('prively.chat.privacy-notice', '1'); if (user) void requireSupabase().rpc('accept_communication_privacy', { _surface: 'conversation', _version: '1.0' }); setVisible(false); }} className="mt-3 min-h-11 rounded-control border border-bone-50/10 px-3 text-sm text-bone-50">
-      Fechar aviso
+    {error ? <p role="alert" className="mt-3 text-sm text-danger">Não foi possível registar o aviso. Tenta novamente.</p> : null}
+    <button type="button" disabled={accepting || !user} onClick={() => void accept()} className="mt-3 min-h-11 rounded-control border border-bone-50/10 px-3 text-sm text-bone-50 disabled:opacity-60">
+      {accepting ? 'A registar…' : 'Continuar'}
     </button>
   </Ficha>;
 }
