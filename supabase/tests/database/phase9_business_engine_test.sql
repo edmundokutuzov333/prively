@@ -25,7 +25,7 @@ rls_check as (
 function_check as (
   select bool_and(x.exists) as ok
   from (
-    select proname, exists(
+    select fn, exists(
       select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
       where n.nspname='public' and p.proname = fn
     )
