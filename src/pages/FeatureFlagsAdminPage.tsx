@@ -15,6 +15,8 @@ const labels: Record<string, string> = {
   fanRanking: 'Ranking de fãs', creatorAnalytics: 'Analytics de criadoras', fanCrm: 'Fan CRM', creatorGoals: 'Metas', referral: 'Referral',
   premiumFeatures: 'Premium', featuredCreators: 'Criadoras em destaque', recommendations: 'Recomendações', aiResponseAssistant: 'Assistente IA',
   autoCaptions: 'Legendas automáticas', faceBlur: 'Face blur', advancedMediaProcessing: 'Processamento avançado de media',
+  phase3Monetization: 'Monetização avançada', creatorStudio: 'Estúdio da criadora',
+  phase6Financials: 'Operações financeiras', wallet: 'Carteira', payments: 'Pagamentos',
 };
 
 function readBoolean(value: unknown) { return value === true || value === 'true'; }
