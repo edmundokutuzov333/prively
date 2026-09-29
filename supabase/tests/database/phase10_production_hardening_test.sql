@@ -78,7 +78,7 @@ with checks as (
     and not has_function_privilege('anon','public.show_creator_in_feed(uuid)','EXECUTE')
     and not has_function_privilege('anon','public.unmute_user(uuid)','EXECUTE')
     and has_function_privilege('authenticated','public.create_support_ticket(text,text,text,text)','EXECUTE')
-    and has_function_privilege('authenticated','public.hide_creator_from_feed(uuid)','EXECUTE'),
+    and has_function_privilege('authenticated','public.hide_creator_from_feed(uuid)','EXECUTE')
   union all select 'health_contract',
     to_regprocedure('public.get_health_probe()') is not null
 )
