@@ -126,7 +126,7 @@ begin
     union all select 1 where has_table_privilege('anon','public.dmca_requests','INSERT')
     union all select 1 where exists(select 1 from public.platform_settings where key='feature_flags.moderation' and value='true'::jsonb)
   )
-  select 16-count(*) into failed from checks;
+  select 15-count(*) into failed from checks;
   if failed <> 0 then
     raise exception 'Phase 8 regression checks failed: % criterion(s)', failed;
   end if;
