@@ -88,10 +88,22 @@ ranking_check as (
   as ok
 ),
 fan_privacy_check as (
-  select exists(
-    select 1 from pg_policies
-    where schemaname='public' and tablename='fan_rankings_weekly' and policyname is null
-  ) as dummy_ok
+  select
+    exists(
+      select 1 from pg_policies
+      where schemaname='public' and tablename='fan_rankings_weekly'
+        and policyname='fan_rankings_weekly_deny_direct_read'
+        and qual='false'
+    )
+    and exists(
+      select 1 from pg_proc p
+      where p.proname='get_fan_crm' and pg_get_functiondef(p.oid) ilike '%is_creator_of_channel%'
+    )
+    and exists(
+      select 1 from pg_proc p
+      where p.proname='get_fan_ranking' and pg_get_functiondef(p.oid) ilike '%is_age_verified%'
+    )
+  as ok
 ),
 referral_agency_check as (
   select exists(select 1 from information_schema.columns where table_schema='public' and table_name='agency_members' and column_name='commission_rate_bps')
