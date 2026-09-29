@@ -203,6 +203,66 @@ begin
 end;
 $phase7_unfollow$;
 
+
+create or replace function public.block_user(_blocked uuid)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $phase7_block$
+begin
+  if _blocked is null or _blocked=auth.uid() then raise exception 'invalid_block_target'; end if;
+  if not exists(select 1 from public.profiles where id=_blocked) then raise exception 'user_not_found'; end if;
+
+  insert into public.blocks(owner_id,blocked_user_id)
+  values(auth.uid(),_blocked)
+  on conflict do nothing;
+
+  delete from public.follows
+  where (follower_id=auth.uid() and channel_id in (select id from public.channels where owner_id=_blocked))
+     or (follower_id=_blocked and channel_id in (select id from public.channels where owner_id=auth.uid()));
+end;
+$phase7_block$;
+
+create or replace function public.unblock_user(_blocked uuid)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $phase7_unblock$
+begin
+  delete from public.blocks
+  where owner_id=auth.uid() and blocked_user_id=_blocked;
+end;
+$phase7_unblock$;
+
+create or replace function public.hide_channel(_channel uuid)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $phase7_hide$
+begin
+  if not exists(select 1 from public.channels where id=_channel) then raise exception 'channel_not_found'; end if;
+
+  insert into public.hidden_from(channel_id,user_id)
+  values(_channel,auth.uid())
+  on conflict do nothing;
+end;
+$phase7_hide$;
+
+create or replace function public.unhide_channel(_channel uuid)
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $phase7_unhide$
+begin
+  delete from public.hidden_from
+  where channel_id=_channel and user_id=auth.uid();
+end;
+$phase7_unhide$;
+
 -- ---------------------------------------------------------------------------
 -- Client-safe RPC surface
 -- UI mutates through guarded RPCs. Internal helpers remain server-only.
