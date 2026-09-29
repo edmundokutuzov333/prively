@@ -61,6 +61,35 @@ with check (
 -- UI mutates through guarded RPCs. Internal helpers remain server-only.
 -- ---------------------------------------------------------------------------
 
+create or replace function public.is_blocked(_a uuid, _b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path=public
+as $function$
+  select exists(
+    select 1
+    from public.blocks
+    where (owner_id=_a and blocked_user_id=_b)
+       or (owner_id=_b and blocked_user_id=_a)
+  );
+$function$;
+
+create or replace function public.is_hidden_from(_channel uuid, _user uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path=public
+as $function$
+  select exists(
+    select 1
+    from public.hidden_from
+    where channel_id=_channel and user_id=_user
+  );
+$function$;
+
 revoke all on function public.is_blocked(uuid,uuid) from public,anon,authenticated;
 revoke all on function public.is_hidden_from(uuid,uuid) from public,anon,authenticated;
 
