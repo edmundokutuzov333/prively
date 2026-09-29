@@ -290,7 +290,7 @@ create table if not exists public.agency_members (
 
 create table if not exists public.channel_embeddings (
   channel_id uuid primary key references public.channels on delete cascade,
-  embedding vector,
+  embedding jsonb,
   source text,
   model text,
   updated_at timestamptz not null default now()
@@ -298,7 +298,7 @@ create table if not exists public.channel_embeddings (
 
 create table if not exists public.user_recommendation_profiles (
   user_id uuid primary key references public.profiles on delete cascade,
-  embedding vector,
+  embedding jsonb,
   source text,
   model text,
   updated_at timestamptz not null default now()
