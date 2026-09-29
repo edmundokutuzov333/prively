@@ -2,20 +2,40 @@ name: Prively Production Delivery
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["Prively CI"]
+    types: [completed]
     branches: [main]
 
 permissions:
   contents: read
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
+  gate:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - id: sha
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
   prepare:
+    needs: gate
     runs-on: ubuntu-latest
     outputs:
       supabase_ready: ${{ steps.config.outputs.supabase_ready }}
       vercel_ready: ${{ steps.config.outputs.vercel_ready }}
       health_ready: ${{ steps.config.outputs.health_ready }}
     steps:
+      - name: Checkout exact CI-approved SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
       - id: config
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -43,13 +63,15 @@ jobs:
           fi
 
   deploy-supabase:
-    needs: prepare
+    needs: [gate, prepare]
     if: ${{ needs.prepare.outputs.supabase_ready == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Checkout
+      - name: Checkout exact CI-approved SHA
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -62,27 +84,31 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
       - name: Validate migrations
         run: supabase db lint
+      - name: Preview migrations
+        run: supabase db push --dry-run
       - name: Push migrations
         run: supabase db push
       - name: Deploy Edge Functions
         run: supabase functions deploy --all
       - name: Record deployment metadata
-        run: echo "Supabase deployment completed for $SUPABASE_PROJECT_REF"
+        run: echo "Supabase deployment completed for $SUPABASE_PROJECT_REF at ${{ needs.gate.outputs.sha }}"
 
   deploy-vercel:
-    needs: prepare
+    needs: [gate, prepare]
     if: ${{ needs.prepare.outputs.vercel_ready == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Checkout
+      - name: Checkout exact CI-approved SHA
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Build
         run: npm run build
       - name: Deploy to Vercel
@@ -90,7 +116,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: npx vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+        run: npx vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
 
   post-deploy-health:
     needs: [prepare, deploy-supabase, deploy-vercel]
@@ -114,13 +140,7 @@ jobs:
           VERCEL_RESULT: ${{ needs.deploy-vercel.result }}
           HEALTH_RESULT: ${{ needs.post-deploy-health.result }}
         run: |
-          if [ "$SUPABASE_RESULT" = "failure" ] || [ "$SUPABASE_RESULT" = "cancelled" ]; then
-            exit 1
-          fi
-          if [ "$VERCEL_RESULT" = "failure" ] || [ "$VERCEL_RESULT" = "cancelled" ]; then
-            exit 1
-          fi
-          if [ "$HEALTH_RESULT" = "failure" ] || [ "$HEALTH_RESULT" = "cancelled" ]; then
-            exit 1
-          fi
+          if [ "$SUPABASE_RESULT" = "failure" ] || [ "$SUPABASE_RESULT" = "cancelled" ]; then exit 1; fi
+          if [ "$VERCEL_RESULT" = "failure" ] || [ "$VERCEL_RESULT" = "cancelled" ]; then exit 1; fi
+          if [ "$HEALTH_RESULT" = "failure" ] || [ "$HEALTH_RESULT" = "cancelled" ]; then exit 1; fi
           echo "Production delivery workflow completed. Provider deployment is skipped when its secrets are not configured."
