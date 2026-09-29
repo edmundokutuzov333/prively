@@ -32,6 +32,14 @@ Deno.serve(async(req)=>{
     const cryptoKey=await crypto.subtle.importKey("raw",keyBytes,{name:"AES-GCM"},false,["decrypt"]);
     const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(order.shipping_nonce)},cryptoKey,fromB64(order.shipping_ciphertext));
     const shipping=JSON.parse(new TextDecoder().decode(plaintext)) as Record<string,unknown>;
+    await admin.from("audit_log").insert({
+      actor_id:user.id,
+      event_type:"order_shipping_access",
+      target_type:"order",
+      target_id:order.id,
+      reason:"channel owner accessed encrypted shipping details",
+      metadata:{channel_id:order.channel_id}
+    });
     return json({ok:true,orderId:order.id,schemaVersion:order.shipping_schema_version,shipping});
   }catch(error){
     const code=error instanceof Error?error.message:"shipping_access_error";
