@@ -42,8 +42,6 @@ export const optionsResponse = () =>
     },
   });
 
-import { requireUser, serviceClient } from "../_shared/auth.ts";
-import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 
 function textValue(value: unknown): string {
   return typeof value === "string" ? value : "";
