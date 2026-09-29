@@ -1,0 +1,21 @@
+name: Prively Load Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    if: \${{ secrets.PRIVELY_LOAD_BASE_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+      - name: Run 200 user smoke load
+        env:
+          BASE_URL: \${{ secrets.PRIVELY_LOAD_BASE_URL }}
+        run: k6 run -e BASE_URL="$BASE_URL" tests/load/k6.js
