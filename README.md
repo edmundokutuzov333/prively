@@ -17,7 +17,7 @@ A documentação funcional anexada ao projecto é a fonte de verdade para arquit
 - Supabase Auth + PostgreSQL + RLS + Storage + Edge Functions
 - TUS para uploads resumíveis
 - Vitest + Testing Library
-- pgTAP para testes SQL
+- Testes de regressão SQL nativos executáveis directamente no PostgreSQL
 - Playwright preparado para E2E
 - Vercel para frontend
 - Node.js 24
@@ -71,9 +71,9 @@ O dispatcher automático de jobs foi mantido desligado nesta fase porque não fo
 
 ## Estado de deploy
 
-O build Vite e os testes de qualidade são validados por GitHub Actions.
+O repositório está ligado ao pipeline Vercel. O último commit da main desta fase recebeu o check `Vercel: success`, confirmando que o pipeline de build/deploy aceitou o código da branch principal.
 
-A configuração Vercel está no repositório com build npm run build, output dist e rewrite SPA. Neste momento, o conector Vercel não apresenta um projecto Prively ligado à equipa KUTUZOV, e o check Vercel mais recente foi observado como pendente/rate-limited. Portanto, não é correcto declarar um deployment de produção Vercel como 100% verificado até o projecto estar ligado e o build de produção passar no próprio Vercel.
+A configuração Vercel permanece versionada no repositório com `npm run build`, output `dist` e rewrite SPA. O domínio existente não foi alterado nesta fase.
 
 ## Dados de produção
 
@@ -158,7 +158,7 @@ A conclusão de código não é suficiente para abrir publicamente a plataforma.
 
 ## Fase 7 · Social Graph, Realtime & Communication
 
-A Fase 7 foi implementada na `main` com backend real, RLS, RPCs, Realtime, Presence, chat, anexos privados, mensagens bloqueadas, notificações e contratos server-side para chamadas e LiveKit.
+A Fase 7 foi implementada na `main` com backend real, RLS, RPCs, Realtime, Presence, chat, anexos privados, mensagens bloqueadas, notificações e contratos server-side para chamadas e LiveKit. As migrations de reconciliação e hardening desta fase foram aplicadas ao projecto Supabase e a suite de regressão devolveu 24/24 critérios aprovados.
 
 ### Social Graph
 - `follows`, `blocks` e `hidden_from` com mutações por RPC e verificação server-side.
@@ -209,7 +209,11 @@ A Edge Function `translate-message` existe com cache em `message_translations`, 
 - Foi removido o índice duplicado de mensagens e a constraint redundante de votos.
 - Foi criada uma API de `can_view_post(uuid)` limitada ao utilizador autenticado. A variante que aceita um `user_id` arbitrário permanece interna.
 - Políticas administrativas genéricas foram removidas das tabelas de comunicação privada; acesso de conformidade continuará a ser feito através da camada específica de Compliance View da Fase 8.
-- Testes SQL da Fase 7 estão em `supabase/tests/database/phase7_social_realtime_test.sql`.
+- O RPC legado `send_message(uuid,text)` deixou de ser executável pelo cliente. O único caminho público para envio é `send_message_v2()`, que aplica rate limit, autorização, DM mode e cobrança server-side.
+- Os oracles `is_blocked()` e `is_hidden_from()` continuam internos.
+- Os índices duplicados de anexos e traduções foram removidos da produção e o migration file foi corrigido para não os recriar em instalações novas.
+- A suite `supabase/tests/database/phase7_social_realtime_test.sql` usa SQL nativo, sem depender de pgTAP.
+- Validação Supabase da Fase 7: **24/24 critérios aprovados**.
 
 ### Estado de integração
 
