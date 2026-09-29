@@ -45,7 +45,7 @@ Deno.serve(async (request) => {
 
   try {
     const { client } = await requireUser(request);
-    const payload = await request.json() as { assetId?: unknown };
+    const payload = await request.json() as { assetId?: unknown; variant?: unknown };
 
     if (typeof payload.assetId !== "string" || !/^[0-9a-f-]{36}$/i.test(payload.assetId)) {
       return jsonResponse({ code: "invalid_asset_id" }, 400);
@@ -59,6 +59,8 @@ Deno.serve(async (request) => {
     const access = data as {
       asset_id?: unknown;
       path?: unknown;
+      face_blur_path?: unknown;
+      caption_path?: unknown;
       hls_path?: unknown;
       thumb_blur_path?: unknown;
       kind?: unknown;
@@ -76,13 +78,19 @@ Deno.serve(async (request) => {
     const admin = serviceClient();
     const storage = admin.storage.from("prively-private");
     const watermarkPath = typeof access.watermark_path === "string" ? access.watermark_path : null;
-    const useWatermark = access.watermark_enabled === true && Boolean(watermarkPath);
+    const variant = payload.variant === "face_blur" || payload.variant === "original" ? payload.variant : "default";
+    const faceBlurPath = typeof access.face_blur_path === "string" ? access.face_blur_path : null;
+    const useFaceBlur = variant === "face_blur";
+    if (useFaceBlur && !faceBlurPath) return jsonResponse({ code: "face_blur_unavailable" }, 404);
+    const useWatermark = !useFaceBlur && access.watermark_enabled === true && Boolean(watermarkPath);
 
-    const primaryPath = useWatermark
-      ? watermarkPath!
-      : typeof access.hls_path === "string" && access.kind === "video"
-        ? access.hls_path
-        : access.path;
+    const primaryPath = useFaceBlur
+      ? faceBlurPath!
+      : useWatermark
+        ? watermarkPath!
+        : typeof access.hls_path === "string" && access.kind === "video"
+          ? access.hls_path
+          : access.path;
 
     const signed = await storage.createSignedUrl(primaryPath, 60);
     if (signed.error || !signed.data?.signedUrl) {
@@ -90,6 +98,12 @@ Deno.serve(async (request) => {
     }
 
     let thumbnailUrl: string | null = null;
+    let captionUrl: string | null = null;
+    if (typeof access.caption_path === "string") {
+      const caption = await storage.createSignedUrl(access.caption_path, 60);
+      if (!caption.error && caption.data?.signedUrl) captionUrl = caption.data.signedUrl;
+    }
+
     if (typeof access.thumb_blur_path === "string") {
       const thumb = await storage.createSignedUrl(access.thumb_blur_path, 60);
       if (!thumb.error && thumb.data?.signedUrl) thumbnailUrl = thumb.data.signedUrl;
@@ -100,11 +114,15 @@ Deno.serve(async (request) => {
       kind: access.kind ?? null,
       url: signed.data.signedUrl,
       thumbnailUrl,
-      source: useWatermark
-        ? "watermark"
-        : primaryPath === access.path
-          ? "original"
-          : "hls",
+      captionUrl,
+      source: useFaceBlur
+        ? "face_blur"
+        : useWatermark
+          ? "watermark"
+          : primaryPath === access.path
+            ? "original"
+            : "hls",
+      variant,
       expiresIn: typeof access.expires_in === "number" ? access.expires_in : 60,
       processingStatus: typeof access.processing_status === "string" ? access.processing_status : null,
       watermark: {
