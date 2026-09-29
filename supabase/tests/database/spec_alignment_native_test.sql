@@ -9,6 +9,7 @@ required_tables(name, feature) as (
     ('profiles','identity'),
     ('user_roles','identity'),
     ('legal_acceptances','consent'),
+    ('creator_terms_acceptances','creator_terms'),
     ('consent_records','consent'),
     ('kyc_verifications','kyc'),
     ('channels','profiles'),
@@ -120,6 +121,8 @@ required_functions(name, feature) as (
   values
     ('record_consent','consent'),
     ('record_legal_acceptance','consent'),
+    ('accept_creator_terms','creator_terms'),
+    ('get_creator_terms_status','creator_terms'),
     ('submit_kyc','kyc'),
     ('get_kyc_status','kyc'),
     ('is_age_verified','kyc'),
@@ -277,6 +280,27 @@ security_checks as (
       select value='false'::jsonb
       from public.platform_settings
       where key='production.launch_enabled'
+    ), false)
+  union all
+  select 'legal.creator_terms_version_present',
+    coalesce((
+      select value='"1.0.0"'::jsonb
+      from public.platform_settings
+      where key='legal.creator_terms_version'
+    ), false)
+  union all
+  select 'legal.commission_default_20_percent',
+    coalesce((
+      select value='0.20'::jsonb
+      from public.platform_settings
+      where key='commission.default'
+    ), false)
+  union all
+  select 'legal.tip_commission_10_percent',
+    coalesce((
+      select value->>'tip'='0.10'
+      from public.platform_settings
+      where key='commission.by_kind'
     ), false)
   union all
   select 'security.live_flag_off_without_provider',
