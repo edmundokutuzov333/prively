@@ -421,6 +421,22 @@ begin
 end;
 $phase7_wishlist_remove$;
 
+create table if not exists public.message_attachments (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  message_id uuid null references public.messages(id) on delete set null,
+  owner_id uuid not null references public.profiles(id) on delete cascade,
+  storage_path text not null unique,
+  kind text not null check (kind in ('image','video','audio','file')),
+  mime_type text not null,
+  file_size bigint not null check (file_size >= 1 and file_size <= 25000000),
+  sha256 text,
+  status text not null default 'pending' check (status in ('pending','attached','failed','deleted')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.message_attachments enable row level security;
+
 create or replace function public.send_message_v2(
   _conversation uuid,
   _body text default null,
