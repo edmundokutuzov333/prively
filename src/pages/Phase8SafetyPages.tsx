@@ -580,8 +580,10 @@ export function Phase8ClientMeetingsPage() {
       return data ?? [];
     },
   });
+  const channelIds = [...new Set(slots.map((slot) => slot.channel_id))];
   const channels = useQuery({
-    queryKey: ['phase8', 'public-channel-names'],
+    queryKey: ['phase8', 'public-channel-names', channelIds.join(',')],
+    enabled: channelIds.length > 0,
     queryFn: async () => {
       const ids = [...new Set(slots.map((slot) => slot.channel_id))];
       if (!ids.length) return [];
