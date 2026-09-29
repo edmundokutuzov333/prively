@@ -265,7 +265,7 @@ begin
 end $$;
 
 create or replace function public.create_auction(
-  _channel uuid,_title text,_description text,_minimum bigint,_starts timestamptz,_ends timestamptz,_post uuid
+  _channel uuid,_title text,_description text,_minimum bigint,_starts timestamptz,_ends timestamptz,_post uuid default null
 ) returns uuid language plpgsql security definer set search_path=public
 as $$
 begin
