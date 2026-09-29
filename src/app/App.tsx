@@ -23,19 +23,11 @@ import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
 import { InfoPage } from '@/pages/InfoPage';
-import { SurfacePage, SurfaceStatePage } from '@/pages/SurfacePages';
+import { SurfaceStatePage } from '@/pages/SurfacePages';
 import {
-  ClientAccountPage,
-  ClientDiscoverPage,
-  ClientDiscreetPage,
-  ClientFeedPage,
-  ClientLimitsPage,
   ClientPostPage,
   ClientPrivacyPage,
-  ClientProfilePage,
-  ClientPurchasesPage,
   ClientWalletPage,
-  ClientWishlistPage,
   CreatorAgendaPage,
   CreatorAnalyticsPage,
   CreatorAuctionsPage,
@@ -51,25 +43,19 @@ import {
 import i18n, { supportedLanguages } from '@/lib/i18n';
 import {
   ClientAuctionPage,
-  ClientCustomRequestPage,
   ClientLiveListPage,
   ClientLiveRoomPage,
-  ClientRewardsPage,
-  ClientStorePage,
   ClientWalletRealPage,
   CreatorAnalyticsAdvancedPage,
   CreatorAuctionsAdvancedPage,
   CreatorAutoRepliesPage,
   CreatorFansAdvancedPage,
-  CreatorGoalsPage,
   CreatorLiveStudioPage,
-  CreatorReferralPage,
   CreatorRequestsAdvancedPage,
   CreatorStoreAdvancedPage
 } from '@/pages/Phase3Pages';
 import {
   ClientSupportCreatorPage,
-  ClientBundlesPage,
   ClientEngagementPage,
   ClientRankingsPage,
   CreatorBundlesPage,
@@ -93,7 +79,6 @@ import {
   Phase6ClientWalletPage,
   Phase6CreatorEarningsPage,
   Phase6FinanceAdminPage,
-  Phase6LimitsPage,
 } from '@/pages/Phase6FinancialPages';
 import { Phase10ProductionReadinessPage } from '@/pages/Phase10ProductionReadinessPage';
 import { ClientDiscoverCorePage, ClientFeedCorePage, ClientProfileCorePage, ClientPurchasesCorePage, ClientWishlistCorePage, ClientAccountCorePage, ClientLimitsCorePage, ClientDiscreetCorePage, ClientStoriesCorePage } from '@/pages/ClientCorePages';
@@ -104,7 +89,6 @@ import {
   Phase9BusinessIntegrationsPage,
   Phase9ClientAuctionsPage,
   Phase9ClientBundlesPage,
-  Phase9ClientDiscoveryPage,
   Phase9ClientGiveawaysPage,
   Phase9ClientGiftsPage,
   Phase9ClientLoyaltyPage,
