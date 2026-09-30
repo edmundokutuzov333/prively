@@ -89,8 +89,8 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
 
     const messageDetail = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`).then((r) => r.json());
     const body = JSON.stringify(messageDetail);
-    const verifyUrlMatch = body.includes('/auth/v1/verify');
-    if (!verifyUrlMatch) throw new Error('confirmation_verify_link_not_found');
+    const verifyEndpointPresent = body.includes('/auth/v1/verify');
+    if (!verifyEndpointPresent) throw new Error('confirmation_verify_link_not_found');
 
     console.log('A.2.6 MAILPIT confirmation_present=true');
     console.log('A.2.7 AUTH verify endpoint observed=true');
