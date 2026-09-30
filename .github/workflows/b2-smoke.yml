@@ -10,14 +10,93 @@ permissions:
 jobs:
   b2:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
       SUPABASE_ANON_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
-      - name: Call deployed B2 smoke test
+      - name: Prepare isolated authenticated media fixture
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail-with-body --silent --show-error             -X POST             "$SUPABASE_URL/functions/v1/b2-smoke-test"             -H "Authorization: Bearer $SUPABASE_ANON_KEY"             -H "apikey: $SUPABASE_ANON_KEY"             -H "Content-Type: application/json"             -d '{}' | tee b2-smoke-output.json
-          jq -e '.ok == true and .provider == "backblaze_b2" and .uploadStatus >= 200 and .uploadStatus < 300 and .downloadStatus == 200 and .contentMatches == true and .cleanup == "deleted" and .downloadExpiresIn == 60' b2-smoke-output.json
+          : "${SUPABASE_PROJECT_REF:?missing SUPABASE_PROJECT_REF}"
+          : "${SUPABASE_DB_PASSWORD:?missing SUPABASE_DB_PASSWORD}"
+          export TEST_USER_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+          export TEST_CHANNEL_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+          export TEST_POST_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+          export TEST_EMAIL="b2-auth-smoke-${GITHUB_RUN_ID}@example.test"
+          export TEST_PASSWORD="B2AuthSmoke!2026-${GITHUB_RUN_ID}"
+          {
+            echo "TEST_USER_ID=$TEST_USER_ID"
+            echo "TEST_CHANNEL_ID=$TEST_CHANNEL_ID"
+            echo "TEST_POST_ID=$TEST_POST_ID"
+            echo "TEST_EMAIL=$TEST_EMAIL"
+            echo "TEST_PASSWORD=$TEST_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+          PGPASSWORD="$SUPABASE_DB_PASSWORD" psql             "host=db.${SUPABASE_PROJECT_REF}.supabase.co port=5432 dbname=postgres user=postgres sslmode=require"             -v ON_ERROR_STOP=1 <<SQL
+          select set_config('app.internal_write','on',true);
+          insert into auth.users(
+            id,aud,role,email,encrypted_password,raw_user_meta_data,email_confirmed_at,created_at,updated_at
+          ) values (
+            '$TEST_USER_ID','authenticated','authenticated','$TEST_EMAIL',
+            crypt('$TEST_PASSWORD',gen_salt('bf')),
+            '{"handle":"b2authsmoke","display_name":"B2 Auth Smoke","signup_role":"creator"}'::jsonb,
+            now(),now(),now()
+          ) on conflict(id) do nothing;
+          update public.profiles
+             set age_verified_at=now(), status='active'
+           where id='$TEST_USER_ID';
+          insert into public.user_roles(user_id,role)
+          values('$TEST_USER_ID','creator') on conflict do nothing;
+          insert into public.legal_acceptances(user_id,document_type,version,source,metadata)
+          values('$TEST_USER_ID','content_prohibited','1.0','b2-smoke','{"test":true}'::jsonb)
+          on conflict do nothing;
+          insert into public.channels(id,owner_id,handle,display_name,dm_mode)
+          values('$TEST_CHANNEL_ID','$TEST_USER_ID','b2authsmoke','B2 Auth Smoke','off');
+          insert into public.posts(
+            id,channel_id,caption,visibility,status,publish_at,is_story,watermark_enabled,moderation_status
+          ) values(
+            '$TEST_POST_ID','$TEST_CHANNEL_ID','B2 authenticated smoke','public','draft',now(),false,true,'clean'
+          );
+          select set_config('app.internal_write','off',true);
+          SQL
+
+      - name: Obtain authenticated access token
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error             -X POST             "$SUPABASE_URL/auth/v1/token?grant_type=password"             -H "apikey: $SUPABASE_ANON_KEY"             -H "Content-Type: application/json"             -d "{"email":"$TEST_EMAIL","password":"$TEST_PASSWORD"}"             > auth.json
+          jq -e '.access_token | length > 20' auth.json
+          jq -r '.access_token' auth.json > token.txt
+          echo "TEST_ACCESS_TOKEN=$(cat token.txt)" >> "$GITHUB_ENV"
+
+      - name: Execute authenticated B2 upload and download path
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error             -X POST             "$SUPABASE_URL/functions/v1/b2-smoke-test"             -H "Authorization: Bearer $TEST_ACCESS_TOKEN"             -H "apikey: $SUPABASE_ANON_KEY"             -H "Content-Type: application/json"             -d "{"postId":"$TEST_POST_ID"}" | tee b2-auth-smoke-output.json
+          jq -e '.ok == true and .provider == "backblaze_b2" and .createMediaUploadStatus == 200 and .uploadStatus >= 200 and .uploadStatus < 300 and .getMediaUrlStatus == 200 and .downloadStatus == 200 and .contentMatches == true and .source == "backblaze_b2" and .expiresIn == 60 and .cleanup == "deleted"' b2-auth-smoke-output.json
+
+      - name: Cleanup isolated database fixture
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          PGPASSWORD="$SUPABASE_DB_PASSWORD" psql             "host=db.${SUPABASE_PROJECT_REF}.supabase.co port=5432 dbname=postgres user=postgres sslmode=require"             -v ON_ERROR_STOP=1 <<SQL
+          select set_config('app.internal_write','on',true);
+          delete from public.media_access_logs
+           where user_id='$TEST_USER_ID'
+              or asset_id in (select id from public.media_assets where channel_id='$TEST_CHANNEL_ID');
+          delete from public.media_consents where user_id='$TEST_USER_ID';
+          delete from public.media_uploads where user_id='$TEST_USER_ID';
+          delete from public.media_assets where channel_id='$TEST_CHANNEL_ID';
+          delete from public.posts where id='$TEST_POST_ID';
+          delete from public.channels where id='$TEST_CHANNEL_ID';
+          delete from public.legal_acceptances where user_id='$TEST_USER_ID';
+          delete from public.user_roles where user_id='$TEST_USER_ID';
+          delete from auth.users where id='$TEST_USER_ID';
+          select set_config('app.internal_write','off',true);
+          SQL
