@@ -13,7 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { Cordao } from '@/design/Cordao';
@@ -25,12 +25,41 @@ const linkButtonBase = 'inline-flex min-h-11 items-center justify-center gap-2 r
 const primaryLinkButton = `${linkButtonBase} border border-crimson-400/40 bg-crimson-500 text-white shadow-[0_0_32px_hsl(var(--wine-600)/.30)] hover:bg-crimson-400`;
 const outlineLinkButton = `${linkButtonBase} border border-bone-50/15 bg-transparent text-bone-50 hover:border-crimson-500/40 hover:bg-wine-900/30`;
 
+const AGE_GATE_KEY = 'prively.age_verified';
+const AGE_GATE_COOKIE = 'prively_age_verified=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure';
+
+function readAgeVerification(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(AGE_GATE_KEY) === '1' || document.cookie.split(';').some((item) => item.trim().startsWith('prively_age_verified=1'));
+}
+
 export function HomePage() {
   const { t, i18n } = useTranslation();
   const reduced = useReducedMotion();
+  const [ageVerified, setAgeVerified] = useState(readAgeVerification);
   const [curtainOpen, setCurtainOpen] = useState(false);
   const language = supportedLanguages.includes(i18n.language as (typeof supportedLanguages)[number]) ? i18n.language : 'pt-MZ';
   const copy = homeCopy[language as keyof typeof homeCopy] ?? homeCopy['pt-MZ'];
+
+  useEffect(() => {
+    if (ageVerified) return;
+    document.title = 'Prively · ' + t('ageGate.title');
+  }, [ageVerified, t]);
+
+  if (!ageVerified) {
+    return <section role="dialog" aria-modal="true" aria-labelledby="prively-age-gate-title" className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-5 py-10 md:px-8">
+      <Ficha variant="focus" className="w-full max-w-xl p-7 md:p-10">
+        <p className="mb-3 text-sm text-bone-300">{t('ageGate.eyebrow')}</p>
+        <h1 id="prively-age-gate-title" className="font-display text-5xl leading-[.92] text-bone-50">{t('ageGate.title')}</h1>
+        <p className="mt-5 text-sm leading-6 text-bone-300">{t('ageGate.body')}</p>
+        <div className="mt-8 grid gap-3">
+          <button type="button" onClick={() => { window.localStorage.setItem(AGE_GATE_KEY, '1'); document.cookie = AGE_GATE_COOKIE; setAgeVerified(true); }} className={primaryLinkButton}>{t('ageGate.confirm')}</button>
+          <Link to="/legal/privacidade" className={outlineLinkButton}>{t('ageGate.leave')}</Link>
+        </div>
+        <p className="mt-6 text-xs leading-5 text-bone-500">{t('ageGate.policy')}</p>
+      </Ficha>
+    </section>;
+  }
 
   return (
     <div className="overflow-hidden">
