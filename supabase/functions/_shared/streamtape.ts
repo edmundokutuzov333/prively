@@ -21,9 +21,10 @@ function msg(v:unknown):string {
 }
 function classify(http:number, api:number, text:string, op:string):Error {
   const s=text.toLowerCase();
+  const expiredSource=/expired|signature.*(?:expired|invalid)|request has expired|presigned.*expired|accessdenied.*expired|expiredtoken/.test(s);
+  if(expiredSource) return new B2UrlExpiredError("b2_url_expired");
   if(http===401||http===403||api===403||/invalid.?key|invalid.?login|authentication|unauthori|forbidden|permission denied/.test(s)) return new StreamtapeAuthError("streamtape_auth_error");
   if([429,509,500,502,503,504].includes(http)||[429,509,500,502,503,504].includes(api)||/timeout|temporar|rate.?limit|bandwidth usage exceeded|network/.test(s)) return new StreamtapeUnavailableError("streamtape_unavailable");
-  if(/expired|signature.*(?:expired|invalid)|request has expired|presigned.*expired|accessdenied.*expired/.test(s)) return new B2UrlExpiredError("b2_url_expired");
   if(http===451||api===451) return new StreamtapeRejectedError(text||"streamtape_rejected");
   if(op==="remote-upload"&&(http===400||api===400||http===404||api===404||/invalid|reject|unsupported|remote url|source/.test(s))) return new StreamtapeRejectedError(text||"streamtape_rejected");
   return op==="remote-upload" ? new StreamtapeUploadFailedError(text||"streamtape_upload_failed") : new StreamtapeRejectedError(text||"streamtape_request_failed");
