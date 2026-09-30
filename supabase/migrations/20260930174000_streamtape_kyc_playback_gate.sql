@@ -73,5 +73,5 @@ begin
 end
 $function$;
 
-revoke execute on function public.can_view_post(uuid,uuid) from public,anon;
-grant execute on function public.can_view_post(uuid,uuid) to authenticated,service_role;
+revoke execute on function public.can_view_post(uuid,uuid) from public,anon,authenticated;
+grant execute on function public.can_view_post(uuid,uuid) to service_role;
