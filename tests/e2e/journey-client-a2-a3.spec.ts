@@ -62,14 +62,23 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
 
     const users = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (users.error) throw users.error;
-    const created = users.data.users.find((u) => u.email === email);
-    if (!created) throw new Error('signup_user_not_found');
+    const listed = users.data.users.find((u) => u.email === email);
+    if (!listed) throw new Error('signup_user_not_found');
+    const createdResult = await admin.auth.admin.getUserById(listed.id);
+    if (createdResult.error) throw createdResult.error;
+    const created = createdResult.data.user;
     createdUserId = created.id;
     console.log('A.2.6 DB auth.users=', JSON.stringify({
       id: created.id,
-      email_confirmed_at: created.email_confirmed_at,
+      email_confirmed_at: created.email_confirmed_at ?? null,
     }));
-    expect(created.email_confirmed_at).toBeNull();
+    expect(created.email_confirmed_at ?? null).toBeNull();
+
+    const preConfirmClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
+    const preLogin = await preConfirmClient.auth.signInWithPassword({ email, password });
+    console.log('A.2.7 login-before-confirm=', JSON.stringify({ session: Boolean(preLogin.data.session), error: preLogin.error?.message ?? null }));
+    expect(preLogin.data.session).toBeNull();
+    expect(preLogin.error).toBeTruthy();
 
     const mailpit = await fetch('http://127.0.0.1:54324/api/v1/messages?limit=50');
     const mailpitJson = await mailpit.json();
