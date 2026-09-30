@@ -207,12 +207,14 @@ try {
     );
   }
 
+  const allPassed = results.every(function(x){return x.pass;});
   console.log(JSON.stringify({
-    ok: results.every(function(x){return x.pass;}),
+    ok: allPassed,
     passed: results.filter(function(x){return x.pass;}).length,
     failed: results.filter(function(x){return !x.pass;}).length,
     results: results,
   }, null, 2));
+  if (!allPassed) process.exitCode = 1;
 } finally {
   try {
     await sql("select set_config('app.internal_write','on',true)");
