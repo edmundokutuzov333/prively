@@ -93,6 +93,14 @@ Deno.serve(async (request) => {
       expires_in?: unknown;
     };
 
+    if (access.kind === "video" && access.storage_provider === "backblaze_b2") {
+      return jsonResponse({
+        code: "video_delivery_required",
+        retry: false,
+        correlationId,
+      }, 409, request, correlationId);
+    }
+
     if (typeof access.path !== "string") {
       return jsonResponse({ code: "media_path_missing" }, 500, request, correlationId);
     }
