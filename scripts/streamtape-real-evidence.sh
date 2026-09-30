@@ -155,15 +155,15 @@ echo "UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 echo
 echo "== Deploy 1/3: streamtape-remote-upload =="
-supabase functions deploy streamtape-remote-upload --project-ref "$SUPABASE_PROJECT_REF" | tee "$EVIDENCE_DIR/deploy-remote-upload.txt"
+./node_modules/.bin/supabase functions deploy streamtape-remote-upload --project-ref "$SUPABASE_PROJECT_REF" | tee "$EVIDENCE_DIR/deploy-remote-upload.txt"
 
 echo
 echo "== Deploy 2/3: streamtape-check-status =="
-supabase functions deploy streamtape-check-status --project-ref "$SUPABASE_PROJECT_REF" | tee "$EVIDENCE_DIR/deploy-check-status.txt"
+./node_modules/.bin/supabase functions deploy streamtape-check-status --project-ref "$SUPABASE_PROJECT_REF" | tee "$EVIDENCE_DIR/deploy-check-status.txt"
 
 echo
 echo "== Deploy 3/3: get-video-playback-url =="
-supabase functions deploy get-video-playback-url --project-ref "$SUPABASE_PROJECT_REF" | tee "$EVIDENCE_DIR/deploy-playback.txt"
+./node_modules/.bin/supabase functions deploy get-video-playback-url --project-ref "$SUPABASE_PROJECT_REF" | tee "$EVIDENCE_DIR/deploy-playback.txt"
 
 backup_and_set_test_passwords
 
