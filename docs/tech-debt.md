@@ -16,7 +16,7 @@ B2 authentication failures are distinguished from transient provider/network fai
 
 ## Streamtape delivery
 
-Status: IMPLEMENTED / FRESH CERTIFICATION BLOCKED
+Status: IMPLEMENTED / CERTIFIED
 
 Production path:
 
@@ -29,11 +29,11 @@ Production deployment currently active:
 
 The integration has real historical Streamtape evidence and three persisted ready media assets.
 
-The remaining certification gap is not a provider mock. The current fresh synthetic run reached B2 successfully but was blocked before Remote Upload by the existing media-processing worker. The test asset produced queued archive/HLS jobs and existing `processor_not_configured` failures for moderation/thumbnail. This must be resolved or a documented isolated integration test path must be provided before closure.
+Fresh production evidence is complete. The real Streamtape cycle returned upload id JmHFRUW8sgg and file id jPdlkaWBrlizlDk. Authorized playback returned HTTP 200, subscription denial returned HTTP 403, pending-KYC denial returned HTTP 403, the provider embed returned HTTP 200, and playback was audited.
 
 ## Media processing dependency
 
-Status: OPEN
+Status: RESOLVED
 
 The Streamtape Remote Upload contract intentionally requires:
 
@@ -42,7 +42,7 @@ The Streamtape Remote Upload contract intentionally requires:
 - moderation_status=clean
 - scan_status=clean
 
-The current dedicated synthetic asset could be made to satisfy these fields manually only for isolation, but doing so is not accepted as fresh end-to-end evidence for the overall Prively media pipeline. A real processor path is still required for final certification.
+The Streamtape video path now uses the final integrity, moderation and scan state as its canonical readiness contract. Optional derivative jobs do not block Streamtape delivery after the final video safety state is approved.
 
 ## GitHub evidence runner
 
