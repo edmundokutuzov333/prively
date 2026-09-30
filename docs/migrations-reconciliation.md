@@ -194,8 +194,8 @@ get_public_feature_flags() = absent
 
 ### 20260928211500 phase5_internal_worker_dispatch
 
-Classificação: OBSOLETA.
-O contrato cria dispatch automático por Vault + pg_net, trigger e cron. A evolução seguinte desactivou esse mecanismo não verificado. No remoto, o token e a função de dispatch existem, mas o trigger e o cron estão desligados. Não reaplicar.
+Classificação: HISTÓRICA NECESSÁRIA PARA RESET.
+A migração cria os componentes internos do dispatcher e, imediatamente depois, `20260928213500_phase5_disable_unverified_dispatch` remove o trigger e o cron e revoga o acesso normal. O estado final continua sem dispatch automático. Não remover esta migração do conjunto local, porque o reset determinístico depende da ordem histórica.
 
 ### 20260930046000 phase1_database_feature_flags
 
@@ -278,8 +278,8 @@ OBSOLETA: 1
 NÃO VERIFICADO: 0
 TOTAL LOCAL-ONLY INICIAL: 99
 TOTAL REMOTE-ONLY INICIAL: 43
-LOCAL ACTIVO PÓS-LIMPEZA: 178
-REMOTE PÓS-REPARAÇÃO: 178
+LOCAL ACTIVO PÓS-RESTAURAÇÃO: 179
+REMOTE PÓS-REPARAÇÃO: 179
 ```
 
 ## 7. Fecho da P1
@@ -297,12 +297,13 @@ Proposta:
 
 ## 8. Alinhamento final do histórico
 
-Em 30 de Setembro de 2026, o histórico de migrações foi reconciliado por timestamp. O ficheiro obsoleto `20260928211500_phase5_internal_worker_dispatch.sql` foi removido de `supabase/migrations/` e preservado integralmente em `docs/archive/migrations/`.
+Em 30 de Setembro de 2026, o histórico de migrações foi reconciliado por timestamp. O ficheiro `20260928211500_phase5_internal_worker_dispatch.sql` é um componente histórico necessário para que o reset local reproduza a criação temporária do dispatcher antes da migração seguinte o desactivar. O ficheiro foi restaurado em `supabase/migrations/` e continua também preservado em `docs/archive/migrations/` para auditoria.
 
 Estado verificável:
 ```text
-migrations locais activas: 178
-migrations remotas: 178
+migrations locais activas: 179
+migrations remotas: 179
+
 remotas sem timestamp local: 0
 locais sem timestamp remoto: 0
 ```

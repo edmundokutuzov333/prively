@@ -1,7 +1,7 @@
 # Archived obsolete migration
 
 Original path: supabase/migrations/20260928211500_phase5_internal_worker_dispatch.sql
-Reason: replaced by later unverified-dispatch disablement; automatic worker dispatch must remain disabled until the worker trust contract is verified.
+Reason: historical migration retained for deterministic local reset. The immediately following migration disables its automatic trigger and cron, so the final runtime state remains without automatic dispatch.
 
 ## Original SQL
 
