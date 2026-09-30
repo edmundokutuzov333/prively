@@ -197,10 +197,7 @@ where id=current_setting('app.phase5_asset_id')::uuid;
 set local role authenticated;
 
 select ok(
-  public.can_view_post(
-    current_setting('app.phase5_post_id')::uuid,
-    auth.uid()
-  ),
+  public.can_view_post(current_setting('app.phase5_post_id')::uuid),
   'client can view a fully approved published post'
 );
 
