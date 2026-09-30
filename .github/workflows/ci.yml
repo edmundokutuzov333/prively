@@ -157,25 +157,89 @@ jobs:
 
 
   b2_real_assets:
-    name: Upload real B2 visual assets
+    name: Upload real B2 raster assets
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Upload and verify real assets in B2
+      - name: Generate real PNG JPEG and WebP files
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 3 --connect-timeout 20 \
-            "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/b2-smoke-test?nonce=prively-real-assets-2026-09-30-7f6c" \
-            | tee /tmp/b2-real-assets.json
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from PIL import Image, ImageDraw
+          import base64, json
+          from pathlib import Path
+
+          out = Path("/tmp/prively-raster")
+          out.mkdir(parents=True, exist_ok=True)
+
+          W, H = 900, 600
+          img = Image.new("RGB", (W, H))
+          px = img.load()
+          for y in range(H):
+              for x in range(W):
+                  px[x, y] = (
+                      25 + int(170 * x / W),
+                      55 + int(125 * y / H),
+                      95 + int(120 * (1 - x / W)),
+                  )
+
+          draw = ImageDraw.Draw(img)
+          draw.rounded_rectangle((55, 55, W-55, H-55), radius=32, outline="white", width=6, fill=(16, 20, 28))
+          draw.text((110, 180), "PRIVELY", fill="white")
+          draw.text((110, 250), "REAL B2 RASTER ASSET", fill="white")
+          draw.text((110, 320), "2026-09-30", fill="white")
+
+          files = []
+          png = out / "prively-real.png"
+          jpg = out / "prively-real.jpg"
+          webp = out / "prively-real.webp"
+
+          img.save(png, "PNG")
+          img.save(jpg, "JPEG", quality=92)
+          img.save(webp, "WEBP", quality=90)
+
+          for path, mime in [
+              (png, "image/png"),
+              (jpg, "image/jpeg"),
+              (webp, "image/webp"),
+          ]:
+              files.append({
+                  "name": path.name,
+                  "contentType": mime,
+                  "bytesBase64": base64.b64encode(path.read_bytes()).decode("ascii")
+              })
+
+          payload = {"assets": files}
+          Path("/tmp/prively-raster.json").write_text(json.dumps(payload))
+          print(json.dumps({
+              "generated": [
+                  {"name": x["name"], "contentType": x["contentType"], "bytes": len(base64.b64decode(x["bytesBase64"]))}
+                  for x in files
+              ]
+          }, indent=2))
+          PY
+
+      - name: Upload real raster files to B2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --connect-timeout 20             -X POST             -H "content-type: application/json"             --data-binary @/tmp/prively-raster.json             "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/b2-smoke-test?nonce=prively-real-raster-2026-09-30-9ab2"             | tee /tmp/b2-raster-response.json
           python - <<'PY'
           import json
-          with open("/tmp/b2-real-assets.json", "r", encoding="utf-8") as f:
+          with open("/tmp/b2-raster-response.json", "r", encoding="utf-8") as f:
               data = json.load(f)
           assert data["ok"] is True, data
-          assert len(data["objects"]) == 4, data
+          assert len(data["objects"]) == 3, data
+          wanted = {
+              "prively-real.png": "image/png",
+              "prively-real.jpg": "image/jpeg",
+              "prively-real.webp": "image/webp",
+          }
           for obj in data["objects"]:
               assert obj["bytes"] > 0, obj
+              assert obj["contentType"] == wanted[obj["key"].split("/")[-1]], obj
           print(json.dumps(data, indent=2))
           PY
 
