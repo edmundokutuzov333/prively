@@ -1,4 +1,4 @@
-import { requireSupabase, supabaseProjectRef } from '@/lib/supabase';
+import { requireSupabase } from '@/lib/supabase';
 
 export type MediaUploadPlan = {
   uploadId: string;
@@ -163,5 +163,3 @@ export async function uploadMediaResumable(
     },
   };
 }
-
-void supabaseProjectRef;
