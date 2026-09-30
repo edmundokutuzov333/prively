@@ -1,0 +1,28 @@
+name: One-time B2 Real Assets
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload-real-assets:
+    if: contains(github.event.head_commit.message, 'chore(test): upload real B2 assets')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Upload real visual assets to B2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --connect-timeout 20             "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/b2-smoke-test?nonce=prively-real-assets-2026-09-30-7f6c"             | tee /tmp/b2-real-assets.json
+          python - <<'PY'
+          import json
+          with open("/tmp/b2-real-assets.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+          assert data["ok"] is True, data
+          assert len(data["objects"]) == 4, data
+          for obj in data["objects"]:
+              assert obj["bytes"] > 0, obj
+          print(json.dumps(data, indent=2))
+          PY
