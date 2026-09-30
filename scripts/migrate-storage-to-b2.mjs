@@ -53,7 +53,7 @@ function extensionForMime(mime) {
 async function loadPage(from) {
   const { data, error } = await supabase
     .from("media_assets")
-    .select("id,storage_path,storage_provider,mime_type,original_filename,file_size_bytes,channel_id,channels(owner_id)")
+    .select("id,storage_path,storage_provider,mime_type,original_filename,file_size_bytes,metadata,channel_id,channels(owner_id)")
     .neq("storage_provider", "backblaze_b2")
     .order("created_at", { ascending: true })
     .range(from, from + pageSize - 1);
