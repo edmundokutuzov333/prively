@@ -47,7 +47,7 @@ Deno.serve(async (request)=>{
       await serviceClient().from("media_assets").update({streamtape_status:"failed",streamtape_attempts:nextAttempts,streamtape_last_error:mapped.message.slice(0,500),streamtape_last_checked_at:new Date().toISOString()}).eq("id",asset.id);
       if(mapped instanceof StreamtapeAuthError) return jsonResponse({code:mapped.code,retry:false},502,request);
       if(mapped instanceof StreamtapeUnavailableError) return jsonResponse({code:mapped.code,retry:true,retry_after_seconds:60},503,request);
-      return jsonResponse({code:(mapped as Error).message,retry:nextAttempts<2},422,request);
+      return jsonResponse({code:(mapped as Error & { code?: string }).code ?? mapped.message,retry:nextAttempts<2},422,request);
     }
   }catch(error){
     const code=error instanceof Error?error.message:"streamtape_remote_upload_error";

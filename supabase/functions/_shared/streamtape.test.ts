@@ -16,4 +16,5 @@ Deno.test("error codes preserve retry semantics", () => {
   if ((unavailable as Error & {code?: string}).code !== "streamtape_unavailable") throw new Error("unavailable_mapping_failed");
   if ((rejected as Error & {code?: string}).code !== "streamtape_rejected") throw new Error("rejected_mapping_failed");
   if ((expired as Error & {code?: string}).code !== "b2_url_expired") throw new Error("expired_mapping_failed");
+  if ((mapStreamtapeError(new StreamtapeRejectedError("provider_message")) as Error & {code?: string}).code !== "streamtape_rejected") throw new Error("rejected_code_contract_failed");
 });

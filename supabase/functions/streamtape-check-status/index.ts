@@ -59,7 +59,7 @@ Deno.serve(async (request)=>{
         return jsonResponse({code:mapped.code,retry:true,retry_after_seconds:60},503,request);
       }
       await serviceClient().from("media_assets").update({streamtape_status:"failed",streamtape_last_error:mapped.message.slice(0,500),streamtape_last_checked_at:new Date().toISOString()}).eq("id",asset.id);
-      return jsonResponse({ok:false,code:mapped.message,retry:Number(asset.streamtape_attempts??0)<2},422,request);
+      return jsonResponse({ok:false,code:(mapped as Error & { code?: string }).code ?? mapped.message,retry:Number(asset.streamtape_attempts??0)<2},422,request);
     }
   }catch(error){
     const code=error instanceof Error?error.message:"streamtape_status_error";

@@ -254,8 +254,8 @@ export async function uploadMediaResumable(
 
 export type StreamtapeRemoteUploadResult = {
   ok: boolean;
-  uploadId: string;
-  status: "processing" | "ready";
+  uploadId: string | null;
+  status: "queued" | "processing" | "ready";
   fileId?: string;
   embedUrl?: string;
 };
@@ -270,6 +270,14 @@ export async function startStreamtapeRemoteUpload(
     "streamtape-remote-upload",
     { body },
   );
+  if (data?.code === "media_not_ready") {
+    return {
+      ok: true,
+      uploadId: null,
+      status: "queued",
+    };
+  }
+
   if (error || !data?.ok || typeof data.upload_id !== "string") {
     throw new Error(
       typeof data?.code === "string"
