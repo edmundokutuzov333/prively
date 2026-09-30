@@ -68,6 +68,14 @@ console.log('RPC get_wallet_summary=', JSON.stringify({data:wallet.data,error:wa
 
 const badLegacy = await signInClient.rpc('create_media_upload',{_post:null,_kind:'image',_mime_type:'image/jpeg',_file_size:100,_sha256:'0'.repeat(64),_original_filename:'e2e.jpg'});
 console.log('RPC legacy create_media_upload=', JSON.stringify({data:badLegacy.data,error:badLegacy.error?.message ?? null}));
+if (badLegacy.error?.message?.includes('Could not choose the best candidate function')) throw new Error('legacy_media_upload_overload_still_present');
+
+const creatorClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
+const creatorLogin = await creatorClient.auth.signInWithPassword({ email: creatorEmail, password });
+if (creatorLogin.error) throw creatorLogin.error;
+const sevenArg = await creatorClient.rpc('create_media_upload',{_post:null,_kind:'image',_mime_type:'image/jpeg',_file_size:100,_sha256:'0'.repeat(64),_original_filename:'e2e.jpg',_participants_consent:false});
+console.log('RPC 7-arg create_media_upload=', JSON.stringify({data:sevenArg.data,error:sevenArg.error?.message ?? null}));
+if (!sevenArg.error || !/consent|participant/i.test(sevenArg.error.message)) throw new Error('seven_arg_media_upload_contract_not_reachable');
 
 const final = await admin.auth.admin.deleteUser(clientId);
 const final2 = await admin.auth.admin.deleteUser(creatorId);
