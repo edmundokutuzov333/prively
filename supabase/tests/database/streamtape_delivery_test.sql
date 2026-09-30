@@ -155,7 +155,7 @@ set status='approved',updated_at=now()
 where user_id=current_setting('app.streamtape_client_id')::uuid;
 
 reset role;
-perform set_config('app.internal_write','on',true);
+select set_config('app.internal_write','on',true);
 update public.posts
 set visibility='subscribers'
 where id=current_setting('app.streamtape_post_id')::uuid;
@@ -174,7 +174,7 @@ select ok(
 );
 
 reset role;
-perform set_config('app.internal_write','on',true);
+select set_config('app.internal_write','on',true);
 insert into public.subscriptions(
   subscriber_id,channel_id,tier_id,period_months,price_paid,current_period_end,status
 )
