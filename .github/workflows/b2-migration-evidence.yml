@@ -1,0 +1,25 @@
+name: B2 migration evidence
+
+on:
+  push:
+
+jobs:
+  evidence:
+    if: github.event.head_commit.message == 'chore(test): run B2 migration evidence'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Execute real migration evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --connect-timeout 15 "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2-migration-evidence-20260930" | tee /tmp/b2-migration-evidence.json
+          python - <<'PY'
+          import json
+          with open("/tmp/b2-migration-evidence.json","r",encoding="utf-8") as f:
+              data=json.load(f)
+          print(json.dumps(data, indent=2))
+          assert data["ok"] is True, data
+          assert len(data["syntheticInput"]) == 6, data
+          assert data["postCleanupListObjectsV2"]["KeyCount"] == 0, data
+          PY
