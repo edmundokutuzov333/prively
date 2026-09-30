@@ -89,11 +89,17 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
 
     const messageDetail = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`).then((r) => r.json());
     const body = JSON.stringify(messageDetail);
-    const verifyUrlMatch = body.includes('/auth/v1/verify');
-    if (!verifyUrlMatch) throw new Error('confirmation_verify_link_not_found');
+    const verifyUrl = body.match(/https?:\/\/[^"'<> ]+\/auth\/v1\/verify[^"'<> ]*/)?.[0];
+    if (!verifyUrl) throw new Error('confirmation_verify_link_not_found');
 
     console.log('A.2.6 MAILPIT confirmation_present=true');
-    console.log('A.2.7 AUTH verify endpoint observed=true');
+    console.log('A.2.7 AUTH verify URL present=true');
+    try {
+      await page.goto(verifyUrl, { waitUntil: 'domcontentloaded' });
+    } catch (verificationNavigationError) {
+      console.log('A.2.7 AUTH verify navigation=', verificationNavigationError instanceof Error ? verificationNavigationError.message : String(verificationNavigationError));
+    }
+    console.log('A.2.7 UI verify target=', page.url());
 
     const afterConfirm = await admin.auth.admin.getUserById(created.id);
     if (afterConfirm.error) throw afterConfirm.error;
