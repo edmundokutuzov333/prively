@@ -53,7 +53,7 @@ export function HomePage() {
         <h1 id="prively-age-gate-title" className="font-display text-5xl leading-[.92] text-bone-50">{t('ageGate.title')}</h1>
         <p className="mt-5 text-sm leading-6 text-bone-300">{t('ageGate.body')}</p>
         <div className="mt-8 grid gap-3">
-          <button type="button" onClick={() => { window.localStorage.setItem(AGE_GATE_KEY, '1'); document.cookie = AGE_GATE_COOKIE; setAgeVerified(true); }} className={primaryLinkButton}>{t('ageGate.confirm')}</button>
+          <button type="button" data-testid="age-gate-confirm" onClick={() => { window.localStorage.setItem(AGE_GATE_KEY, '1'); document.cookie = AGE_GATE_COOKIE; setAgeVerified(true); }} className={primaryLinkButton}>{t('ageGate.confirm')}</button>
           <Link to="/legal/privacidade" className={outlineLinkButton}>{t('ageGate.leave')}</Link>
         </div>
         <p className="mt-6 text-xs leading-5 text-bone-500">{t('ageGate.policy')}</p>
