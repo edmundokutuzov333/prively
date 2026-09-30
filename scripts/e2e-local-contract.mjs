@@ -5,37 +5,49 @@ const anon = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHA
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !anon || !service) throw new Error('missing_supabase_local_env');
 
+const publicClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
 const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
 const ts = Date.now();
 const clientEmail = 'e2e-client-' + ts + '@example.test';
 const creatorEmail = 'e2e-creator-' + ts + '@example.test';
-const password = 'PrivelyE2E!' + ts;
+const clientPassword = 'PrivelyE2E!Client' + ts;
+const creatorPassword = 'PrivelyE2E!Creator' + ts;
+const clientHandle = 'e2eclient' + String(ts).slice(-6);
+const creatorHandle = 'e2ecreator' + String(ts).slice(-6);
 
 console.log('===== COMMAND: node scripts/e2e-local-contract.mjs =====');
 console.log('SUPABASE_URL=', url);
 console.log('CLIENT_EMAIL=', clientEmail);
 console.log('CREATOR_EMAIL=', creatorEmail);
 
-const clientSignUp = await admin.auth.admin.createUser({ email: clientEmail, password, email_confirm: false, user_metadata: {
-  handle: 'e2eclient' + String(ts).slice(-6),
-  display_name: 'E2E Client',
-  signup_role: 'client',
-  role: 'client'
-}});
-if (clientSignUp.error) throw clientSignUp.error;
-console.log('AUTH CLIENT signup=', JSON.stringify({ id: clientSignUp.data.user.id, email_confirmed_at: clientSignUp.data.user.email_confirmed_at }));
+const clientSignup = await publicClient.auth.signUp({
+  email: clientEmail,
+  password: clientPassword,
+  options: { data: { handle: clientHandle, display_name: 'E2E Client', signup_role: 'client', role: 'client' } }
+});
+if (clientSignup.error) throw clientSignup.error;
+console.log('AUTH CLIENT signup=', JSON.stringify({ id: clientSignup.data.user?.id, email_confirmed_at: clientSignup.data.user?.email_confirmed_at, session_present: Boolean(clientSignup.data.session) }));
+if (!clientSignup.data.user?.id) throw new Error('client_signup_missing_user');
+const clientId = clientSignup.data.user.id;
 
-const creatorSignUp = await admin.auth.admin.createUser({ email: creatorEmail, password, email_confirm: false, user_metadata: {
-  handle: 'e2ecreator' + String(ts).slice(-6),
-  display_name: 'E2E Creator',
-  signup_role: 'creator',
-  role: 'creator'
-}});
-if (creatorSignUp.error) throw creatorSignUp.error;
-console.log('AUTH CREATOR signup=', JSON.stringify({ id: creatorSignUp.data.user.id, email_confirmed_at: creatorSignUp.data.user.email_confirmed_at }));
+const creatorSignup = await publicClient.auth.signUp({
+  email: creatorEmail,
+  password: creatorPassword,
+  options: { data: { handle: creatorHandle, display_name: 'E2E Creator', signup_role: 'creator', role: 'creator' } }
+});
+if (creatorSignup.error) throw creatorSignup.error;
+console.log('AUTH CREATOR signup=', JSON.stringify({ id: creatorSignup.data.user?.id, email_confirmed_at: creatorSignup.data.user?.email_confirmed_at, session_present: Boolean(creatorSignup.data.session) }));
+if (!creatorSignup.data.user?.id) throw new Error('creator_signup_missing_user');
+const creatorId = creatorSignup.data.user.id;
 
-const clientId = clientSignUp.data.user.id;
-const creatorId = creatorSignUp.data.user.id;
+try {
+  const mailpit = await fetch('http://127.0.0.1:54324/api/v1/messages?limit=50');
+  const mailpitJson = await mailpit.json();
+  const subjects = (mailpitJson.messages ?? []).map((m) => ({ ID: m.ID, Subject: m.Subject, To: m.To }));
+  console.log('MAILPIT status=', mailpit.status, 'messages=', JSON.stringify(subjects));
+} catch (error) {
+  console.log('MAILPIT error=', error instanceof Error ? error.message : String(error));
+}
 
 const roles = await admin.from('user_roles').select('user_id,role').in('user_id',[clientId,creatorId]).order('user_id');
 if (roles.error) throw roles.error;
@@ -51,29 +63,38 @@ if (clientWallet.error || creatorWallet.error) throw clientWallet.error ?? creat
 console.log('DB client balances=', JSON.stringify(clientWallet.data));
 console.log('DB creator balances=', JSON.stringify(creatorWallet.data));
 
+const preLogin = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
+const preLoginResult = await preLogin.auth.signInWithPassword({ email: clientEmail, password: clientPassword });
+console.log('AUTH login-before-confirm=', JSON.stringify({ session_present: Boolean(preLoginResult.data.session), error: preLoginResult.error?.message ?? null }));
+if (!preLoginResult.error || preLoginResult.data.session) throw new Error('login_before_confirmation_was_allowed');
+
 const confirmedBefore = await admin.auth.admin.getUserById(clientId);
 console.log('AUTH email_confirmed_at BEFORE=', confirmedBefore.data.user?.email_confirmed_at ?? null);
-const confirm = await admin.auth.admin.updateUserById(clientId,{email_confirm:true});
-if (confirm.error) throw confirm.error;
+if (confirmedBefore.data.user?.email_confirmed_at) throw new Error('email_confirmed_before_confirmation');
+
+const confirmClient = await admin.auth.admin.updateUserById(clientId,{email_confirm:true});
+const confirmCreator = await admin.auth.admin.updateUserById(creatorId,{email_confirm:true});
+if (confirmClient.error) throw confirmClient.error;
+if (confirmCreator.error) throw confirmCreator.error;
 const confirmedAfter = await admin.auth.admin.getUserById(clientId);
 console.log('AUTH email_confirmed_at AFTER=', confirmedAfter.data.user?.email_confirmed_at ?? null);
 
-const signInClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
-const signedIn = await signInClient.auth.signInWithPassword({ email: clientEmail, password });
+const signedIn = await publicClient.auth.signInWithPassword({ email: clientEmail, password: clientPassword });
 if (signedIn.error) throw signedIn.error;
 console.log('AUTH login=', JSON.stringify({ user_id: signedIn.data.user?.id, aal: signedIn.data.session?.user?.aal ?? 'aal1', access_token_present: Boolean(signedIn.data.session?.access_token) }));
 
-const wallet = await signInClient.rpc('get_wallet_summary');
+const wallet = await publicClient.rpc('get_wallet_summary');
 console.log('RPC get_wallet_summary=', JSON.stringify({data:wallet.data,error:wallet.error?.message ?? null}));
 
-const badLegacy = await signInClient.rpc('create_media_upload',{_post:null,_kind:'image',_mime_type:'image/jpeg',_file_size:100,_sha256:'0'.repeat(64),_original_filename:'e2e.jpg'});
+const badLegacy = await publicClient.rpc('create_media_upload',{_post:null,_kind:'image',_mime_type:'image/jpeg',_file_size:100,_sha256:'0'.repeat(64),_original_filename:'e2e.jpg'});
 console.log('RPC legacy create_media_upload=', JSON.stringify({data:badLegacy.data,error:badLegacy.error?.message ?? null}));
 if (badLegacy.error?.message?.includes('Could not choose the best candidate function')) throw new Error('legacy_media_upload_overload_still_present');
+if (!badLegacy.error) throw new Error('legacy_media_upload_call_unexpectedly_succeeded');
 
-await admin.auth.admin.updateUserById(creatorId,{email_confirm:true});
 const creatorClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
-const creatorLogin = await creatorClient.auth.signInWithPassword({ email: creatorEmail, password });
+const creatorLogin = await creatorClient.auth.signInWithPassword({ email: creatorEmail, password: creatorPassword });
 if (creatorLogin.error) throw creatorLogin.error;
+console.log('AUTH creator login=', JSON.stringify({ user_id: creatorLogin.data.user?.id, role_claim: creatorLogin.data.user?.user_metadata?.role, aal: creatorLogin.data.session?.user?.aal ?? 'aal1' }));
 const sevenArg = await creatorClient.rpc('create_media_upload',{_post:null,_kind:'image',_mime_type:'image/jpeg',_file_size:100,_sha256:'0'.repeat(64),_original_filename:'e2e.jpg',_participants_consent:false});
 console.log('RPC 7-arg create_media_upload=', JSON.stringify({data:sevenArg.data,error:sevenArg.error?.message ?? null}));
 if (!sevenArg.error || !/consent|participant/i.test(sevenArg.error.message)) throw new Error('seven_arg_media_upload_contract_not_reachable');
