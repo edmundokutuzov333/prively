@@ -1,7 +1,7 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
 import { presignDownload } from "../_shared/b2.ts";
-import { B2UrlExpiredError, mapStreamtapeError, remoteUpload, StreamtapeAuthError, StreamtapeUnavailableError } from "../_shared/streamtape.ts";
+import { B2UrlExpiredError, mapStreamtapeError, remoteUpload, StreamtapeAuthError, StreamtapeRejectedError, StreamtapeUnavailableError } from "../_shared/streamtape.ts";
 
 Deno.serve(async (request)=>{
   if(request.method==="OPTIONS") return optionsResponse(request);
@@ -46,6 +46,7 @@ Deno.serve(async (request)=>{
       const nextAttempts=attempts+1;
       await serviceClient().from("media_assets").update({streamtape_status:"failed",streamtape_attempts:nextAttempts,streamtape_last_error:mapped.message.slice(0,500),streamtape_last_checked_at:new Date().toISOString()}).eq("id",asset.id);
       if(mapped instanceof StreamtapeAuthError) return jsonResponse({code:mapped.code,retry:false},502,request);
+      if(mapped instanceof StreamtapeRejectedError) return jsonResponse({code:mapped.code,retry:false},422,request);
       if(mapped instanceof StreamtapeUnavailableError) return jsonResponse({code:mapped.code,retry:true,retry_after_seconds:60},503,request);
       return jsonResponse({code:(mapped as Error & { code?: string }).code ?? mapped.message,retry:nextAttempts<2},422,request);
     }

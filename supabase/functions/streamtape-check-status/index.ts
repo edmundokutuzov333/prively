@@ -1,6 +1,6 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
-import { fileInfo, mapStreamtapeError, remoteStatus, StreamtapeAuthError, StreamtapeUnavailableError } from "../_shared/streamtape.ts";
+import { fileInfo, mapStreamtapeError, remoteStatus, StreamtapeAuthError, StreamtapeRejectedError, StreamtapeUnavailableError } from "../_shared/streamtape.ts";
 
 Deno.serve(async (request)=>{
   if(request.method==="OPTIONS") return optionsResponse(request);
@@ -54,6 +54,7 @@ Deno.serve(async (request)=>{
     }catch(error){
       const mapped=mapStreamtapeError(error);
       if(mapped instanceof StreamtapeAuthError) return jsonResponse({code:mapped.code,retry:false},502,request);
+      if(mapped instanceof StreamtapeRejectedError) return jsonResponse({code:mapped.code,retry:false},422,request);
       if(mapped instanceof StreamtapeUnavailableError){
         await serviceClient().from("media_assets").update({streamtape_last_error:mapped.message.slice(0,500),streamtape_last_checked_at:new Date().toISOString()}).eq("id",asset.id);
         return jsonResponse({code:mapped.code,retry:true,retry_after_seconds:60},503,request);
