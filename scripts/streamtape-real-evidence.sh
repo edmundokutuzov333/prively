@@ -11,11 +11,39 @@ EVIDENCE_DIR="${EVIDENCE_DIR:-artifacts/streamtape}"
 mkdir -p "$EVIDENCE_DIR"
 VIDEO_FILE="$EVIDENCE_DIR/streamtape-evidence-testsrc.mp4"
 
-PSQL="psql host=db.${SUPABASE_PROJECT_REF}.supabase.co port=5432 user=postgres dbname=postgres sslmode=require"
+export PGHOST="db.${SUPABASE_PROJECT_REF}.supabase.co"
+export PGPORT="5432"
+export PGUSER="postgres"
+export PGDATABASE="postgres"
 export PGPASSWORD="$SUPABASE_DB_PASSWORD"
 
 sql() {
-  psql "$PSQL" -XAtqc "$1"
+  SQL_QUERY="$1" node --input-type=module <<'NODE'
+import pg from "pg";
+
+const client = new pg.Client({
+  host: process.env.PGHOST,
+  port: Number(process.env.PGPORT),
+  user: process.env.PGUSER,
+  database: process.env.PGDATABASE,
+  password: process.env.PGPASSWORD,
+  ssl: { rejectUnauthorized: false },
+});
+
+await client.connect();
+try {
+  const result = await client.query(process.env.SQL_QUERY);
+  if (result.rows.length === 0) {
+    process.stdout.write("");
+  } else if (result.fields.length === 1) {
+    for (const row of result.rows) process.stdout.write(String(row[result.fields[0].name] ?? "") + "\\n");
+  } else {
+    process.stdout.write(JSON.stringify(result.rows));
+  }
+} finally {
+  await client.end();
+}
+NODE
 }
 
 json_request() {
@@ -242,12 +270,6 @@ for attempt in $(seq 1 60); do
 done
 
 write_summary "test2-status-final" "$BODY"
-
-EMBED_URL="$(jq -r '.embed_url // empty' <(curl -sS -X POST "$SUPABASE_URL/functions/v1/get-video-playback-url" \
-  -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
-  -H "Authorization: Bearer $CLIENT_TOKEN" \
-  -H "Content-Type: application/json" \
-  --data "$(jq -nc --arg asset "$ASSET_ID" '{asset_id:$asset}')"))" || true
 
 echo
 echo "== Publish test post after media readiness =="
