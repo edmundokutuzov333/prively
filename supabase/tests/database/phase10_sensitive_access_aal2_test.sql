@@ -112,5 +112,4 @@ begin
 end
 $aal2$;
 
-select * from finish();
 rollback;

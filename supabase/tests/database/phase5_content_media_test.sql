@@ -185,10 +185,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  not public.can_view_post(
-    current_setting('app.phase5_post_id')::uuid,
-    auth.uid()
-  ),
+  not public.can_view_post(current_setting('app.phase5_post_id')::uuid),
   'client cannot view while media processing is incomplete'
 );
 
