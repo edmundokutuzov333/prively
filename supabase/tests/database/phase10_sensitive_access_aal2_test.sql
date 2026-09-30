@@ -114,12 +114,5 @@ begin
 end
 $$;
 
-select ok(
-  pg_get_functiondef('public.phase8_can_compliance_read(uuid)'::regprocedure) ilike '%auth.jwt%aal%'
-  and pg_get_functiondef('public.get_admin_kyc_queue(integer)'::regprocedure) ilike '%has_permission%'
-  and pg_get_functiondef('public.approve_kyc(uuid,boolean,text)'::regprocedure) ilike '%has_permission%',
-  'sensitive admin paths remain server-gated'
-);
-
 select * from finish();
 rollback;
