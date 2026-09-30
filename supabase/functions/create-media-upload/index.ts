@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
-import { b2Bucket, B2ConfigurationError, B2UnavailableError, mediaBackend, presignUpload } from "../_shared/b2.ts";
+import { b2Bucket, B2AuthError, B2ConfigurationError, B2UnavailableError, mediaBackend, presignUpload } from "../_shared/b2.ts";
 import { corsFor, optionsResponse } from "../_shared/cors.ts";
 
 function jsonResponse(
@@ -208,6 +208,16 @@ Deno.serve(async (request) => {
       correlationId,
       code,
     }));
+
+    if (error instanceof B2AuthError) {
+      return jsonResponse({
+        code: "b2_auth_error",
+        message: "As credenciais do armazenamento de media não são válidas ou não têm permissão.",
+        retry: false,
+        correlationId,
+      }, 500, request, correlationId);
+
+    }
 
     if (error instanceof B2UnavailableError) {
       return jsonResponse({
