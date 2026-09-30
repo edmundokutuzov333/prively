@@ -26,7 +26,7 @@ Original video remains private in Backblaze B2. Streamtape is the delivery provi
 
 ## Security
 
-The remote-upload function is creator-owner only. Playback delegates authorization to get_media_access(), which reaches can_view_post() and enforces KYC, visibility/subscription, blocks and media readiness before any embed URL is returned. Successful playback is audited with streamtape_embed. No provider credentials are stored in source code.
+The remote-upload function is creator-owner only. Playback delegates authorization to get_media_access(), which reaches can_view_post() and enforces approved KYC, age verification, visibility/subscription, blocks and media readiness before any embed URL is returned. Successful playback is audited with streamtape_embed. No provider credentials are stored in source code.
 
 ## Scheduling
 
@@ -34,15 +34,11 @@ public.poll_streamtape_uploads() is protected by an advisory transaction lock, r
 
 ## Production deployment
 
-The three production Edge Functions are active with JWT policy preserved:
-
-- `streamtape-remote-upload` v3, SHA `62b29b6742e58c34192e8bf1829edeeb36b4c7bd450b414e1a8446c2db0391d`.
-- `streamtape-check-status` v3, SHA `22cb3d7fed3310a50fb6d064a1e42d9f74763ce7cb2493440bef02b3a4db8165`. JWT gateway disabled because it accepts only the Vault-backed internal polling token or an authenticated creator.
-- `get-video-playback-url` v3, SHA `198611b74cd48c63d2b371520d2af2529bf4de048f6751eaa6d8461877aea700`.
+The production Edge Functions are deployed and the final closure deployment is still gated on CI and live evidence. Before this closure change, the deployed versions were v10 for all three functions. The exact post-merge version numbers and SHA-256 values must be recorded from `supabase functions deploy` output rather than estimated.
 
 ## Real evidence
 
-A real B2 -> Streamtape Remote Upload and status cycle has already completed:
+A real B2 -> Streamtape Remote Upload and status cycle has already completed on production:
 
 ```json
 { "upload_id": "QIwuotwSWYk", "remote_http": 200, "remote_status": "processing", "status_http": 200, "status": "ready", "file_id": "eGW8vZB2PoTmk0" }
@@ -56,4 +52,4 @@ The frontend now routes every B2-backed video through `get-video-playback-url` a
 
 ## Closure gate
 
-The `fase-streamtape-concluida` tag is intentionally absent. Final closure still requires fresh authorized playback HTTP 200, fresh unauthorized/KYC/subscription HTTP 403 evidence, current CI green, and cleanup or explicit retention of the synthetic evidence fixtures.
+The `fase-streamtape-concluida` tag is intentionally absent. Final closure still requires one fresh end-to-end synthetic B2 upload followed by Remote Upload and polling, fresh authorized playback HTTP 200, fresh unauthorised/KYC/subscription HTTP 403 evidence, current CI green, and cleanup or explicit retention of the synthetic evidence fixtures.
