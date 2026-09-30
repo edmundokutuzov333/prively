@@ -47,6 +47,14 @@ async function runDirectB2Smoke() {
     body: payload,
   });
   if (!uploadResponse.ok) throw new Error("upload_http_" + uploadResponse.status);
+  const preflight = await fetch(uploadUrl, {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://prively.vercel.app",
+      "Access-Control-Request-Method": "PUT",
+      "Access-Control-Request-Headers": "content-type",
+    },
+  });
   const downloadUrl = await presignDownload(key, 60);
   const downloadResponse = await fetch(downloadUrl);
   if (!downloadResponse.ok) throw new Error("download_http_" + downloadResponse.status);
