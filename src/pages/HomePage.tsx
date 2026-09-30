@@ -19,19 +19,12 @@ import { Ficha } from '@/design/Ficha';
 import { Cordao } from '@/design/Cordao';
 import { supportedLanguages } from '@/lib/i18n';
 import { homeCopy } from '@/content/homeCopy';
+import { persistAgeVerification, readAgeVerification } from '@/lib/ageGate';
 
 const pillarIcons = [Sparkle, ChatsCircle, Wallet] as const;
 const linkButtonBase = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[2px] px-4 py-3 text-sm font-semibold no-underline transition-colors';
 const primaryLinkButton = `${linkButtonBase} border border-crimson-400/40 bg-crimson-500 text-white shadow-[0_0_32px_hsl(var(--wine-600)/.30)] hover:bg-crimson-400`;
 const outlineLinkButton = `${linkButtonBase} border border-bone-50/15 bg-transparent text-bone-50 hover:border-crimson-500/40 hover:bg-wine-900/30`;
-
-const AGE_GATE_KEY = 'prively.age_verified';
-const AGE_GATE_COOKIE = 'prively_age_verified=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure';
-
-function readAgeVerification(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem(AGE_GATE_KEY) === '1' || document.cookie.split(';').some((item) => item.trim().startsWith('prively_age_verified=1'));
-}
 
 export function HomePage() {
   const { t, i18n } = useTranslation();
@@ -53,7 +46,7 @@ export function HomePage() {
         <h1 id="prively-age-gate-title" className="font-display text-5xl leading-[.92] text-bone-50">{t('ageGate.title')}</h1>
         <p className="mt-5 text-sm leading-6 text-bone-300">{t('ageGate.body')}</p>
         <div className="mt-8 grid gap-3">
-          <button type="button" data-testid="age-gate-confirm" onClick={() => { window.localStorage.setItem(AGE_GATE_KEY, '1'); document.cookie = AGE_GATE_COOKIE; setAgeVerified(true); }} className={primaryLinkButton}>{t('ageGate.confirm')}</button>
+          <button type="button" data-testid="age-gate-confirm" onClick={() => { persistAgeVerification(); setAgeVerified(true); }} className={primaryLinkButton}>{t('ageGate.confirm')}</button>
           <Link to="/legal/privacidade" className={outlineLinkButton}>{t('ageGate.leave')}</Link>
         </div>
         <p className="mt-6 text-xs leading-5 text-bone-500">{t('ageGate.policy')}</p>
