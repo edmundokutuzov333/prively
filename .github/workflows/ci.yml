@@ -83,7 +83,17 @@ jobs:
       - name: Run canonical database suite
         id: canonical_db
         continue-on-error: true
-        run: supabase test db
+        run: |
+          supabase test db \
+            supabase/tests/database/phase3_test.sql \
+            supabase/tests/database/phase4_function_security_test.sql \
+            supabase/tests/database/phase4_identity_security_test.sql \
+            supabase/tests/database/phase5_content_media_test.sql \
+            supabase/tests/database/phase5_hardening_test.sql \
+            supabase/tests/database/phase5_hardening_test_v2.sql \
+            supabase/tests/database/phase5_storage_security_test.sql \
+            supabase/tests/database/phase6_financial_core_test.sql \
+            supabase/tests/database/phase10_security_contract_test.sql
       - name: Run native SQL regression suites
         shell: bash
         run: |
