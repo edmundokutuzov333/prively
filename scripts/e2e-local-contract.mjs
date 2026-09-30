@@ -70,6 +70,7 @@ const badLegacy = await signInClient.rpc('create_media_upload',{_post:null,_kind
 console.log('RPC legacy create_media_upload=', JSON.stringify({data:badLegacy.data,error:badLegacy.error?.message ?? null}));
 if (badLegacy.error?.message?.includes('Could not choose the best candidate function')) throw new Error('legacy_media_upload_overload_still_present');
 
+await admin.auth.admin.updateUserById(creatorId,{email_confirm:true});
 const creatorClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
 const creatorLogin = await creatorClient.auth.signInWithPassword({ email: creatorEmail, password });
 if (creatorLogin.error) throw creatorLogin.error;
