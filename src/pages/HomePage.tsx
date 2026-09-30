@@ -40,7 +40,7 @@ export function HomePage() {
   }, [ageVerified, t]);
 
   if (!ageVerified) {
-    return <section role="dialog" aria-modal="true" aria-labelledby="prively-age-gate-title" className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-5 py-10 md:px-8">
+    return <section data-testid="age-gate" role="dialog" aria-modal="true" aria-labelledby="prively-age-gate-title" className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-5 py-10 md:px-8">
       <Ficha variant="focus" className="w-full max-w-xl p-7 md:p-10">
         <p className="mb-3 text-sm text-bone-300">{t('ageGate.eyebrow')}</p>
         <h1 id="prively-age-gate-title" className="font-display text-5xl leading-[.92] text-bone-50">{t('ageGate.title')}</h1>
