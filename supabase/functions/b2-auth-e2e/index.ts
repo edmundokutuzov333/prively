@@ -54,6 +54,13 @@ Deno.serve(async (request) => {
         source: "b2-auth-e2e",
         metadata: { test: true },
       });
+      await admin.from("creator_terms_acceptances").insert({
+        user_id: userId,
+        version: "1.0.0",
+        source: "b2-auth-e2e",
+        declarations: { test: true },
+        metadata: { test: true },
+      });
 
       channelId = crypto.randomUUID();
       postId = crypto.randomUUID();
