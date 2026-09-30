@@ -1,0 +1,110 @@
+import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
+import { corsFor, optionsResponse } from "../_shared/cors.ts";
+import { b2Bucket, presignUpload } from "../_shared/b2.ts";
+
+function jsonResponse(body: unknown, status = 200, request?: Request): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsFor(request), "Content-Type": "application/json" },
+  });
+}
+
+function env(name: string): string {
+  const value = Deno.env.get(name);
+  if (!value) throw new Error(`missing_env:${name}`);
+  return value;
+}
+
+function userClient(request: Request): SupabaseClient {
+  return createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), {
+    global: { headers: { Authorization: request.headers.get("Authorization") ?? "" } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function requireUser(request: Request): Promise<{ client: SupabaseClient; user: User }> {
+  const client = userClient(request);
+  const { data, error } = await client.auth.getUser();
+  if (error || !data.user) throw new Error("unauthorized");
+  return { client, user: data.user };
+}
+
+Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") return optionsResponse(request);
+  if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405, request);
+
+  try {
+    const { client } = await requireUser(request);
+    const body = await request.json() as {
+      postId?: unknown;
+      kind?: unknown;
+      mimeType?: unknown;
+      fileSize?: unknown;
+      sha256?: unknown;
+      originalFilename?: unknown;
+      participantsConsent?: unknown;
+    };
+
+    if (
+      typeof body.postId !== "string" ||
+      !/^[0-9a-f-]{36}$/i.test(body.postId) ||
+      typeof body.kind !== "string" ||
+      typeof body.mimeType !== "string" ||
+      typeof body.fileSize !== "number" ||
+      !Number.isSafeInteger(body.fileSize) ||
+      typeof body.originalFilename !== "string" ||
+      typeof body.participantsConsent !== "boolean"
+    ) {
+      return jsonResponse({ code: "invalid_upload_request" }, 400, request);
+    }
+
+    const { data, error } = await client.rpc("create_media_upload", {
+      _post: body.postId,
+      _kind: body.kind,
+      _mime_type: body.mimeType,
+      _file_size: body.fileSize,
+      _sha256: typeof body.sha256 === "string" ? body.sha256 : null,
+      _original_filename: body.originalFilename,
+      _participants_consent: body.participantsConsent,
+    });
+
+    if (error || !data || typeof data !== "object") {
+      return jsonResponse({ code: error?.code ?? error?.message ?? "media_upload_prepare_failed" }, 400, request);
+    }
+
+    const plan = data as {
+      uploadId?: unknown;
+      assetId?: unknown;
+      path?: unknown;
+      expiresAt?: unknown;
+    };
+
+    if (
+      typeof plan.uploadId !== "string" ||
+      typeof plan.assetId !== "string" ||
+      typeof plan.path !== "string"
+    ) {
+      return jsonResponse({ code: "media_upload_plan_invalid" }, 500, request);
+    }
+
+    const uploadUrl = await presignUpload(plan.path, body.mimeType, 15 * 60);
+
+    return jsonResponse({
+      uploadId: plan.uploadId,
+      assetId: plan.assetId,
+      path: plan.path,
+      bucket: b2Bucket(),
+      provider: "backblaze_b2",
+      uploadMethod: "PUT",
+      uploadUrl,
+      uploadHeaders: {
+        "Content-Type": body.mimeType,
+      },
+      expiresAt: typeof plan.expiresAt === "string" ? plan.expiresAt : new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      expiresIn: 900,
+    }, 200, request);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "media_upload_error";
+    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400, request);
+  }
+});
