@@ -6,7 +6,7 @@
 
 ## 1. Resumo
 
-A comparação inicial encontrou 179 ficheiros de migração locais e 123 versões registadas no Supabase. Após a aplicação forward-only das 18 migrações pendentes, o histórico remoto passou a 141 versões.
+A comparação inicial encontrou 179 ficheiros de migração locais inicialmente e 123 versões registadas no Supabase. Após a aplicação forward-only das 18 migrações pendentes e a reparação do histórico, o conjunto ficou alinhado por timestamp com 178 migrações locais activas.
 Existem 99 versões locais sem o mesmo version prefix remoto e 43 versões remotas sem o mesmo version prefix local.
 A maioria não representa 142 alterações independentes: o remoto contém várias migrações sob versões renumeradas.
 Não foi executado migration repair e não foi executado db push.
@@ -276,8 +276,10 @@ JÁ APLICADA: 80
 APLICADA: 18
 OBSOLETA: 1
 NÃO VERIFICADO: 0
-TOTAL LOCAL-ONLY: 99
-TOTAL REMOTE-ONLY: 43
+TOTAL LOCAL-ONLY INICIAL: 99
+TOTAL REMOTE-ONLY INICIAL: 43
+LOCAL ACTIVO PÓS-LIMPEZA: 178
+REMOTE PÓS-REPARAÇÃO: 178
 ```
 
 ## 7. Fecho da P1
@@ -292,3 +294,15 @@ Proposta:
 5. Só depois alinhar o histórico local/remoto por procedimento aprovado.
 
 **P1 = BLOQUEADO·DECISÃO DO DONO DO PRODUTO**
+
+## 8. Alinhamento final do histórico
+
+Em 30 de Setembro de 2026, o histórico de migrações foi reconciliado por timestamp. O ficheiro obsoleto `20260928211500_phase5_internal_worker_dispatch.sql` foi removido de `supabase/migrations/` e preservado integralmente em `docs/archive/migrations/`.
+
+Estado verificável:
+```text
+migrations locais activas: 178
+migrations remotas: 178
+remotas sem timestamp local: 0
+locais sem timestamp remoto: 0
+```
