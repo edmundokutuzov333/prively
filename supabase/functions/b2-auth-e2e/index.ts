@@ -15,6 +15,7 @@ const json = (body: unknown, status = 200) =>
   });
 
 Deno.serve(async (request) => {
+  let stage = "bootstrap";
   try {
     const admin = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -46,6 +47,7 @@ Deno.serve(async (request) => {
     let objectPath = "";
 
     try {
+      stage = "prepare_profile";
       const profile = await admin.from("profiles").update({
         age_verified_at: new Date().toISOString(),
         status: "active",
@@ -86,6 +88,7 @@ Deno.serve(async (request) => {
       });
       if (post.error) throw post.error;
 
+      stage = "sign_in";
       const signIn = await anon.auth.signInWithPassword({ email, password });
       if (signIn.error || !signIn.data.session) throw signIn.error ?? new Error("signin_failed");
       const accessToken = signIn.data.session.access_token;
@@ -99,6 +102,7 @@ Deno.serve(async (request) => {
         69,78,68,174,66,96,130
       ]);
 
+      stage = "create_media_upload";
       const prepare = await fetch(baseUrl + "/create-media-upload", {
         method: "POST",
         headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
@@ -118,6 +122,7 @@ Deno.serve(async (request) => {
       assetId = String(plan.assetId);
       objectPath = String(plan.path);
 
+      stage = "b2_upload";
       const uploadResponse = await fetch(String(plan.uploadUrl), {
         method: "PUT",
         headers: { "Content-Type": "image/png" },
@@ -125,6 +130,7 @@ Deno.serve(async (request) => {
       });
       if (!uploadResponse.ok) throw new Error("b2_upload_" + uploadResponse.status);
 
+      stage = "finalize_media_upload";
       const finalize = await anon.rpc("finalize_media_upload", {
         _upload: uploadId,
         _reported_sha256: null,
@@ -132,6 +138,7 @@ Deno.serve(async (request) => {
       });
       if (finalize.error || !finalize.data) throw finalize.error ?? new Error("finalize_failed");
 
+      stage = "get_media_url";
       const access = await fetch(baseUrl + "/get-media-url", {
         method: "POST",
         headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
@@ -140,6 +147,7 @@ Deno.serve(async (request) => {
       const accessBody = await access.json();
       if (!access.ok) throw new Error("get_media_url_" + access.status + ":" + JSON.stringify(accessBody));
 
+      stage = "b2_download";
       const download = await fetch(String(accessBody.url));
       const bytes = new Uint8Array(await download.arrayBuffer());
       const contentMatches = download.ok &&
@@ -198,6 +206,7 @@ Deno.serve(async (request) => {
   } catch (error) {
     return json({
       ok: false,
+      stage,
       code: error instanceof Error ? error.message : "b2_auth_e2e_failed",
     }, 502);
   }
