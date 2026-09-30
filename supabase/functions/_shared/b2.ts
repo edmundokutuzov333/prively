@@ -11,7 +11,7 @@ function b2Endpoint(): string {
   const endpoint = env("B2_ENDPOINT");
   const url = new URL(endpoint);
   if (url.protocol !== "https:") throw new Error("b2_endpoint_must_be_https");
-  return url.toString().replace(//$/, "");
+  return url.toString().replace(/\/$/, "");
 }
 
 export function b2Bucket(): string {
