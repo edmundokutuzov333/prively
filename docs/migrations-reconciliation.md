@@ -2,7 +2,7 @@
 
 **Data:** 29 de Setembro de 2026
 **Projecto Supabase:** gaonupelgtpfthouyobh
-**Estado:** P1 BLOQUEADO PARA APLICAÇÃO/REPAIR
+**Estado:** P1 APLICADO · RECONCILIAÇÃO LÓGICA CONCLUÍDA
 
 ## 1. Resumo
 
