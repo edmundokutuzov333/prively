@@ -39,16 +39,51 @@ Deno.serve(async (request)=>{
       return jsonResponse({ok:true,upload_id:result.id,status:"processing"},200,request);
     }catch(error){
       const mapped=mapStreamtapeError(error);
+      const nextAttempts=attempts+1;
+      const now=new Date().toISOString();
+
       if(mapped instanceof B2UrlExpiredError){
-        await serviceClient().from("media_assets").update({streamtape_status:"not_started",streamtape_last_error:mapped.message.slice(0,500),streamtape_last_checked_at:new Date().toISOString()}).eq("id",asset.id);
+        await serviceClient().from("media_assets").update({
+          streamtape_status:"not_started",
+          streamtape_last_error:mapped.message.slice(0,500),
+          streamtape_last_checked_at:now
+        }).eq("id",asset.id);
         return jsonResponse({code:mapped.code,retry:true,retry_after_seconds:1},409,request);
       }
-      const nextAttempts=attempts+1;
-      await serviceClient().from("media_assets").update({streamtape_status:"failed",streamtape_attempts:nextAttempts,streamtape_last_error:mapped.message.slice(0,500),streamtape_last_checked_at:new Date().toISOString()}).eq("id",asset.id);
-      if(mapped instanceof StreamtapeAuthError) return jsonResponse({code:mapped.code,retry:false},502,request);
-      if(mapped instanceof StreamtapeRejectedError) return jsonResponse({code:mapped.code,retry:false},422,request);
-      if(mapped instanceof StreamtapeUnavailableError) return jsonResponse({code:mapped.code,retry:true,retry_after_seconds:60},503,request);
-      return jsonResponse({code:(mapped as Error & { code?: string }).code ?? mapped.message,retry:nextAttempts<2},422,request);
+
+      if(mapped instanceof StreamtapeAuthError||mapped instanceof StreamtapeRejectedError){
+        await serviceClient().from("media_assets").update({
+          streamtape_status:"failed",
+          streamtape_attempts:2,
+          streamtape_last_error:mapped.message.slice(0,500),
+          streamtape_last_checked_at:now
+        }).eq("id",asset.id);
+        return jsonResponse({
+          code:mapped.code,
+          retry:false
+        },mapped instanceof StreamtapeAuthError?502:422,request);
+      }
+
+      const retryable=nextAttempts<2;
+      await serviceClient().from("media_assets").update({
+        streamtape_status:retryable?"not_started":"failed",
+        streamtape_attempts:nextAttempts,
+        streamtape_last_error:mapped.message.slice(0,500),
+        streamtape_last_checked_at:now
+      }).eq("id",asset.id);
+
+      if(mapped instanceof StreamtapeUnavailableError)
+        return jsonResponse({
+          code:mapped.code,
+          retry:retryable,
+          retry_after_seconds:retryable?(attempts===0?60:120):undefined
+        },503,request);
+
+      return jsonResponse({
+        code:(mapped as Error & { code?: string }).code ?? mapped.message,
+        retry:retryable,
+        retry_after_seconds:retryable?(attempts===0?30:60):undefined
+      },422,request);
     }
   }catch(error){
     const code=error instanceof Error?error.message:"streamtape_remote_upload_error";

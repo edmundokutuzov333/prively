@@ -201,7 +201,7 @@ test.describe('platform route contract', () => {
       await page.goto('/');
     }
     await page.getByTestId('language-selector').click();
-    await page.getByRole('button', { name: /^EN$/i }).click();
+    await page.getByRole('button', { name: /^en EN$/i }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });

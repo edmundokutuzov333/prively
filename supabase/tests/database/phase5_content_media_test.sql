@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(20);
 
 select ok(to_regclass('public.media_uploads') is not null,'media uploads exists');
 select ok(to_regclass('public.media_processing_jobs') is not null,'media jobs exists');
@@ -26,6 +26,7 @@ declare
   second_payload jsonb;
   v_asset_id uuid;
   v_upload_id uuid;
+  v_tier_id uuid;
   ignored text;
 begin
   insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data)
@@ -43,7 +44,9 @@ begin
   on conflict do nothing;
 
   insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
-  values(creator,'native-test','approved','native:'||creator::text,now());
+  values
+    (creator,'native-test','approved','native:'||creator::text,now()),
+    (client,'native-test','approved','native:'||client::text,now());
 
   insert into public.creator_terms_acceptances(user_id,version,source,declarations)
   values(
@@ -93,8 +96,15 @@ begin
   v_asset_id:=(first_payload->>'assetId')::uuid;
   v_upload_id:=(first_payload->>'uploadId')::uuid;
 
+  insert into public.subscription_tiers(channel_id,name,rank,price_month)
+  values(v_channel_id,'Bronze',1,100)
+  returning id into v_tier_id;
+
   perform set_config('app.phase5_asset_id',v_asset_id::text,false);
   perform set_config('app.phase5_post_id',v_post_id::text,false);
+  perform set_config('app.phase5_channel_id',v_channel_id::text,false);
+  perform set_config('app.phase5_client_id',client::text,false);
+  perform set_config('app.phase5_tier_id',v_tier_id::text,false);
 
   if not exists(
     select 1
@@ -199,6 +209,74 @@ set local role authenticated;
 select ok(
   public.can_view_post(current_setting('app.phase5_post_id')::uuid),
   'client can view a fully approved published post'
+);
+
+reset role;
+update public.kyc_verifications
+set status='pending'
+where user_id=current_setting('app.phase5_client_id')::uuid;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('app.phase5_client_id'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase5_client_id'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
+
+select ok(
+  not public.can_view_post(current_setting('app.phase5_post_id')::uuid),
+  'client without approved KYC cannot view Streamtape media'
+);
+
+reset role;
+update public.kyc_verifications
+set status='approved'
+where user_id=current_setting('app.phase5_client_id')::uuid;
+
+select set_config('app.internal_write','on',true);
+update public.posts
+set visibility='subscribers'
+where id=current_setting('app.phase5_post_id')::uuid;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('app.phase5_client_id'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase5_client_id'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
+
+select ok(
+  not public.can_view_post(current_setting('app.phase5_post_id')::uuid),
+  'client without subscription cannot view subscriber-only Streamtape media'
+);
+
+reset role;
+select set_config('app.internal_write','on',true);
+insert into public.subscriptions(
+  subscriber_id,channel_id,tier_id,period_months,price_paid,current_period_end,status
+)
+values(
+  current_setting('app.phase5_client_id')::uuid,
+  current_setting('app.phase5_channel_id')::uuid,
+  current_setting('app.phase5_tier_id')::uuid,
+  1,
+  100,
+  now()+interval '30 days',
+  'active'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('app.phase5_client_id'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase5_client_id'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
+
+select ok(
+  public.can_view_post(current_setting('app.phase5_post_id')::uuid),
+  'subscribed client can view subscriber-only Streamtape media'
 );
 
 with access as (

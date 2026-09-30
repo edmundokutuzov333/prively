@@ -89,16 +89,21 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
 
     const messageDetail = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`).then((r) => r.json());
     const body = JSON.stringify(messageDetail);
-    const verifyUrlMatch = body.includes('/auth/v1/verify');
-    if (!verifyUrlMatch) throw new Error('confirmation_verify_link_not_found');
+    const verifyEndpointPresent = body.includes('/auth/v1/verify');
+    if (!verifyEndpointPresent) throw new Error('confirmation_verify_link_not_found');
 
     console.log('A.2.6 MAILPIT confirmation_present=true');
     console.log('A.2.7 AUTH verify endpoint observed=true');
 
-    const afterConfirm = await admin.auth.admin.getUserById(created.id);
-    if (afterConfirm.error) throw afterConfirm.error;
-    console.log('A.2.8 DB auth.users email_confirmed_at=', afterConfirm.data.user?.email_confirmed_at ?? null);
-    expect(afterConfirm.data.user?.email_confirmed_at).toBeTruthy();
+    const verifyUrlMatch = body.match(/https?:\/\/[^"'\\\s<]+\/auth\/v1\/verify\?[^"'\\\s<]+/);
+    if (!verifyUrlMatch) throw new Error('confirmation_verify_url_missing');
+    const verifyUrl = verifyUrlMatch[0].replace(/&amp;/g, '&');
+    await page.goto(verifyUrl);
+    await expect.poll(async () => {
+      const confirmed = await admin.auth.admin.getUserById(created.id);
+      if (confirmed.error) throw confirmed.error;
+      return Boolean(confirmed.data.user?.email_confirmed_at);
+    }, { timeout: 10000 }).toBeTruthy();
 
     await page.goto('/entrar');
     await page.getByLabel(/email/i).fill(email);
@@ -115,7 +120,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.2.10 DB profiles=', JSON.stringify(profile.data));
     expect(profile.data.handle).toBe(handle);
 
-    const legal = await admin.from('legal_acceptances').select('document_type,version').eq('user_id', created.id).order('created_at', { ascending: false });
+    const legal = await admin.from('legal_acceptances').select('document_type,version').eq('user_id', created.id).order('accepted_at', { ascending: false });
     if (legal.error) throw legal.error;
     const consent = await admin.from('consent_records').select('consent_type,version').eq('user_id', created.id).order('created_at', { ascending: false });
     if (consent.error) throw consent.error;
