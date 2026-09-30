@@ -64,7 +64,7 @@ Deno.serve(async (request) => {
   }
 
   try {
-    // Authorization is resolved first and the DB access RPC is evaluated before any B2 signing.
+    // Authorization is resolved first and the DB access RPC is evaluated before B2 signing.
     const { client } = await requireUser(request);
     const payload = await request.json() as { assetId?: unknown; variant?: unknown };
 
