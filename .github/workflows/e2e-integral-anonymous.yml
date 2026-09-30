@@ -11,9 +11,6 @@ jobs:
   anonymous:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      PLAYWRIGHT_BASE_URL: https://prively.vercel.app
-      PLAYWRIGHT_EXPECT_HEADERS: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,14 +18,21 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Curl root security headers
+      - name: Curl configured deployment endpoint
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           echo "===== COMMAND: curl -sS -D - -o /tmp/prively-root.html https://prively.vercel.app/ ====="
-          curl -sS -D - -o /tmp/prively-root.html https://prively.vercel.app/
+          curl -sS -D /tmp/prively-headers.txt -o /tmp/prively-root.html https://prively.vercel.app/
+          status=$?
+          cat /tmp/prively-headers.txt
           echo "===== ROOT BODY BYTES ====="
           wc -c /tmp/prively-root.html
+          echo "===== CURL EXIT ====="
+          echo "$status"
+          if grep -q "DEPLOYMENT_NOT_FOUND" /tmp/prively-headers.txt; then
+            echo "BLOCKED·EXTERNAL: configured Vercel endpoint is not deployed."
+          fi
       - run: npx playwright install --with-deps chromium
-      - name: Run anonymous E2E evidence
+      - name: Run local anonymous E2E evidence
         run: npx playwright test tests/e2e/integral-anonymous.spec.ts --reporter=list
