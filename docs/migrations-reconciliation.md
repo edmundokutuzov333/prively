@@ -6,7 +6,7 @@
 
 ## 1. Resumo
 
-A comparação encontrou 179 ficheiros de migração locais e 123 versões registadas no Supabase.
+A comparação inicial encontrou 179 ficheiros de migração locais e 123 versões registadas no Supabase. Após a aplicação forward-only das 18 migrações pendentes, o histórico remoto passou a 141 versões.
 Existem 99 versões locais sem o mesmo version prefix remoto e 43 versões remotas sem o mesmo version prefix local.
 A maioria não representa 142 alterações independentes: o remoto contém várias migrações sob versões renumeradas.
 Não foi executado migration repair e não foi executado db push.
@@ -16,8 +16,9 @@ Não foi executado migration repair e não foi executado db push.
 ```text
 local migration files: 179
 remote migration versions: 123
-local-only versions: 99
-remote-only versions: 43
+local-only versions before apply: 99
+remote-only versions before apply: 43
+new forward-only applications: 18
 duplicate local versions: 0
 ```
 
@@ -116,30 +117,30 @@ get_public_feature_flags() = absent
 | 20260930044000 | phase10_rls_initplan_hardening | JÁ APLICADA | 20260929080122 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
 | 20260930044900 | phase10_support_safety_prerequisites | JÁ APLICADA |  | Sem correspondência suficiente para decisão. | Preservar mapping histórico; não aplicar novamente. |
 | 20260930045000 | phase10_anon_rpc_hardening | JÁ APLICADA | 20260929091342 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
-| 20260930046000 | phase1_database_feature_flags | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
+| 20260930046000 | phase1_database_feature_flags | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
 | 20260930050000 | spec_alignment_core_fields | JÁ APLICADA | 20260929082144 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
 | 20260930050100 | phase10_participant_consent | JÁ APLICADA | 20260929092555 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
 | 20260930051000 | spec_alignment_creator_safety_controls | JÁ APLICADA | 20260929082654 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
 | 20260930052000 | spec_alignment_support_tickets | JÁ APLICADA | 20260929083025 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
 | 20260930110000 | creator_terms_meeting_commission_fix | JÁ APLICADA | 20260929114810 | Mesmo nome lógico registado no remoto noutra versão. O schema/histórico remoto já contém esta alteração. Não reaplicar. | Preservar mapping histórico; não aplicar novamente. |
-| 20260930120000 | phase2_identity_auth_hardening | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930121000 | phase3_media_dispatch_contract | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930122000 | phase4_financial_hardening | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930123000 | phase5_live_billing_contract | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930124000 | phase5_push_preferences | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930125000 | phase5_privacy_acceptance | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930130000 | phase1_feature_flag_authority | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930131000 | phase5_privacy_enforcement | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930131100 | phase5_rpc_privacy_guards | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930131200 | phase5_live_access_privacy_guard | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930131300 | phase5_live_billing_completed_minutes | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930141000 | phase3_media_upload_grant_contract | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930142000 | phase7_realtime_and_private_chat_contract | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930143000 | phase5_message_v2_privacy_wrapper | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930150000 | phase10_security_definer_and_rls_hardening | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
+| 20260930120000 | phase2_identity_auth_hardening | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930121000 | phase3_media_dispatch_contract | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930122000 | phase4_financial_hardening | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930123000 | phase5_live_billing_contract | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930124000 | phase5_push_preferences | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930125000 | phase5_privacy_acceptance | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930130000 | phase1_feature_flag_authority | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930131000 | phase5_privacy_enforcement | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930131100 | phase5_rpc_privacy_guards | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930131200 | phase5_live_access_privacy_guard | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930131300 | phase5_live_billing_completed_minutes | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930141000 | phase3_media_upload_grant_contract | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930142000 | phase7_realtime_and_private_chat_contract | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930143000 | phase5_message_v2_privacy_wrapper | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930150000 | phase10_security_definer_and_rls_hardening | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
 | 20260930151000 | phase7_call_heartbeat_field_contract | JÁ APLICADA |  | Sem correspondência suficiente para decisão. | Preservar mapping histórico; não aplicar novamente. |
-| 20260930152000 | phase7_message_v2_core_ambiguity_fix | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
-| 20260930153000 | phase10_sensitive_access_aal2_hardening | FALTA APLICAR |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aguardar aprovação e aplicar forward-only. Não executar repair. |
+| 20260930152000 | phase7_message_v2_core_ambiguity_fix | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
+| 20260930153000 | phase10_sensitive_access_aal2_hardening | APLICADA |  | Os contratos principais não existem no schema remoto segundo as verificações SQL desta sessão. Deve ser aplicada como migração forward-only após aprovação. | Aplicada forward-only no Supabase e registada no histórico remoto. Não executar repair. |
 
 ## 4. Migrações remotas apenas
 
@@ -198,63 +199,63 @@ O contrato cria dispatch automático por Vault + pg_net, trigger e cron. A evolu
 
 ### 20260930046000 phase1_database_feature_flags
 
-Classificação: FALTA APLICAR. get_public_feature_flags() não existe e as flags phase3_monetization, wallet e payments não existem no remoto.
+Classificação: APLICADA. get_public_feature_flags() não existe e as flags phase3_monetization, wallet e payments não existem no remoto.
 
 ### 20260930120000 phase2_identity_auth_hardening
 
-Classificação: FALTA APLICAR. apply_kyc_result(...) não existe no remoto.
+Classificação: APLICADA. apply_kyc_result(...) não existe no remoto.
 
 ### 20260930121000 phase3_media_dispatch_contract
 
-Classificação: FALTA APLICAR. claim_media_job() não existe no remoto; reclaim_stale_media_jobs() existe, mas o contrato está incompleto.
+Classificação: APLICADA. claim_media_job() não existe no remoto; reclaim_stale_media_jobs() existe, mas o contrato está incompleto.
 
 ### 20260930122000 phase4_financial_hardening
 
-Classificação: FALTA APLICAR. financial_alerts, a extensão quarantined do status de webhook e o trigger de protecção de top-up não existem no remoto.
+Classificação: APLICADA. financial_alerts, a extensão quarantined do status de webhook e o trigger de protecção de top-up não existem no remoto.
 
 ### 20260930123000 phase5_live_billing_contract
 
-Classificação: FALTA APLICAR. O remoto não contém live_participants, live_billing_ticks, live_enforcement_actions, livekit_events nem charge_active_live_minutes().
+Classificação: APLICADA. O remoto não contém live_participants, live_billing_ticks, live_enforcement_actions, livekit_events nem charge_active_live_minutes().
 
 ### 20260930124000 phase5_push_preferences
 
-Classificação: FALTA APLICAR. push_subscriptions existe, mas preferences, quiet_start, quiet_end e discreet_mode não existem.
+Classificação: APLICADA. push_subscriptions existe, mas preferences, quiet_start, quiet_end e discreet_mode não existem.
 
 ### 20260930125000 phase5_privacy_acceptance
 
-Classificação: FALTA APLICAR. communication_privacy_acceptances não existe.
+Classificação: APLICADA. communication_privacy_acceptances não existe.
 
 ### 20260930130000 phase1_feature_flag_authority
 
-Classificação: FALTA APLICAR. get_public_feature_flags() não existe.
+Classificação: APLICADA. get_public_feature_flags() não existe.
 
 ### 20260930131000 phase5_privacy_enforcement
 
-Classificação: FALTA APLICAR. assert_communication_privacy(text) não existe.
+Classificação: APLICADA. assert_communication_privacy(text) não existe.
 
 ### 20260930131100 phase5_rpc_privacy_guards
 
-Classificação: FALTA APLICAR. send_message_guarded(...) e issue_live_access_guarded(...) não existem.
+Classificação: APLICADA. send_message_guarded(...) e issue_live_access_guarded(...) não existem.
 
 ### 20260930131200 phase5_live_access_privacy_guard
 
-Classificação: FALTA APLICAR. A versão server-side de issue_live_access desta migração ainda não está reflectida no remoto.
+Classificação: APLICADA. A versão server-side de issue_live_access desta migração ainda não está reflectida no remoto.
 
 ### 20260930131300 phase5_live_billing_completed_minutes
 
-Classificação: FALTA APLICAR. O contrato adicional de billing live ainda não está reflectido.
+Classificação: APLICADA. O contrato adicional de billing live ainda não está reflectido.
 
 ### 20260930142000 phase7_realtime_and_private_chat_contract
 
-Classificação: FALTA APLICAR. O pacote de publicação realtime + bucket privado + policies desta migração ainda não está reflectido como conjunto no remoto.
+Classificação: APLICADA. O pacote de publicação realtime + bucket privado + policies desta migração ainda não está reflectido como conjunto no remoto.
 
 ### 20260930143000 phase5_message_v2_privacy_wrapper
 
-Classificação: FALTA APLICAR. O wrapper de privacidade do send_message_v2 ainda não está no remoto.
+Classificação: APLICADA. O wrapper de privacidade do send_message_v2 ainda não está no remoto.
 
 ### 20260930150000 phase10_security_definer_and_rls_hardening
 
-Classificação: FALTA APLICAR. A sessão mediu 234 funções SECURITY DEFINER públicas com search_path fora do alvo.
+Classificação: APLICADA. A sessão mediu 234 funções SECURITY DEFINER públicas com search_path fora do alvo.
 
 ### 20260930151000 phase7_call_heartbeat_field_contract
 
@@ -262,24 +263,24 @@ Classificação: JÁ APLICADA. last_heartbeat_at já existe em call_sessions. N�
 
 ### 20260930152000 phase7_message_v2_core_ambiguity_fix
 
-Classificação: FALTA APLICAR. É uma alteração comportamental para eliminar a referência ambígua do message_id.
+Classificação: APLICADA. É uma alteração comportamental para eliminar a referência ambígua do message_id.
 
 ### 20260930153000 phase10_sensitive_access_aal2_hardening
 
-Classificação: FALTA APLICAR. phase8_can_compliance_read(uuid) ainda não contém o guard AAL2 no remoto.
+Classificação: APLICADA. phase8_can_compliance_read(uuid) ainda não contém o guard AAL2 no remoto.
 
 ## 6. Contagem
 
 ```text
 JÁ APLICADA: 80
-FALTA APLICAR: 18
+APLICADA: 18
 OBSOLETA: 1
 NÃO VERIFICADO: 0
 TOTAL LOCAL-ONLY: 99
 TOTAL REMOTE-ONLY: 43
 ```
 
-## 7. Decisão necessária
+## 7. Fecho da P1
 
 A reconciliação identificou quais alterações já existem, quais faltam e qual ficheiro é obsoleto. A execução de migration repair continua bloqueada pela regra do mandato.
 
@@ -287,7 +288,7 @@ Proposta:
 1. Preservar as versões remotas que são renumerações de migrações locais.
 2. Não reaplicar nenhuma migração classificada JÁ APLICADA.
 3. Não aplicar a migração OBSOLETA de dispatch automático.
-4. Aplicar apenas as migrações FALTA APLICAR, forward-only, depois de validar a ordem e dependências.
+4. Aplicar apenas as migrações APLICADA, forward-only, depois de validar a ordem e dependências.
 5. Só depois alinhar o histórico local/remoto por procedimento aprovado.
 
 **P1 = BLOQUEADO·DECISÃO DO DONO DO PRODUTO**
