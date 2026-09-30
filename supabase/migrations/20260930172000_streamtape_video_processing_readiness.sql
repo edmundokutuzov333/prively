@@ -3,7 +3,7 @@ returns text
 language plpgsql
 security definer
 set search_path=public,pg_temp
-as $
+as $$
 declare
   a public.media_assets;
   has_failed boolean:=false;
