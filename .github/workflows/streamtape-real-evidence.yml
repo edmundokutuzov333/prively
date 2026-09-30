@@ -1,0 +1,59 @@
+name: Streamtape Real Evidence
+
+on:
+  push:
+    branches:
+      - streamtape-certification
+
+permissions:
+  contents: read
+
+concurrency:
+  group: streamtape-real-evidence
+  cancel-in-progress: false
+
+jobs:
+  real-evidence:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 25
+    env:
+      SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
+      SUPABASE_PROJECT_REF: gaonupelgtpfthouyobh
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg postgresql-client jq
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Validate required secrets are available
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+
+      - name: Run real Streamtape evidence
+        shell: bash
+        run: |
+          chmod +x scripts/streamtape-real-evidence.sh
+          scripts/streamtape-real-evidence.sh
+
+      - name: Upload Streamtape evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamtape-real-evidence
+          path: artifacts/streamtape
+          if-no-files-found: warn
+          retention-days: 14
