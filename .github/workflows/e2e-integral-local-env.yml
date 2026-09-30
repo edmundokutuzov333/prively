@@ -1,0 +1,35 @@
+name: Prively Integral Local Environment
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  local-env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci --no-audit --no-fund
+      - name: Start local Supabase
+        run: |
+          supabase start
+          supabase status
+          echo "===== ENV ====="
+          supabase status -o env | sed -E 's/(SERVICE_ROLE_KEY|JWT_SECRET|ANON_KEY|PUBLISHABLE_KEY)=.*/\1=[REDACTED]/'
+      - name: Reset database
+        run: supabase db reset
+      - name: Verify local invariants
+        run: |
+          echo "===== LOCAL DB CHECK ====="
+          supabase db lint --local
