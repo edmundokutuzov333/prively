@@ -155,6 +155,30 @@ jobs:
         if: always()
         run: supabase stop --no-backup
 
+  b2_media_real_integration:
+    name: Real Backblaze B2 upload/download/CORS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Execute real B2 evidence endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --connect-timeout 15 "$B2_EVIDENCE_URL" | tee /tmp/b2-evidence.json
+          python - <<'PY'
+          import json
+          with open("/tmp/b2-evidence.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+          assert data["ok"] is True, data
+          assert data["upload"]["ok"] is True and data["upload"]["status"] in (200, 201), data
+          assert data["download"]["ok"] is True and data["download"]["exactMatch"] is True, data
+          assert data["cors"]["ok"] is True and data["cors"]["allowOrigin"] == "http://localhost:5173", data
+          assert data["expires"]["uploadSeconds"] == 900 and data["expires"]["downloadSeconds"] == 60, data
+          print(json.dumps(data, indent=2))
+          PY
+        env:
+          B2_EVIDENCE_URL: https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2evidence-8e4d1f5b0c3a7a91
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 35
