@@ -27,15 +27,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Validate runner tools
         shell: bash
         run: |
           command -v ffmpeg
-          command -v psql
           command -v jq
+          command -v node
           ffmpeg -version | head -n 1
-          psql --version
           jq --version
+          node --version
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
