@@ -25,7 +25,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
 
   await page.goto('/registo');
   await expect(page.getByRole('heading')).toBeVisible();
-  await page.getByLabel(/utilizador|handle/i).fill(handle);
+  await page.locator('input[autocomplete="username"]').fill(handle);
   await page.getByLabel(/email/i).fill(email);
   const signupCheckboxes = page.locator('input[type="checkbox"]');
   await expect(signupCheckboxes).toHaveCount(3);
