@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           echo "===== COMMAND: psql catalog check ====="
-          psql "$DB_URL" -Atc "select p.oid, p.proname, pg_get_function_identity_arguments(p.oid), p.proargnames, p.proargdefaults is not null from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_media_upload' order by p.oid;"
+          psql "$POSTGRES_URL" -Atc "select p.oid, p.proname, pg_get_function_identity_arguments(p.oid), p.proargnames, p.proargdefaults is not null from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_media_upload' order by p.oid;"
       - name: Execute local auth and wallet contract
         run: node scripts/e2e-local-contract.mjs
       - name: Verify local invariants
