@@ -91,79 +91,95 @@ export function ClientPostPage() {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [media, setMedia] = useState<SignedMedia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unlocking, setUnlocking] = useState(false);
   const [error, setError] = useState<'notFound' | 'forbidden' | 'load'>('load');
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const load = async () => {
+    if (!id) {
+      setError('notFound');
+      setLoading(false);
+      return;
+    }
+
+    const sb = requireSupabase();
+    const postResult = await sb
+      .from('posts')
+      .select('id,caption,visibility,price,status,publish_at,expires_at,is_story,blurhash')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (postResult.error || !postResult.data) {
+      setError(postResult.error ? 'forbidden' : 'notFound');
+      setLoading(false);
+      return;
+    }
+
+    const mediaResult = await sb
+      .from('media_assets')
+      .select('id,kind,thumb_blur_path,watermark_enabled,watermark_text')
+      .eq('post_id', id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true });
+
+    if (mediaResult.error) {
+      setError('load');
+      setLoading(false);
+      return;
+    }
+
+    const signedResults = await Promise.all(
+      (mediaResult.data as PostMedia[]).map(async (asset) => {
+        const result = await sb.functions.invoke('get-media-url', { body: { assetId: asset.id } });
+        if (!result.error && result.data?.url) {
+          return result.data as SignedMedia;
+        }
+
+        const preview = await sb.functions.invoke('get-media-preview', {
+          body: { assetId: asset.id },
+        });
+
+        if (!preview.error && preview.data?.locked && preview.data?.thumbnailUrl) {
+          return preview.data as SignedMedia;
+        }
+
+        return null;
+      }),
+    );
+
+    const signedMedia = signedResults.filter((item): item is SignedMedia => item !== null);
+    if (mediaResult.data.length > 0 && signedMedia.length === 0) {
+      setError('forbidden');
+    } else {
+      setPost(postResult.data as PostDetail);
+      setMedia(signedMedia);
+      setError('load');
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     let active = true;
-    const load = async () => {
-      if (!id) {
-        setError('notFound');
-        setLoading(false);
-        return;
-      }
-
-      const sb = requireSupabase();
-      const postResult = await sb
-        .from('posts')
-        .select('id,caption,visibility,price,status,publish_at,expires_at,is_story,blurhash')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (!active) return;
-      if (postResult.error || !postResult.data) {
-        setError(postResult.error ? 'forbidden' : 'notFound');
-        setLoading(false);
-        return;
-      }
-
-      const mediaResult = await sb
-        .from('media_assets')
-        .select('id,kind,thumb_blur_path,watermark_enabled,watermark_text')
-        .eq('post_id', id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: true });
-
-      if (!active) return;
-      if (mediaResult.error) {
-        setError('load');
-        setLoading(false);
-        return;
-      }
-
-      const signedResults = await Promise.all(
-        (mediaResult.data as PostMedia[]).map(async (asset) => {
-          const result = await sb.functions.invoke('get-media-url', { body: { assetId: asset.id } });
-          if (!result.error && result.data?.url) {
-            return result.data as SignedMedia;
-          }
-
-          const preview = await sb.functions.invoke('get-media-preview', {
-            body: { assetId: asset.id },
-          });
-
-          if (!preview.error && preview.data?.locked && preview.data?.thumbnailUrl) {
-            return preview.data as SignedMedia;
-          }
-
-          return null;
-        }),
-      );
-
-      if (!active) return;
-      const signedMedia = signedResults.filter((item): item is SignedMedia => item !== null);
-      if (mediaResult.data.length > 0 && signedMedia.length === 0) {
-        setError('forbidden');
-      } else {
-        setPost(postResult.data as PostDetail);
-        setMedia(signedMedia);
-        setError('load');
-      }
-      setLoading(false);
-    };
-
     void load();
     return () => { active = false; };
   }, [id]);
+
+  const unlockPpv = async () => {
+    if (!post || post.visibility !== 'ppv' || post.price === null || unlocking) return;
+    setUnlocking(true);
+    setActionError(null);
+    const { error: rpcError } = await requireSupabase().rpc('purchase_ppv', {
+      _post: post.id,
+      _idem: 'ppv-ui:' + post.id + ':' + crypto.randomUUID(),
+    });
+    if (rpcError) {
+      setActionError(rpcError.code ?? rpcError.message);
+      setUnlocking(false);
+      return;
+    }
+    await load();
+    setUnlocking(false);
+  };
 
   if (loading) {
     return <section className="mx-auto max-w-5xl px-5 py-12 md:px-8"><p className="text-sm text-bone-500">{t('common.loading')}</p></section>;
@@ -187,6 +203,7 @@ export function ClientPostPage() {
       <p className="mt-3 text-sm text-bone-500">{t('post.visibilityValues.' + post.visibility)} · {post.is_story ? t('post.story') : t('post.publication')}</p>
     </div>
 
+    {actionError ? <p role="alert" className="text-sm text-danger">{actionError}</p> : null}
     <Ficha variant="focus" className="overflow-hidden p-2 md:p-4">
       {media.length ? <div className="grid gap-4">
         {media.map((asset) => <figure key={asset.assetId} className="relative overflow-hidden rounded-md border border-bone-50/8 bg-black">
@@ -194,6 +211,8 @@ export function ClientPostPage() {
             <Cortina
               priceLabel={post.visibility === 'ppv' && post.price !== null ? formatMznFromCents(post.price) : t('post.locked')}
               thumbnailUrl={asset.thumbnailUrl}
+              state={unlocking ? 'unlocking' : 'locked'}
+              onUnlock={post.visibility === 'ppv' ? () => void unlockPpv() : undefined}
             />
           ) : (
             <>
