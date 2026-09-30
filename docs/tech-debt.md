@@ -59,6 +59,8 @@ Status: IMPLEMENTED / REAL SERVICE EVIDENCE IN PROGRESS
 
 Production path: B2 originals -> one-hour B2 read URL -> Streamtape Remote Upload -> pg_cron status polling -> Streamtape file id -> authorized embed.
 
+Current production deployment: `streamtape-remote-upload` v3, `streamtape-check-status` v3, `get-video-playback-url` v3. The frontend routes B2-backed video playback through the authorized Streamtape embed function.
+
 Closure gate before the fase-streamtape-concluida tag:
 1. Real Remote Upload and status reach ready.
 2. KYC and subscription authorization are enforced before playback.
@@ -66,4 +68,4 @@ Closure gate before the fase-streamtape-concluida tag:
 4. Legacy B2 video delivery is blocked.
 5. CI is green.
 6. Real Streamtape embed curl returns HTTP 200.
-7. Synthetic B2, Streamtape and database fixtures are cleaned.
+7. Synthetic B2, Streamtape and database fixtures are cleaned or explicitly retained as evidence.
