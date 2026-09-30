@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
 import {
+  B2AuthError,
   B2ConfigurationError,
   B2ObjectNotFoundError,
   B2UnavailableError,
@@ -190,6 +191,16 @@ Deno.serve(async (request) => {
         message: "O ficheiro de media pedido não existe no Backblaze B2.",
         correlationId,
       }, 404, request, correlationId);
+    }
+
+    if (error instanceof B2AuthError) {
+      return jsonResponse({
+        code: "b2_auth_error",
+        message: "As credenciais do armazenamento de media não são válidas ou não têm permissão.",
+        retry: false,
+        correlationId,
+      }, 500, request, correlationId);
+
     }
 
     if (error instanceof B2UnavailableError) {
