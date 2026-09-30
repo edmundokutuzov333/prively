@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: streamtape-real-evidence
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   real-evidence:
@@ -27,10 +27,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install ffmpeg
+      - name: Validate runner tools
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg postgresql-client jq
+          command -v ffmpeg
+          command -v psql
+          command -v jq
+          ffmpeg -version | head -n 1
+          psql --version
+          jq --version
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
