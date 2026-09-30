@@ -29,6 +29,18 @@ jobs:
           supabase status -o env | sed -E 's/(SERVICE_ROLE_KEY|JWT_SECRET|ANON_KEY|PUBLISHABLE_KEY)=.*/\1=[REDACTED]/'
       - name: Reset database
         run: supabase db reset
+      - name: Export local Supabase environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+      - name: Execute local auth and wallet contract
+        run: node scripts/e2e-local-contract.mjs
       - name: Verify local invariants
         run: |
           echo "===== LOCAL DB CHECK ====="
