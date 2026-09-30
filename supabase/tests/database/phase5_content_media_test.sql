@@ -97,7 +97,7 @@ begin
   v_upload_id:=(first_payload->>'uploadId')::uuid;
 
   insert into public.subscription_tiers(channel_id,name,rank,price_month)
-  values(v_channel_id,'Phase 5 Test Tier',1,100)
+  values(v_channel_id,'Bronze',1,100)
   returning id into v_tier_id;
 
   perform set_config('app.phase5_asset_id',v_asset_id::text,false);
