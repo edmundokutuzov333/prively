@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 /* global process, console */
-#!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
