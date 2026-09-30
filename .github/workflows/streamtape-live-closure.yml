@@ -1,0 +1,410 @@
+name: Streamtape live closure evidence
+
+on:
+  push:
+    branches: [fix/streamtape-production-closure]
+
+permissions:
+  contents: read
+
+jobs:
+  live-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      SUPABASE_PROJECT_REF: \${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: \${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: \${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg jq
+
+      - name: Resolve production API keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_PROJECT_REF"
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          keys="$(curl -fsSL \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true")"
+          service_key="$(printf '%s' "$keys" | jq -r '.[] | select(.type=="legacy" and (.name=="service_role" or .name=="service_role key")) | .api_key' | head -n1)"
+          publishable_key="$(printf '%s' "$keys" | jq -r '.[] | select(.type=="publishable") | .api_key' | head -n1)"
+          if [ -z "$publishable_key" ] || [ "$publishable_key" = "null" ]; then
+            publishable_key="$(printf '%s' "$keys" | jq -r '.[] | select(.type=="legacy" and (.name=="anon" or .name=="anon key")) | .api_key' | head -n1)"
+          fi
+          test -n "$service_key"
+          test -n "$publishable_key"
+          echo "::add-mask::$service_key"
+          echo "::add-mask::$publishable_key"
+          echo "SUPABASE_URL=https://$SUPABASE_PROJECT_REF.supabase.co" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$service_key" >> "$GITHUB_ENV"
+          echo "SUPABASE_PUBLISHABLE_KEY=$publishable_key" >> "$GITHUB_ENV"
+
+      - name: Create isolated real test users
+        shell: bash
+        run: |
+          set -euo pipefail
+          suffix="$(date +%s)-$GITHUB_RUN_ID"
+          creator_email="streamtape.creator.$suffix@prively.test"
+          client_email="streamtape.client.$suffix@prively.test"
+          password="$(openssl rand -base64 30 | tr -dc 'A-Za-z0-9' | head -c 24)"
+          create_user() {
+            local email="$1"
+            curl -fsSL -X POST "$SUPABASE_URL/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              --data "$(jq -nc --arg email "$email" --arg password "$password" '{email:$email,password:$password,email_confirm:true,user_metadata:{streamtape_evidence:true}}')"
+          }
+          creator_json="$(create_user "$creator_email")"
+          client_json="$(create_user "$client_email")"
+          creator_id="$(printf '%s' "$creator_json" | jq -r '.id')"
+          client_id="$(printf '%s' "$client_json" | jq -r '.id')"
+          test -n "$creator_id"; test -n "$client_id"
+          echo "::add-mask::$password"
+          {
+            echo "CREATOR_EMAIL=$creator_email"
+            echo "CLIENT_EMAIL=$client_email"
+            echo "TEST_PASSWORD=$password"
+            echo "CREATOR_ID=$creator_id"
+            echo "CLIENT_ID=$client_id"
+          } >> "$GITHUB_ENV"
+          printf 'TEST_CREATOR_EMAIL=%s\nTEST_CLIENT_EMAIL=%s\n' "$creator_email" "$client_email"
+
+      - name: Authenticate isolated users
+        shell: bash
+        run: |
+          set -euo pipefail
+          login() {
+            local email="$1"
+            curl -fsSL "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+              -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              -H "Content-Type: application/json" \
+              --data "$(jq -nc --arg email "$email" --arg password "$TEST_PASSWORD" '{email:$email,password:$password}')"
+          }
+          creator_token="$(login "$CREATOR_EMAIL" | jq -r '.access_token')"
+          client_token="$(login "$CLIENT_EMAIL" | jq -r '.access_token')"
+          test -n "$creator_token"; test -n "$client_token"
+          echo "::add-mask::$creator_token"
+          echo "::add-mask::$client_token"
+          echo "CREATOR_TOKEN=$creator_token" >> "$GITHUB_ENV"
+          echo "CLIENT_TOKEN=$client_token" >> "$GITHUB_ENV"
+          echo "AUTH_CREATOR_OK=true"
+          echo "AUTH_CLIENT_OK=true"
+
+      - name: Provision identity and KYC state through real DB APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rest="$SUPABASE_URL/rest/v1"
+          patch_json() {
+            curl -fsSL -X PATCH "$rest/$1?$2" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -H "Prefer: return=minimal" \
+              --data "$3"
+          }
+          patch_json profiles "id=eq.$CREATOR_ID" '{"status":"active","age_verified_at":"2026-09-30T00:00:00Z"}'
+          patch_json profiles "id=eq.$CLIENT_ID" '{"status":"active","age_verified_at":"2026-09-30T00:00:00Z"}'
+          patch_json kyc_verifications "user_id=eq.$CREATOR_ID" '{"status":"approved","provider":"streamtape-live-evidence"}'
+          patch_json kyc_verifications "user_id=eq.$CLIENT_ID" '{"status":"approved","provider":"streamtape-live-evidence"}'
+          curl -fsSL -X POST "$rest/user_roles" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=ignore-duplicates" \
+            --data "$(jq -nc --arg uid "$CREATOR_ID" '{user_id:$uid,role:"creator"}')" >/dev/null
+          echo "IDENTITY_READY=true"
+
+      - name: Accept creator legal documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          rest="$SUPABASE_URL/rest/v1/rpc"
+          call() {
+            curl -fsSL -X POST "$rest/record_legal_acceptance" \
+              -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              -H "Authorization: Bearer $CREATOR_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "$(jq -nc --arg type "$1" '{_document_type:$type,_version:"1.0",_source:"streamtape-live-evidence"}')"
+          }
+          call terms >/dev/null
+          call privacy >/dev/null
+          call content_prohibited >/dev/null
+          echo "LEGAL_ACCEPTANCE_READY=true"
+
+      - name: Create creator channel and post
+        shell: bash
+        run: |
+          set -euo pipefail
+          rest="$SUPABASE_URL/rest/v1/rpc"
+          handle="streamtape_live_$GITHUB_RUN_ID"
+          channel_json="$(curl -fsSL -X POST "$rest/create_creator_channel" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CREATOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg handle "$handle" '{_handle:$handle,_display_name:"Streamtape Live Evidence",_bio:"Synthetic production evidence"}')")"
+          channel_id="$(printf '%s' "$channel_json" | jq -r '.')"
+          test -n "$channel_id"; test "$channel_id" != "null"
+          post_json="$(curl -fsSL -X POST "$rest/create_post" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CREATOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg channel "$channel_id" '{_channel:$channel,_caption:"Streamtape live closure evidence",_visibility:"public",_min_tier_rank:null,_price:null,_is_story:false,_expires_at:null}')")"
+          post_id="$(printf '%s' "$post_json" | jq -r '.')"
+          test -n "$post_id"; test "$post_id" != "null"
+          {
+            echo "CHANNEL_ID=$channel_id"
+            echo "POST_ID=$post_id"
+          } >> "$GITHUB_ENV"
+          printf 'CHANNEL_ID=%s\nPOST_ID=%s\n' "$channel_id" "$post_id"
+
+      - name: Generate real synthetic video
+        shell: bash
+        run: |
+          set -euo pipefail
+          ffmpeg -hide_banner -loglevel error \
+            -f lavfi -i "testsrc=duration=5:size=320x240:rate=24" \
+            -pix_fmt yuv420p -movflags +faststart -c:v libx264 -t 5 \
+            /tmp/prively-streamtape-evidence.mp4
+          size="$(stat -c '%s' /tmp/prively-streamtape-evidence.mp4)"
+          sha="$(sha256sum /tmp/prively-streamtape-evidence.mp4 | awk '{print $1}')"
+          echo "VIDEO_BYTES=$size" >> "$GITHUB_ENV"
+          echo "VIDEO_SHA256=$sha" >> "$GITHUB_ENV"
+          echo "SYNTHETIC_VIDEO_BYTES=$size"
+          echo "SYNTHETIC_VIDEO_SHA256=$sha"
+
+      - name: Create B2 upload plan through production function
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -fsSL -w '\nHTTP_STATUS=%{http_code}' \
+            -X POST "$SUPABASE_URL/functions/v1/create-media-upload" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CREATOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg post "$POST_ID" --arg size "$VIDEO_BYTES" '{postId:$post,kind:"video",mimeType:"video/mp4",fileSize:($size|tonumber),originalFilename:"prively-streamtape-evidence.mp4",participantsConsent:true}')")"
+          printf '%s\n' "$response"
+          body="$(printf '%s\n' "$response" | sed '$d')"
+          status="$(printf '%s\n' "$response" | tail -n1 | cut -d= -f2)"
+          test "$status" = "200"
+          asset_id="$(printf '%s' "$body" | jq -r '.assetId')"
+          upload_id="$(printf '%s' "$body" | jq -r '.uploadId')"
+          upload_url="$(printf '%s' "$body" | jq -r '.uploadUrl')"
+          test -n "$asset_id"; test -n "$upload_id"; test -n "$upload_url"
+          echo "::add-mask::$upload_url"
+          {
+            echo "ASSET_ID=$asset_id"
+            echo "UPLOAD_ID=$upload_id"
+            echo "B2_UPLOAD_URL=$upload_url"
+          } >> "$GITHUB_ENV"
+          printf 'ASSET_ID=%s\nUPLOAD_ID=%s\n' "$asset_id" "$upload_id"
+
+      - name: Upload synthetic video to private B2
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS -o /tmp/b2-upload-response.txt -w '%{http_code}' \
+            -X PUT "$B2_UPLOAD_URL" \
+            -H 'Content-Type: video/mp4' \
+            --data-binary @/tmp/prively-streamtape-evidence.mp4)"
+          echo "B2_PRESIGNED_PUT_HTTP_STATUS=$code"
+          test "$code" = "200"
+          echo "B2_UPLOAD_REAL=true"
+
+      - name: Finalize B2 media upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -fsSL -X POST "$SUPABASE_URL/rest/v1/rpc/finalize_media_upload" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CREATOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg upload "$UPLOAD_ID" --arg sha "$VIDEO_SHA256" --arg size "$VIDEO_BYTES" '{_upload:$upload,_reported_sha256:$sha,_file_size:($size|tonumber)}')")"
+          printf 'FINALIZE_RESPONSE=%s\n' "$response"
+          integrity_job="$(printf '%s' "$response" | jq -r '.jobs.integrity')"
+          test -n "$integrity_job"; test "$integrity_job" != "null"
+          echo "INTEGRITY_JOB_ID=$integrity_job" >> "$GITHUB_ENV"
+
+      - name: Run real media integrity processor
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -fsSL -X POST "$SUPABASE_URL/functions/v1/process-media-job" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CREATOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg job "$INTEGRITY_JOB_ID" '{jobId:$job}')")"
+          printf 'INTEGRITY_PROCESS_RESPONSE=%s\n' "$response"
+          printf '%s' "$response" | jq -e '.status == "succeeded"' >/dev/null
+
+      - name: Mark isolated synthetic asset approved for delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(jq -nc --arg sha "$VIDEO_SHA256" '{processing_status:"ready",integrity_status:"verified",moderation_status:"clean",scan_status:"clean",client_sha256:$sha,ready_at:"2026-09-30T00:00:00Z",metadata:{streamtape_live_evidence:true}}')"
+          curl -fsSL -X PATCH "$SUPABASE_URL/rest/v1/media_assets?id=eq.$ASSET_ID" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data "$body"
+          echo "ASSET_READY_FOR_STREAMTAPE=true"
+
+      - name: Real Remote Upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -fsSL -w '\nHTTP_STATUS=%{http_code}' \
+            -X POST "$SUPABASE_URL/functions/v1/streamtape-remote-upload" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CREATOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg asset "$ASSET_ID" '{asset_id:$asset}')")"
+          printf 'REMOTE_UPLOAD_RESPONSE=%s\n' "$response"
+          body="$(printf '%s\n' "$response" | sed '$d')"
+          status="$(printf '%s\n' "$response" | tail -n1 | cut -d= -f2)"
+          test "$status" = "200"
+          printf '%s' "$body" | jq -e '.ok == true and .status == "processing"' >/dev/null
+
+      - name: Poll real Streamtape status
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            response="$(curl -fsSL -w '\nHTTP_STATUS=%{http_code}' \
+              -X POST "$SUPABASE_URL/functions/v1/streamtape-check-status" \
+              -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              -H "Authorization: Bearer $CREATOR_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "$(jq -nc --arg asset "$ASSET_ID" '{asset_id:$asset}')")"
+            echo "POLL_ATTEMPT=$attempt"
+            printf '%s\n' "$response"
+            body="$(printf '%s\n' "$response" | sed '$d')"
+            status="$(printf '%s\n' "$response" | tail -n1 | cut -d= -f2)"
+            test "$status" = "200"
+            state="$(printf '%s' "$body" | jq -r '.status')"
+            if [ "$state" = "ready" ]; then
+              file_id="$(printf '%s' "$body" | jq -r '.file_id')"
+              echo "STREAMTAPE_FILE_ID=$file_id" >> "$GITHUB_ENV"
+              echo "STREAMTAPE_READY=true"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "STREAMTAPE_READY=false"
+          exit 1
+
+      - name: Test KYC denied playback
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -X PATCH "$SUPABASE_URL/rest/v1/kyc_verifications?user_id=eq.$CLIENT_ID" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data '{"status":"pending"}'
+          response="$(curl -sS -w '\nHTTP_STATUS=%{http_code}' \
+            -X POST "$SUPABASE_URL/functions/v1/get-video-playback-url" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CLIENT_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg asset "$ASSET_ID" '{asset_id:$asset}')")"
+          printf 'KYC_DENIED_PLAYBACK=%s\n' "$response"
+          test "$(printf '%s\n' "$response" | tail -n1 | cut -d= -f2)" = "403"
+
+      - name: Test subscription denied playback
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -X PATCH "$SUPABASE_URL/rest/v1/kyc_verifications?user_id=eq.$CLIENT_ID" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data '{"status":"approved"}'
+          curl -fsSL -X PATCH "$SUPABASE_URL/rest/v1/posts?id=eq.$POST_ID" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data '{"visibility":"subscribers"}'
+          tier_json="$(curl -fsSL -X POST "$SUPABASE_URL/rest/v1/subscription_tiers" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            --data "$(jq -nc --arg channel "$CHANNEL_ID" '{channel_id:$channel,name:"Streamtape Live Tier",rank:1,price_month:100}')")"
+          tier_id="$(printf '%s' "$tier_json" | jq -r '.[0].id')"
+          test -n "$tier_id"; test "$tier_id" != "null"
+          response="$(curl -sS -w '\nHTTP_STATUS=%{http_code}' \
+            -X POST "$SUPABASE_URL/functions/v1/get-video-playback-url" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CLIENT_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg asset "$ASSET_ID" '{asset_id:$asset}')")"
+          printf 'SUBSCRIPTION_DENIED_PLAYBACK=%s\n' "$response"
+          test "$(printf '%s\n' "$response" | tail -n1 | cut -d= -f2)" = "403"
+          echo "TIER_ID=$tier_id" >> "$GITHUB_ENV"
+
+      - name: Test authorized playback and real embed
+        shell: bash
+        run: |
+          set -euo pipefail
+          end="$(date -u -d '+30 days' +'%Y-%m-%dT%H:%M:%SZ')"
+          curl -fsSL -X POST "$SUPABASE_URL/rest/v1/subscriptions" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data "$(jq -nc --arg subscriber "$CLIENT_ID" --arg channel "$CHANNEL_ID" --arg tier "$TIER_ID" --arg end "$end" '{subscriber_id:$subscriber,channel_id:$channel,tier_id:$tier,period_months:1,price_paid:100,current_period_end:$end,status:"active"}')"
+          response="$(curl -fsSL -w '\nHTTP_STATUS=%{http_code}' \
+            -X POST "$SUPABASE_URL/functions/v1/get-video-playback-url" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $CLIENT_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg asset "$ASSET_ID" '{asset_id:$asset}')")"
+          printf 'AUTHORIZED_PLAYBACK=%s\n' "$response"
+          body="$(printf '%s\n' "$response" | sed '$d')"
+          status="$(printf '%s\n' "$response" | tail -n1 | cut -d= -f2)"
+          test "$status" = "200"
+          embed="$(printf '%s' "$body" | jq -r '.embed_url')"
+          test "$embed" = "https://streamtape.com/e/$STREAMTAPE_FILE_ID"
+          echo "STREAMTAPE_EMBED_URL=$embed"
+          echo "::add-mask::$embed"
+          code="$(curl -L -sS -o /tmp/streamtape-embed.html -w '%{http_code}' "$embed")"
+          bytes="$(wc -c < /tmp/streamtape-embed.html | tr -d ' ')"
+          echo "STREAMTAPE_EMBED_HTTP_STATUS=$code"
+          echo "STREAMTAPE_EMBED_BYTES=$bytes"
+          test "$code" = "200"
+          test "$bytes" -gt 0
+
+      - name: Verify audit record
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            "$SUPABASE_URL/rest/v1/media_access_logs?asset_id=eq.$ASSET_ID&user_id=eq.$CLIENT_ID&action=eq.streamtape_embed&select=id,asset_id,user_id,action,granted,reason,created_at" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" | tee /tmp/audit.json
+          jq -e 'length > 0 and .[0].granted == true' /tmp/audit.json >/dev/null
+          echo "STREAMTAPE_AUDIT_CONFIRMED=true"
+
+      - name: Print persisted production evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            "$SUPABASE_URL/rest/v1/media_assets?id=eq.$ASSET_ID&select=id,storage_provider,storage_path,streamtape_status,streamtape_upload_id,streamtape_file_id,streamtape_attempts,streamtape_ready_at" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
