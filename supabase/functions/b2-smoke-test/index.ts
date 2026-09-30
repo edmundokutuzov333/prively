@@ -14,6 +14,36 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+async function runDirectB2Smoke() {
+  const key = `__smoke__/b2/${new Date().toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID()}.txt`;
+  const payload = `PRIVELY-B2-SMOKE-${crypto.randomUUID()}`;
+  const bucket = b2Bucket();
+  const uploadUrl = await presignUpload(key, "text/plain", 300);
+  const uploadResponse = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "text/plain" },
+    body: payload,
+  });
+  if (!uploadResponse.ok) throw new Error(`upload_http_${uploadResponse.status}`);
+  const downloadUrl = await presignDownload(key, 60);
+  const downloadResponse = await fetch(downloadUrl);
+  if (!downloadResponse.ok) throw new Error(`download_http_${downloadResponse.status}`);
+  const downloaded = await downloadResponse.text();
+  const contentMatches = downloaded === payload;
+  await b2Client().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  return {
+    ok: contentMatches,
+    provider: "backblaze_b2",
+    bucket,
+    key,
+    uploadStatus: uploadResponse.status,
+    downloadStatus: downloadResponse.status,
+    contentMatches,
+    cleanup: "deleted",
+    downloadExpiresIn: 60,
+  };
+}
+
 function authHeader(request: Request): string {
   const value = request.headers.get("Authorization") ?? "";
   if (!value.startsWith("Bearer ")) throw new Error("unauthorized");
@@ -24,11 +54,14 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
 
   try {
-    const authorization = authHeader(request);
-    const body = await request.json() as { postId?: unknown };
+    const body = await request.json().catch(() => ({})) as { postId?: unknown };
+    if (typeof body.postId !== "string") {
+      return json(await runDirectB2Smoke());
+    }
 
-    if (typeof body.postId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.postId)) {
-      return json({ code: "post_id_required" }, 400);
+    const authorization = authHeader(request);
+    if (!/^[0-9a-f-]{36}$/i.test(body.postId)) {
+      return json({ code: "invalid_post_id" }, 400);
     }
 
     const baseUrl = `${env("SUPABASE_URL")}/functions/v1`;
