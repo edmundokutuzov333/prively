@@ -1,6 +1,6 @@
 begin;
 
-do $
+do $aal2$
 declare
   admin_uid uuid := 'd1000000-0000-0000-0000-000000000001'::uuid;
   compliance_uid uuid := 'd1000000-0000-0000-0000-000000000002'::uuid;
@@ -110,7 +110,7 @@ begin
     raise exception 'FAIL: AAL2 compliance access guard returned false';
   end if;
 end
-$$;
+$aal2$;
 
 select * from finish();
 rollback;
