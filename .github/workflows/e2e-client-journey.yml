@@ -1,0 +1,41 @@
+name: Prively Client Journey Evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  client-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_APP_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+      - run: npm ci --no-audit --no-fund
+      - name: Start local Supabase
+        run: supabase start
+      - name: Reset database
+        run: supabase db reset
+      - name: Export local Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          {
+            echo "VITE_SUPABASE_URL=$API_URL"
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY=$ANON_KEY"
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "POSTGRES_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+      - name: Run A1
+        run: npx playwright test tests/e2e/journey-client-a1.spec.ts --reporter=list
