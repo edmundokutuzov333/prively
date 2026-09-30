@@ -1,6 +1,7 @@
 import { createSHA256 } from "npm:hash-wasm@4.12.0";
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
 import { corsFor } from "../_shared/cors.ts";
+import { presignDownload } from "../_shared/b2.ts";
 
 const corsHeaders = {
   ...corsFor(),
@@ -72,10 +73,13 @@ function safeDerivativePath(asset: Record<string, unknown>, value: unknown): str
 
 async function signedSourceUrl(
   admin: ReturnType<typeof serviceClient>,
-  path: string,
+  asset: Record<string, unknown>,
   expiresIn = 300,
 ): Promise<string> {
-  const { data, error } = await admin.storage.from("prively-private").createSignedUrl(path, expiresIn);
+  if (asset.storage_provider === "backblaze_b2") {
+    return await presignDownload(String(asset.storage_path), expiresIn);
+  }
+  const { data, error } = await admin.storage.from("prively-private").createSignedUrl(String(asset.storage_path), expiresIn);
   if (error || !data?.signedUrl) throw new Error("signed_source_url_failed");
   return data.signedUrl;
 }
@@ -104,9 +108,9 @@ async function auditProcessingRead(
   if (error) throw new Error("processing_access_audit_failed");
 }
 
-async function sha256Stream(blob: Blob): Promise<string> {
+async function sha256Stream(body: ReadableStream<Uint8Array>): Promise<string> {
   const hasher = await createSHA256();
-  const reader = blob.stream().getReader();
+  const reader = body.getReader();
 
   try {
     while (true) {
@@ -146,7 +150,7 @@ async function executeProviderJob(
 
   if (!token || !hmacSecret) throw new Error("processor_not_configured");
 
-  const sourceUrl = await signedSourceUrl(admin, String(asset.storage_path));
+  const sourceUrl = await signedSourceUrl(admin, asset);
   await auditProcessingRead(admin, String(asset.id), jobType);
 
   const payload = JSON.stringify({
@@ -226,14 +230,34 @@ async function executeComplianceArchive(
   const existsInStorage = (existingObjects ?? []).some((item) => item.name === sha256);
 
   if (!existsInStorage) {
-    const { error: copyError } = await admin
-      .storage
-      .from("prively-private")
-      .copy(String(asset.storage_path), archivePath, {
-        destinationBucket: "compliance-archive",
-      });
+    if (asset.storage_provider === "backblaze_b2") {
+      const sourceUrl = await presignDownload(String(asset.storage_path), 600);
+      const sourceResponse = await fetch(sourceUrl);
+      if (!sourceResponse.ok || !sourceResponse.body) throw new Error("compliance_archive_source_failed");
 
-    if (copyError) throw new Error("compliance_archive_copy_failed");
+      const targetPath = archivePath.split("/").map((part) => encodeURIComponent(part)).join("/");
+      const targetUrl = `${env("SUPABASE_URL")}/storage/v1/object/compliance-archive/${targetPath}`;
+      const uploadResponse = await fetch(targetUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env("SUPABASE_SERVICE_ROLE_KEY")}`,
+          apikey: env("SUPABASE_SERVICE_ROLE_KEY"),
+          "Content-Type": String(asset.mime_type ?? "application/octet-stream"),
+          "x-upsert": "true",
+        },
+        body: sourceResponse.body,
+      });
+      if (!uploadResponse.ok) throw new Error("compliance_archive_copy_failed");
+    } else {
+      const { error: copyError } = await admin
+        .storage
+        .from("prively-private")
+        .copy(String(asset.storage_path), archivePath, {
+          destinationBucket: "compliance-archive",
+        });
+
+      if (copyError) throw new Error("compliance_archive_copy_failed");
+    }
   }
 
   const { data: retentionSetting, error: retentionError } = await admin
@@ -385,15 +409,26 @@ Deno.serve(async (request) => {
       if (claimedJob.job_type === "integrity") {
         await auditProcessingRead(admin, String(asset.id), "integrity");
 
-        const { data: blob, error: downloadError } = await admin
-          .storage
-          .from("prively-private")
-          .download(String(asset.storage_path));
+        const sourceUrl = await signedSourceUrl(admin, asset, 300);
+        const sourceResponse = await fetch(sourceUrl);
+        if (!sourceResponse.ok || !sourceResponse.body) throw new Error("media_download_failed");
 
-        if (downloadError || !blob) throw new Error("media_download_failed");
-        if (blob.size !== Number(asset.file_size_bytes)) throw new Error("media_size_mismatch");
-
-        const computedSha = await sha256Stream(blob);
+        const expectedSize = Number(asset.file_size_bytes);
+        const reader = sourceResponse.body.getReader();
+        let byteCount = 0;
+        const hasher = await createSHA256();
+        try {
+          while (true) {
+            const chunk = await reader.read();
+            if (chunk.done) break;
+            byteCount += chunk.value.byteLength;
+            hasher.update(chunk.value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        if (byteCount !== expectedSize) throw new Error("media_size_mismatch");
+        const computedSha = hasher.digest();
         const clientSha = typeof asset.client_sha256 === "string"
           ? asset.client_sha256.toLowerCase()
           : null;
