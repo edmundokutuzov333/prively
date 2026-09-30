@@ -48,7 +48,7 @@ select ok(
 select ok(
   has_function_privilege(
     'authenticated',
-    'public.create_media_upload(uuid,text,text,bigint,text,text)',
+    'public.create_media_upload(uuid,text,text,bigint,text,text,boolean)',
     'EXECUTE'
   ),
   'authenticated creators can initiate media uploads through the RPC'
