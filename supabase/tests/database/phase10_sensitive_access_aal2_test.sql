@@ -1,6 +1,8 @@
 begin;
 
-do $$
+select plan(1);
+
+do $
 declare
   admin_uid uuid := 'd1000000-0000-0000-0000-000000000001'::uuid;
   compliance_uid uuid := 'd1000000-0000-0000-0000-000000000002'::uuid;
@@ -119,4 +121,5 @@ select ok(
   'sensitive admin paths remain server-gated'
 );
 
+select * from finish();
 rollback;
