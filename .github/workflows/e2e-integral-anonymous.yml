@@ -1,0 +1,34 @@
+name: Prively Integral Anonymous Evidence
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  anonymous:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_BASE_URL: https://prively.vercel.app
+      PLAYWRIGHT_EXPECT_HEADERS: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Curl root security headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "===== COMMAND: curl -sS -D - -o /tmp/prively-root.html https://prively.vercel.app/ ====="
+          curl -sS -D - -o /tmp/prively-root.html https://prively.vercel.app/
+          echo "===== ROOT BODY BYTES ====="
+          wc -c /tmp/prively-root.html
+      - run: npx playwright install --with-deps chromium
+      - name: Run anonymous E2E evidence
+        run: npx playwright test tests/e2e/integral-anonymous.spec.ts --reporter=list
