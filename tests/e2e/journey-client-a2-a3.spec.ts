@@ -95,10 +95,15 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.2.6 MAILPIT confirmation_present=true');
     console.log('A.2.7 AUTH verify endpoint observed=true');
 
-    const afterConfirm = await admin.auth.admin.getUserById(created.id);
-    if (afterConfirm.error) throw afterConfirm.error;
-    console.log('A.2.8 DB auth.users email_confirmed_at=', afterConfirm.data.user?.email_confirmed_at ?? null);
-    expect(afterConfirm.data.user?.email_confirmed_at).toBeTruthy();
+    const verifyUrlMatch = body.match(/https?:\/\/[^"'\\\s<]+\/auth\/v1\/verify\?[^"'\\\s<]+/);
+    if (!verifyUrlMatch) throw new Error('confirmation_verify_url_missing');
+    const verifyUrl = verifyUrlMatch[0].replace(/&amp;/g, '&');
+    await page.goto(verifyUrl);
+    await expect.poll(async () => {
+      const confirmed = await admin.auth.admin.getUserById(created.id);
+      if (confirmed.error) throw confirmed.error;
+      return Boolean(confirmed.data.user?.email_confirmed_at);
+    }, { timeout: 10000 }).toBeTruthy();
 
     await page.goto('/entrar');
     await page.getByLabel(/email/i).fill(email);
