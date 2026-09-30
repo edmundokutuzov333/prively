@@ -250,3 +250,38 @@ export async function uploadMediaResumable(
     },
   };
 }
+
+
+export type StreamtapeRemoteUploadResult = {
+  ok: boolean;
+  uploadId: string;
+  status: "processing" | "ready";
+  fileId?: string;
+  embedUrl?: string;
+};
+
+export async function startStreamtapeRemoteUpload(
+  assetId: string,
+  folderId?: string,
+): Promise<StreamtapeRemoteUploadResult> {
+  const body: Record<string, string> = { asset_id: assetId };
+  if (folderId) body.folder_id = folderId;
+  const { data, error } = await requireSupabase().functions.invoke(
+    "streamtape-remote-upload",
+    { body },
+  );
+  if (error || !data?.ok || typeof data.upload_id !== "string") {
+    throw new Error(
+      typeof data?.code === "string"
+        ? data.code
+        : error?.message ?? "streamtape_upload_failed",
+    );
+  }
+  return {
+    ok: true,
+    uploadId: data.upload_id,
+    status: data.status === "ready" ? "ready" : "processing",
+    fileId: typeof data.file_id === "string" ? data.file_id : undefined,
+    embedUrl: typeof data.embed_url === "string" ? data.embed_url : undefined,
+  };
+}
