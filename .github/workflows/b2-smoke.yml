@@ -1,0 +1,23 @@
+name: Prively B2 Smoke
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  b2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
+      SUPABASE_ANON_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
+    steps:
+      - name: Call deployed B2 smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error             -X POST             "$SUPABASE_URL/functions/v1/b2-smoke-test"             -H "Authorization: Bearer $SUPABASE_ANON_KEY"             -H "apikey: $SUPABASE_ANON_KEY"             -H "Content-Type: application/json"             -d '{}' | tee b2-smoke-output.json
+          jq -e '.ok == true and .provider == "backblaze_b2" and .uploadStatus >= 200 and .uploadStatus < 300 and .downloadStatus == 200 and .contentMatches == true and .cleanup == "deleted" and .downloadExpiresIn == 60' b2-smoke-output.json
