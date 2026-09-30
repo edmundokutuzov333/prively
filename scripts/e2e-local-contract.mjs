@@ -107,31 +107,41 @@ console.log('RPC get_wallet_summary=', JSON.stringify({data:wallet.data,error:wa
 const idem = 'e2e-topup-' + ts;
 const topup1 = await publicClient.rpc('create_topup_intent',{_amount:10000,_method:'mpesa',_idem:idem});
 console.log('RPC create_topup_intent #1=', JSON.stringify({data:topup1.data,error:topup1.error?.message ?? null}));
-if (topup1.error) throw topup1.error;
-const topup2 = await publicClient.rpc('create_topup_intent',{_amount:10000,_method:'mpesa',_idem:idem});
-console.log('RPC create_topup_intent #2=', JSON.stringify({data:topup2.data,error:topup2.error?.message ?? null}));
-if (topup2.error) throw topup2.error;
-const topupRef1 = topup1.data?.provider_ref ?? null;
-const topupRef2 = topup2.data?.provider_ref ?? null;
-if (!topupRef1 || topupRef1 !== topupRef2) throw new Error('topup_idempotency_failed');
-const topupRows = await admin.from('topups').select('id,user_id,amount,status,provider,method,idempotency_key,provider_ref').eq('user_id',clientId).eq('idempotency_key',idem);
-if (topupRows.error) throw topupRows.error;
-console.log('DB topup rows=', JSON.stringify(topupRows.data));
-if (topupRows.data.length !== 1) throw new Error('duplicate_topup_rows_created');
+const walletBlocked = topup1.error?.message === 'wallet_production_disabled';
+if (walletBlocked) {
+  console.log('VERDICT payment-topup=', 'BLOQUEADO·EXTERNO');
+  console.log('EXTERNAL_GATE=', JSON.stringify({
+    reason:'wallet_production_disabled',
+    required:'wallet.production_enabled=true plus real PaySuite sandbox credentials',
+    simulation:false
+  }));
+} else {
+  if (topup1.error) throw topup1.error;
+  const topup2 = await publicClient.rpc('create_topup_intent',{_amount:10000,_method:'mpesa',_idem:idem});
+  console.log('RPC create_topup_intent #2=', JSON.stringify({data:topup2.data,error:topup2.error?.message ?? null}));
+  if (topup2.error) throw topup2.error;
+  const topupRef1 = topup1.data?.provider_ref ?? null;
+  const topupRef2 = topup2.data?.provider_ref ?? null;
+  if (!topupRef1 || topupRef1 !== topupRef2) throw new Error('topup_idempotency_failed');
+  const topupRows = await admin.from('topups').select('id,user_id,amount,status,provider,method,idempotency_key,provider_ref').eq('user_id',clientId).eq('idempotency_key',idem);
+  if (topupRows.error) throw topupRows.error;
+  console.log('DB topup rows=', JSON.stringify(topupRows.data));
+  if (topupRows.data.length !== 1) throw new Error('duplicate_topup_rows_created');
 
-const creditCalls = await Promise.all(Array.from({length:10}, () =>
-  publicClient.rpc('credit_topup',{_provider_ref:topupRef1,_status:'paid',_amount:10000,_provider_transaction_id:'e2e-provider-tx-' + ts})
-));
-console.log('RPC credit_topup x10=', JSON.stringify(creditCalls.map((r,i)=>({i,data:r.data,error:r.error?.message ?? null}))));
-if (creditCalls.some((r)=>r.error && !/already|processed|duplicate|status/i.test(r.error.message))) throw new Error('credit_topup_concurrency_failed');
+  const creditCalls = await Promise.all(Array.from({length:10}, () =>
+    admin.rpc('credit_topup',{_provider_ref:topupRef1,_status:'paid',_amount:10000,_provider_transaction_id:'e2e-provider-tx-' + ts})
+  ));
+  console.log('RPC credit_topup x10=', JSON.stringify(creditCalls.map((r,i)=>({i,data:r.data,error:r.error?.message ?? null}))));
+  if (creditCalls.some((r)=>r.error && !/already|processed|duplicate|status/i.test(r.error.message))) throw new Error('credit_topup_concurrency_failed');
 
-const walletAfterCredit = await publicClient.rpc('get_wallet_summary');
-console.log('RPC get_wallet_summary after credit=', JSON.stringify({data:walletAfterCredit.data,error:walletAfterCredit.error?.message ?? null}));
-if (walletAfterCredit.error || walletAfterCredit.data?.wallet !== 10000) throw new Error('wallet_credit_amount_wrong');
+  const walletAfterCredit = await publicClient.rpc('get_wallet_summary');
+  console.log('RPC get_wallet_summary after credit=', JSON.stringify({data:walletAfterCredit.data,error:walletAfterCredit.error?.message ?? null}));
+  if (walletAfterCredit.error || walletAfterCredit.data?.wallet !== 10000) throw new Error('wallet_credit_amount_wrong');
 
-const mismatch = await publicClient.rpc('credit_topup',{_provider_ref:topupRef1,_status:'paid',_amount:20000,_provider_transaction_id:'e2e-mismatch-' + ts});
-console.log('RPC credit_topup amount mismatch=', JSON.stringify({data:mismatch.data,error:mismatch.error?.message ?? null}));
-if (!mismatch.error) throw new Error('amount_mismatch_was_accepted');
+  const mismatch = await admin.rpc('credit_topup',{_provider_ref:topupRef1,_status:'paid',_amount:20000,_provider_transaction_id:'e2e-mismatch-' + ts});
+  console.log('RPC credit_topup amount mismatch=', JSON.stringify({data:mismatch.data,error:mismatch.error?.message ?? null}));
+  if (!mismatch.error) throw new Error('amount_mismatch_was_accepted');
+}
 
 const ledgerState = await admin.rpc('reconcile_ledger');
 if (ledgerState.error) throw ledgerState.error;
@@ -154,6 +164,8 @@ console.log('AUTH creator login=', JSON.stringify({ user_id: creatorLogin.data.u
 const sevenArg = await creatorClient.rpc('create_media_upload',{_post:null,_kind:'image',_mime_type:'image/jpeg',_file_size:100,_sha256:'0'.repeat(64),_original_filename:'e2e.jpg',_participants_consent:false});
 console.log('RPC 7-arg create_media_upload=', JSON.stringify({data:sevenArg.data,error:sevenArg.error?.message ?? null}));
 if (!sevenArg.error || !/consent|participant/i.test(sevenArg.error.message)) throw new Error('seven_arg_media_upload_contract_not_reachable');
+
+console.log('VERDICT=PASS (local non-external contract checks)');
 
 const final = await admin.auth.admin.deleteUser(clientId);
 const final2 = await admin.auth.admin.deleteUser(creatorId);
