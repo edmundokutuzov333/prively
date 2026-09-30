@@ -55,7 +55,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
   if (!message?.ID) throw new Error('confirmation_mail_not_found');
   const messageDetail = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`).then((r) => r.json());
   const body = JSON.stringify(messageDetail);
-  const verifyMatch = body.match(/https?:\\/\\/[^"\\s]+\/auth\/v1\/verify[^"\\s]+/);
+  const verifyMatch = body.includes('/auth/v1/verify');
   console.log('A.2.6 MAILPIT confirmation_present=', Boolean(verifyMatch));
 
   const confirmed = await admin.auth.admin.updateUserById(created.id, { email_confirm: true });
