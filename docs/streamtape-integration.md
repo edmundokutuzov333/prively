@@ -32,12 +32,28 @@ The remote-upload function is creator-owner only. Playback delegates authorizati
 
 public.poll_streamtape_uploads() is protected by an advisory transaction lock, reads the internal token from Vault, and polls at most 25 assets per run.
 
+## Production deployment
+
+The three production Edge Functions are active with JWT policy preserved:
+
+- `streamtape-remote-upload` v3, SHA `62b29b6742e58c34192e8bf1829edeeb36b4c7bd450b414e1a8446c2db0391d`.
+- `streamtape-check-status` v3, SHA `22cb3d7fed3310a50fb6d064a1e42d9f74763ce7cb2493440bef02b3a4db8165`. JWT gateway disabled because it accepts only the Vault-backed internal polling token or an authenticated creator.
+- `get-video-playback-url` v3, SHA `198611b74cd48c63d2b371520d2af2529bf4de048f6751eaa6d8461877aea700`.
+
 ## Real evidence
 
-Real production Remote Upload and status polling have already succeeded against the live B2 bucket and live Streamtape account.
+A real B2 -> Streamtape Remote Upload and status cycle has already completed:
 
+```json
 { "upload_id": "QIwuotwSWYk", "remote_http": 200, "remote_status": "processing", "status_http": 200, "status": "ready", "file_id": "eGW8vZB2PoTmk0" }
+```
 
-A KYC-denied playback request returned HTTP 403 with media_forbidden. A subsequent authorized request reached the audit-log gate; the missing streamtape_embed action was closed by forward-only migration 20260930170000_media_access_logs_streamtape_action.
+Production `media_assets` currently contains three real Streamtape-ready synthetic evidence rows, including persisted upload/file identifiers. The polling cron is installed at two-minute cadence and recent cron runs report `succeeded`.
 
-Closure requires authorized playback HTTP 200, real embed HTTP 200 from curl, green CI, and cleanup of all synthetic fixtures.
+Real provider embed probes against `https://streamtape.com/e/l4Ggw0BJbzhZYr` returned HTTP 200 with non-empty HTML in GitHub Actions runs 1 and 2. A later probe against the same historical file id returned 404, so that failed probe is not treated as current availability evidence.
+
+The frontend now routes every B2-backed video through `get-video-playback-url` and renders the returned provider URL as an iframe. Direct B2 video delivery through `get-media-url` remains blocked.
+
+## Closure gate
+
+The `fase-streamtape-concluida` tag is intentionally absent. Final closure still requires fresh authorized playback HTTP 200, fresh unauthorized/KYC/subscription HTTP 403 evidence, current CI green, and cleanup or explicit retention of the synthetic evidence fixtures.
