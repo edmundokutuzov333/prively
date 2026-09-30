@@ -12,13 +12,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python -m pip install --disable-pip-version-check -q imageio-ffmpeg
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          echo "FFMPEG=$FFMPEG"
+          "$FFMPEG" -version | head -n 1
           mkdir -p /tmp/prively-b2-synth
-          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=red:s=64x64 -frames:v 1 /tmp/prively-b2-synth/image1.png
-          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=green:s=96x64 -frames:v 1 /tmp/prively-b2-synth/image2.png
-          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=blue:s=80x80 -frames:v 1 /tmp/prively-b2-synth/image3.png
-          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=yellow:s=64x64:r=5 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video1.mp4
-          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc=size=80x60:rate=7 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video2.mp4
-          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=magenta:s=100x70:r=6 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video3.mp4
+          $FFMPEG -hide_banner -loglevel error -f lavfi -i color=c=red:s=64x64 -frames:v 1 /tmp/prively-b2-synth/image1.png
+          $FFMPEG -hide_banner -loglevel error -f lavfi -i color=c=green:s=96x64 -frames:v 1 /tmp/prively-b2-synth/image2.png
+          $FFMPEG -hide_banner -loglevel error -f lavfi -i color=c=blue:s=80x80 -frames:v 1 /tmp/prively-b2-synth/image3.png
+          $FFMPEG -hide_banner -loglevel error -f lavfi -i color=c=yellow:s=64x64:r=5 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video1.mp4
+          $FFMPEG -hide_banner -loglevel error -f lavfi -i testsrc=size=80x60:rate=7 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video2.mp4
+          $FFMPEG -hide_banner -loglevel error -f lavfi -i color=c=magenta:s=100x70:r=6 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video3.mp4
           sha256sum /tmp/prively-b2-synth/* | tee /tmp/prively-b2-sha256.txt
 
       - name: Upload synthetic assets to Supabase Storage through evidence harness
