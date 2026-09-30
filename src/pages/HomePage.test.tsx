@@ -2,12 +2,19 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 import '@/lib/i18n';
+import { persistAgeVerification } from '@/lib/ageGate';
 import { HomePage } from './HomePage';
 
 describe('HomePage', () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+    document.cookie = 'prively_age_verified=; Max-Age=0; Path=/';
+  });
 
   it('presents both real entry paths without showing explicit content', () => {
+    persistAgeVerification();
+    persistAgeVerification();
     render(<MemoryRouter><HomePage /></MemoryRouter>);
 
     expect(screen.getByRole('heading', { name: 'Menos público, muito mais Privê.' })).toBeVisible();
