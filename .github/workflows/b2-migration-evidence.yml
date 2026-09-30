@@ -8,20 +8,55 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Execute real migration evidence
+      - name: Generate synthetic images and videos
         shell: bash
         run: |
           set -euo pipefail
-          curl --silent --show-error --retry 2 --connect-timeout 15 -w '\nHTTP_STATUS:%{http_code}\n' "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2-migration-real-20260930" | tee /tmp/b2-migration-evidence.raw
+          mkdir -p /tmp/prively-b2-synth
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=red:s=64x64 -frames:v 1 /tmp/prively-b2-synth/image1.png
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=green:s=96x64 -frames:v 1 /tmp/prively-b2-synth/image2.png
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=blue:s=80x80 -frames:v 1 /tmp/prively-b2-synth/image3.png
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=yellow:s=64x64:r=5 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video1.mp4
+          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc=size=80x60:rate=7 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video2.mp4
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=magenta:s=100x70:r=6 -t 1 -c:v libx264 -pix_fmt yuv420p /tmp/prively-b2-synth/video3.mp4
+          sha256sum /tmp/prively-b2-synth/* | tee /tmp/prively-b2-sha256.txt
+
+      - name: Upload synthetic assets to Supabase Storage through evidence harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2-migration-runner-20260930&run=${GITHUB_RUN_ID}"
+          upload() {
+            local file="$1" kind="$2" mime="$3"
+            echo "UPLOAD $file"
+            curl --fail --silent --show-error --retry 2 --connect-timeout 15               -X POST               -H "Content-Type: application/octet-stream"               --data-binary "@$file"               "$base&filename=$(basename "$file")&kind=$kind&mime=$mime"
+            echo
+          }
+          upload /tmp/prively-b2-synth/image1.png image image/png
+          upload /tmp/prively-b2-synth/image2.png image image/png
+          upload /tmp/prively-b2-synth/image3.png image image/png
+          upload /tmp/prively-b2-synth/video1.mp4 video video/mp4
+          upload /tmp/prively-b2-synth/video2.mp4 video video/mp4
+          upload /tmp/prively-b2-synth/video3.mp4 video video/mp4
+
+      - name: Run exact migration script and verify B2
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2-migration-runner-20260930&run=${GITHUB_RUN_ID}"
+          curl --silent --show-error --retry 2 --connect-timeout 15 -w '\nHTTP_STATUS:%{http_code}\n' "$url" | tee /tmp/b2-migration-evidence.raw
           python - <<'PY'
           import json
           raw=open("/tmp/b2-migration-evidence.raw","r",encoding="utf-8").read()
           print(raw)
-          payload, status = raw.rsplit("\nHTTP_STATUS:",1)
-          assert status.strip() == "200", raw
+          payload,status=raw.rsplit("\nHTTP_STATUS:",1)
+          assert status.strip()=="200", raw
           data=json.loads(payload)
-          print(json.dumps(data, indent=2))
+          print(json.dumps(data,indent=2))
           assert data["ok"] is True, data
-          assert len(data["syntheticInput"]) == 6, data
+          assert len(data["expected"]) == 6, data
+          assert len(data["verified"]) == 6, data
+          assert all(x["byteMatch"] for x in data["verified"]), data
+          assert all(x["db"]["storage_provider"] == "backblaze_b2" for x in data["verified"]), data
           assert data["postCleanupListObjectsV2"]["KeyCount"] == 0, data
           PY
