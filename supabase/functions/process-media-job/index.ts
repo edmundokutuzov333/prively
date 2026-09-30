@@ -438,7 +438,7 @@ Deno.serve(async (request) => {
 
         const { error: jobUpdateError } = await admin.from("media_processing_jobs").update({
           status: "succeeded",
-          output: { sha256: computedSha, bytes: blob.size },
+          output: { sha256: computedSha, bytes: byteCount },
           finished_at: new Date().toISOString(),
         }).eq("id", claimedJob.id);
 
