@@ -52,10 +52,12 @@ function extensionForMime(mime) {
 }
 
 async function loadPage(from) {
-  const { data, error } = await supabase
+  let query = supabase
     .from("media_assets")
     .select("id,storage_path,storage_provider,mime_type,original_filename,file_size_bytes,metadata,channel_id,channels(owner_id)")
-    .neq("storage_provider", "backblaze_b2")
+    .neq("storage_provider", "backblaze_b2");
+  if (migrationAssetIds.length) query = query.in("id", migrationAssetIds);
+  const { data, error } = await query
     .order("created_at", { ascending: true })
     .range(from, from + pageSize - 1);
   if (error) throw error;
