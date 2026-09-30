@@ -54,14 +54,9 @@ begin
     )::text,true
   );
 
-  begin
-    perform public.get_admin_kyc_queue(10);
+  if exists(select 1 from public.get_admin_kyc_queue(10)) then
     raise exception 'FAIL: AAL1 accessed admin KYC queue';
-  exception when others then
-    if sqlerrm not in ('insufficient_privilege','forbidden') then
-      raise;
-    end if;
-  end;
+  end if;
 
   begin
     perform public.approve_kyc(kyc_id,true,'aal2 test');
@@ -82,7 +77,9 @@ begin
     )::text,true
   );
 
-  perform public.get_admin_kyc_queue(10);
+  if not exists(select 1 from public.get_admin_kyc_queue(10)) then
+    raise exception 'FAIL: AAL2 could not access admin KYC queue';
+  end if;
 
   perform set_config('request.jwt.claim.sub',compliance_uid::text,true);
   perform set_config('request.jwt.claims',

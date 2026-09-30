@@ -139,11 +139,11 @@ begin
   end if;
 
   if not exists (
-    select 1 from public.creator_terms_acceptances
-    where id=acceptance_id
+    select 1 from public.creator_terms_acceptances cta
+    where cta.id=acceptance_id
       and user_id=auth.uid()
       and version='1.0.0'
-      and jsonb_object_length(declarations)=16
+      and jsonb_object_length(cta.declarations)=16
   ) then
     raise exception 'FAIL: normalized creator terms acceptance was not persisted correctly';
   end if;

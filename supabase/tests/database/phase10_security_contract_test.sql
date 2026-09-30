@@ -1,5 +1,7 @@
 begin;
 
+select plan(3);
+
 select is(
   count(*)::integer,
   0,
@@ -38,4 +40,5 @@ where n.nspname='public'
       and p.tablename=c.relname
   );
 
+select * from finish();
 rollback;

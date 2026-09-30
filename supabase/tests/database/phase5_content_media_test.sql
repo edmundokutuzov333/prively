@@ -11,7 +11,7 @@ select ok(to_regclass('public.content_archive_events') is not null,'content arch
 select ok((select relrowsecurity from pg_class where oid='public.media_uploads'::regclass),'media uploads RLS enabled');
 select ok((select relrowsecurity from pg_class where oid='public.media_processing_jobs'::regclass),'media jobs RLS enabled');
 select ok(not has_function_privilege('anon','public.create_post(uuid,text,public.visibility,smallint,bigint,boolean,timestamptz)','EXECUTE'),'anon cannot create posts');
-select ok(not has_function_privilege('anon','public.create_media_upload(uuid,text,text,bigint,text,text)','EXECUTE'),'anon cannot create media uploads');
+select ok(not has_function_privilege('anon','public.create_media_upload(uuid,text,text,bigint,text,text,boolean)','EXECUTE'),'anon cannot create media uploads');
 select ok(not has_function_privilege('anon','public.publish_post(uuid,timestamptz)','EXECUTE'),'anon cannot publish posts');
 select ok(to_regprocedure('public.create_post_with_blurhash(uuid,text,public.visibility,smallint,bigint,boolean,timestamptz,text)') is not null,'blurhash post creator exists');
 select ok(not has_function_privilege('anon','public.create_post_with_blurhash(uuid,text,public.visibility,smallint,bigint,boolean,timestamptz,text)','EXECUTE'),'anon cannot create blurhash posts');
@@ -79,10 +79,10 @@ begin
   );
 
   first_payload:=public.create_media_upload(
-    v_post_id,'image','image/png',2048,repeat('a',64),'test.png'
+    v_post_id,'image','image/png',2048,repeat('a',64),'test.png',true
   );
   second_payload:=public.create_media_upload(
-    v_post_id,'image','image/png',2048,repeat('a',64),'test-renamed.png'
+    v_post_id,'image','image/png',2048,repeat('a',64),'test-renamed.png',true
   );
 
   if (first_payload->>'assetId')<>(second_payload->>'assetId')
