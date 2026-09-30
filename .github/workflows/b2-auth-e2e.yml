@@ -21,3 +21,5 @@ jobs:
           set -euo pipefail
           curl --fail-with-body --silent --show-error             -X POST             "$SUPABASE_URL/functions/v1/b2-auth-e2e"             -H "Authorization: Bearer $SUPABASE_ANON_KEY"             -H "apikey: $SUPABASE_ANON_KEY"             -H "Content-Type: application/json"             -d '{}' | tee b2-auth-e2e-output.json
           jq -e '.ok == true and .provider == "backblaze_b2" and .createMediaUploadStatus == 200 and .uploadStatus >= 200 and .uploadStatus < 300 and .finalizeStatus == 200 and .getMediaUrlStatus == 200 and .downloadStatus == 200 and .contentMatches == true and .storageProvider == "backblaze_b2" and .source == "backblaze_b2" and .expiresIn == 60' b2-auth-e2e-output.json
+
+# B2 authenticated E2E uses the active deployed function version.
