@@ -159,9 +159,7 @@ export function ClientPostPage() {
   };
 
   useEffect(() => {
-    let active = true;
     void load();
-    return () => { active = false; };
   }, [id]);
 
   const unlockPpv = async () => {
