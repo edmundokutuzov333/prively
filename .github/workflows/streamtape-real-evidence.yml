@@ -47,10 +47,8 @@ jobs:
           jq --version
           node --version
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.118.0
+      - name: Install Supabase CLI
+        run: npm install --no-save --package-lock=false supabase@2.118.0
 
       - name: Validate required secrets are available
         shell: bash
