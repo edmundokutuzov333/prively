@@ -25,3 +25,5 @@ jobs:
 # B2 authenticated E2E uses the active deployed function version.
 
 # Finalize RPC grant restored before this run.
+
+# Current creator terms included in authenticated fixture.
