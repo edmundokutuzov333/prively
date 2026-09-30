@@ -4,6 +4,10 @@ import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const backend = (process.env.MEDIA_BACKEND ?? "both").toLowerCase();
+const migrationAssetIds = (process.env.MIGRATION_ASSET_IDS ?? "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
 if (!["supabase", "b2", "both"].includes(backend)) throw new Error("MEDIA_BACKEND must be supabase|b2|both");
 
 if (backend === "supabase") {
