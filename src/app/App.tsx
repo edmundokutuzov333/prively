@@ -152,7 +152,7 @@ function Header() {
         <Link to="/entrar" className="hidden min-h-11 items-center gap-2 rounded-md px-3 text-sm text-bone-300 hover:bg-ink-900 hover:text-bone-50 sm:flex"><SignIn size={18} weight="duotone" />{t('nav.enter')}</Link>
         <Link to="/se-criadora" className="flex min-h-11 items-center gap-2 rounded-md border border-bone-50/10 px-3 text-sm text-bone-50 hover:bg-ink-900"><UserPlus size={18} weight="duotone" />{t('nav.creator')}</Link>
         <div className="relative">
-          <button type="button" aria-expanded={localeOpen} aria-label={t('common.language')} onClick={() => setLocaleOpen((open) => !open)} className="flex min-h-11 w-11 items-center justify-center rounded-md text-bone-300 hover:bg-ink-900 hover:text-bone-50"><Globe size={19} weight="duotone" /></button>
+          <button type="button" data-testid="language-selector" aria-expanded={localeOpen} aria-label={t('common.language')} onClick={() => setLocaleOpen((open) => !open)} className="flex min-h-11 w-11 items-center justify-center rounded-md text-bone-300 hover:bg-ink-900 hover:text-bone-50"><Globe size={19} weight="duotone" /></button>
           {localeOpen ? <div className="absolute right-0 top-12 z-50 w-36 rounded-md border border-bone-50/10 bg-ink-900 p-1 shadow-2xl">
             {supportedLanguages.map((language) => <button key={language} type="button" className="flex min-h-11 w-full items-center justify-between rounded px-3 text-sm text-bone-300 hover:bg-ink-800 hover:text-bone-50" onClick={() => { void i18n.changeLanguage(language); setLocaleOpen(false); }}>{language}<span className="text-bone-500">{language === 'pt-MZ' ? 'PT' : language.toUpperCase()}</span></button>)}
           </div> : null}
