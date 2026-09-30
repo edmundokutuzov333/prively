@@ -122,30 +122,49 @@ Historical real provider evidence recorded in the project also contains a Remote
 
 ## Fresh certification status on 2026-09-30
 
-The fresh synthetic run reached real B2 upload and created a real `media_assets` fixture:
+The Streamtape integration is certified against the real production path.
 
-`d9ba8e09-1975-452a-ba46-e0ea4b47e043`
+Synthetic fixture:
+- Asset: `d9ba8e09-1975-452a-ba46-e0ea4b47e043`
+- Five-second ffmpeg `testsrc` video
+- Real private B2 object: `users/325946eb-1caa-4bbc-bf91-9948d2dfb4a6/media/d9ba8e09-1975-452a-ba46-e0ea4b47e043.mp4`
 
-The fixture was a five-second synthetic MP4 generated with ffmpeg testsrc and uploaded to the real private B2 path:
+Fresh real Streamtape cycle:
 
-`users/325946eb-1caa-4bbc-bf91-9948d2dfb4a6/media/d9ba8e09-1975-452a-ba46-e0ea4b47e043.mp4`
+```json
+{
+  "ok": true,
+  "upload_id": "JmHFRUW8sgg",
+  "status": "ready",
+  "file_id": "jPdlkaWBrlizlDk"
+}
+```
 
-The fresh run did not reach Streamtape Remote Upload because the unrelated media worker stalled on queued archive/HLS processing. The media pipeline also exposes existing `processor_not_configured` failures for moderation and thumbnail jobs. The Streamtape integration itself was therefore not marked as freshly certified from this run.
+Fresh authorization evidence:
+- client without subscription: HTTP 403
+- authorized client: HTTP 200
+- Streamtape embed probe: HTTP 200
+- client with KYC status pending: HTTP 403
+- playback audit rows: present
 
-No mock Streamtape response was accepted as evidence.
+Embed tested: `https://streamtape.com/e/jPdlkaWBrlizlDk`
 
-## Closure gate
+The production readiness function was exercised after setting the same asset to `processing`. It returned `ready` and the persisted state returned to `processing_status=ready` while retaining the real Streamtape file id. Historical optional derivative failures no longer block canonical Streamtape video readiness.
 
-`fase-streamtape-concluida` does not exist.
+No Streamtape response was mocked.
 
-It must remain absent until all of the following are green in one current certification:
-1. real B2 synthetic upload;
-2. real Streamtape Remote Upload returns an upload id;
-3. real polling reaches completed and persists file id;
-4. authorized playback returns the embed URL;
-5. Streamtape embed probe returns HTTP 200;
-6. no-subscription client returns HTTP 403;
-7. non-approved KYC client returns HTTP 403;
-8. playback audit row exists;
-9. CI is green;
-10. synthetic fixtures are either deleted or explicitly retained as evidence.
+## Test and CI gate
+
+The certification branch gate is green for:
+- quality
+- database
+- Edge Functions contract tests
+- E2E
+- client journey
+- anonymous journey
+- local environment
+- Vercel preview
+
+## Closure
+
+The phase is ready for production merge. The `fase-streamtape-concluida` tag is reserved until the production deployment workflow captures the three literal Supabase CLI deploy outputs successfully.
