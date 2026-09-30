@@ -10,6 +10,8 @@ set -Eeuo pipefail
 EVIDENCE_DIR="${EVIDENCE_DIR:-artifacts/streamtape}"
 mkdir -p "$EVIDENCE_DIR"
 VIDEO_FILE="$EVIDENCE_DIR/streamtape-evidence-testsrc.mp4"
+FFMPEG_BIN="$(node --input-type=module -e 'import ffmpegPath from "ffmpeg-static"; process.stdout.write(ffmpegPath)')"
+[[ -x "$FFMPEG_BIN" ]] || { echo "ffmpeg-static binary is unavailable: $FFMPEG_BIN" >&2; exit 1; }
 
 export PGHOST="db.${SUPABASE_PROJECT_REF}.supabase.co"
 export PGPORT="5432"
@@ -167,7 +169,7 @@ backup_and_set_test_passwords
 
 echo
 echo "== Test 1: generate 5s ffmpeg fixture =="
-ffmpeg -hide_banner -loglevel error -y \
+"$FFMPEG_BIN" -hide_banner -loglevel error -y \
   -f lavfi -i "testsrc=duration=5:size=320x240:rate=30" \
   -an -c:v libx264 -pix_fmt yuv420p -movflags +faststart "$VIDEO_FILE"
 VIDEO_SIZE="$(stat -c '%s' "$VIDEO_FILE")"
