@@ -1,0 +1,293 @@
+name: B2 Node migration verification
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      B2_ENDPOINT: https://s3.eu-central-003.backblazeb2.com
+      B2_REGION: eu-central-003
+      B2_BUCKET_NAME: prively-media-originals-2026
+      B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+      B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      SUPABASE_STORAGE_BUCKET: prively-private
+      MEDIA_BACKEND: b2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies and S3 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm install --no-save @aws-sdk/client-s3@3.1142.0 --no-audit --no-fund
+          node -e "import('@aws-sdk/client-s3').then(() => console.log('NODE_S3_SDK=ok'))"
+
+      - name: Check required credentials without exposing them
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "MISSING_SUPABASE_SERVICE_ROLE_KEY"; exit 1; }
+          test -n "$B2_KEY_ID" || { echo "MISSING_B2_KEY_ID"; exit 1; }
+          test -n "$B2_APPLICATION_KEY" || { echo "MISSING_B2_APPLICATION_KEY"; exit 1; }
+          echo "CREDENTIALS_PRESENT=true"
+
+      - name: Generate six synthetic media files
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="/tmp/prively-b2-node-${GITHUB_RUN_ID}"
+          mkdir -p "$root"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=red:s=64x64 -frames:v 1 "$root/image1.png"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=green:s=96x64 -frames:v 1 "$root/image2.png"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=blue:s=80x80 -frames:v 1 "$root/image3.png"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=yellow:s=64x64:r=5 -t 1 -c:v libx264 -pix_fmt yuv420p "$root/video1.mp4"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc=size=80x60:rate=7 -t 1 -c:v libx264 -pix_fmt yuv420p "$root/video2.mp4"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=magenta:s=100x70:r=6 -t 1 -c:v libx264 -pix_fmt yuv420p "$root/video3.mp4"
+          sha256sum "$root"/* | tee "$root/input-sha256.txt"
+
+      - name: Seed six source assets in Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { createClient } from "@supabase/supabase-js";
+          import { readFileSync, writeFileSync } from "node:fs";
+          import { createHash } from "node:crypto";
+          import { join } from "node:path";
+
+          const root = "/tmp/prively-b2-node-" + process.env.GITHUB_RUN_ID;
+          const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+
+          const { data: channel, error: channelError } = await admin
+            .from("channels")
+            .select("id,owner_id")
+            .limit(1)
+            .single();
+          if (channelError || !channel) throw channelError ?? new Error("no_channel_fixture");
+
+          const specs = [
+            ["image1.png", "image/png", "image"],
+            ["image2.png", "image/png", "image"],
+            ["image3.png", "image/png", "image"],
+            ["video1.mp4", "video/mp4", "video"],
+            ["video2.mp4", "video/mp4", "video"],
+            ["video3.mp4", "video/mp4", "video"],
+          ];
+
+          const runPrefix = "migration-node-test/" + process.env.GITHUB_RUN_ID;
+          const manifest = [];
+
+          for (const [filename, mimeType, kind] of specs) {
+            const bytes = readFileSync(join(root, filename));
+            const id = crypto.randomUUID();
+            const storagePath = runPrefix + "/" + filename;
+            const sha256 = createHash("sha256").update(bytes).digest("hex");
+
+            const { error: uploadError } = await admin.storage
+              .from(process.env.SUPABASE_STORAGE_BUCKET)
+              .upload(storagePath, bytes, { contentType: mimeType, upsert: false });
+            if (uploadError) throw uploadError;
+
+            const { error: insertError } = await admin.from("media_assets").insert({
+              id,
+              channel_id: channel.id,
+              post_id: null,
+              kind,
+              storage_path: storagePath,
+              mime_type: mimeType,
+              original_filename: filename,
+              file_size_bytes: bytes.byteLength,
+              client_sha256: sha256,
+              metadata: { verification_run: process.env.GITHUB_RUN_ID, test_only: true },
+              storage_provider: "supabase",
+              integrity_status: "pending",
+              processing_status: "pending",
+              moderation_status: "pending",
+            });
+            if (insertError) throw insertError;
+
+            manifest.push({ id, filename, mimeType, kind, storagePath, bytes: bytes.byteLength, sha256 });
+          }
+
+          writeFileSync(join(root, "manifest.json"), JSON.stringify({
+            runId: process.env.GITHUB_RUN_ID,
+            ownerId: channel.owner_id,
+            manifest,
+          }, null, 2));
+
+          console.log(JSON.stringify({ seeded: manifest.length, manifest }, null, 2));
+          NODE
+
+      - name: Run exact migration script in normal Node 24
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="/tmp/prively-b2-node-${GITHUB_RUN_ID}"
+          ids="$(node --input-type=module -e 'const fs=await import("node:fs/promises"); const m=JSON.parse(await fs.readFile(process.argv[1],"utf8")); console.log(m.manifest.map(x=>x.id).join(","));' "$root/manifest.json")"
+          echo "MIGRATION_ASSET_IDS=$ids"
+          MIGRATION_ASSET_IDS="$ids" node scripts/migrate-storage-to-b2.mjs | tee "$root/migration-output.jsonl"
+
+      - name: Verify bytes and metadata in B2 and Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { createClient } from "@supabase/supabase-js";
+          import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
+          import { createHash } from "node:crypto";
+          import { readFileSync } from "node:fs";
+          import { join } from "node:path";
+
+          const root = "/tmp/prively-b2-node-" + process.env.GITHUB_RUN_ID;
+          const fixture = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
+          const ids = fixture.manifest.map(x => x.id);
+
+          const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const s3 = new S3Client({
+            endpoint: process.env.B2_ENDPOINT,
+            region: process.env.B2_REGION,
+            forcePathStyle: true,
+            credentials: {
+              accessKeyId: process.env.B2_KEY_ID,
+              secretAccessKey: process.env.B2_APPLICATION_KEY,
+            },
+          });
+
+          const { data: assets, error } = await supabase
+            .from("media_assets")
+            .select("id,storage_provider,storage_path,metadata,file_size_bytes,mime_type")
+            .in("id", ids);
+          if (error) throw error;
+
+          const verified = [];
+          for (const item of fixture.manifest) {
+            const row = assets.find(x => x.id === item.id);
+            if (!row) throw new Error("missing_asset:" + item.id);
+
+            const extension = item.filename.split(".").pop();
+            const expectedKey = "users/" + fixture.ownerId + "/media/" + item.id + "." + extension;
+            if (row.storage_provider !== "backblaze_b2") throw new Error("provider_not_migrated:" + item.id);
+            if (row.storage_path !== expectedKey) throw new Error("key_mismatch:" + item.id);
+            if (row.file_size_bytes !== item.bytes) throw new Error("db_size_mismatch:" + item.id);
+            if (row.metadata?.storage_provider !== "backblaze_b2") throw new Error("metadata_provider:" + item.id);
+            if (row.metadata?.bucket !== process.env.B2_BUCKET_NAME) throw new Error("metadata_bucket:" + item.id);
+            if (row.metadata?.media_key_version !== 2) throw new Error("metadata_key_version:" + item.id);
+            if (row.metadata?.migration_sha256 !== item.sha256) throw new Error("metadata_sha256:" + item.id);
+
+            const head = await s3.send(new HeadObjectCommand({
+              Bucket: process.env.B2_BUCKET_NAME,
+              Key: expectedKey,
+            }));
+            const body = await s3.send(new GetObjectCommand({
+              Bucket: process.env.B2_BUCKET_NAME,
+              Key: expectedKey,
+            }));
+            const bytes = new Uint8Array(await body.Body.transformToByteArray());
+            const sha = createHash("sha256").update(bytes).digest("hex");
+            if (Number(head.ContentLength) !== item.bytes || bytes.byteLength !== item.bytes || sha !== item.sha256) {
+              throw new Error("b2_bytes_or_size_mismatch:" + item.id);
+            }
+
+            verified.push({
+              id: item.id,
+              filename: item.filename,
+              bytes: item.bytes,
+              sha256: sha,
+              contentType: head.ContentType ?? null,
+              key: row.storage_path,
+              storage_provider: row.storage_provider,
+              metadata_storage_provider: row.metadata.storage_provider,
+              metadata_bucket: row.metadata.bucket,
+              metadata_key_version: row.metadata.media_key_version,
+            });
+          }
+
+          console.log(JSON.stringify({ ok: true, count: verified.length, verified }, null, 2));
+          NODE
+
+      - name: Cleanup source and B2 fixtures
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          root="/tmp/prively-b2-node-${GITHUB_RUN_ID}"
+          if [ -f "$root/manifest.json" ]; then
+            node --input-type=module <<'NODE'
+            import { createClient } from "@supabase/supabase-js";
+            import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+            import { readFileSync } from "node:fs";
+            import { join } from "node:path";
+
+            const root = "/tmp/prively-b2-node-" + process.env.GITHUB_RUN_ID;
+            const fixture = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
+            const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            });
+            const s3 = new S3Client({
+              endpoint: process.env.B2_ENDPOINT,
+              region: process.env.B2_REGION,
+              forcePathStyle: true,
+              credentials: {
+                accessKeyId: process.env.B2_KEY_ID,
+                secretAccessKey: process.env.B2_APPLICATION_KEY,
+              },
+            });
+
+            for (const item of fixture.manifest) {
+              const extension = item.filename.split(".").pop();
+              await s3.send(new DeleteObjectCommand({
+                Bucket: process.env.B2_BUCKET_NAME,
+                Key: "users/" + fixture.ownerId + "/media/" + item.id + "." + extension,
+              }));
+              await supabase.storage.from(process.env.SUPABASE_STORAGE_BUCKET).remove([item.storagePath]);
+            }
+
+            const { error } = await supabase
+              .from("media_assets")
+              .delete()
+              .in("id", fixture.manifest.map(x => x.id));
+            if (error) throw error;
+
+            console.log(JSON.stringify({ cleanup: "completed", count: fixture.manifest.length }));
+            NODE
+          fi
+
+      - name: Prepare dependency lockfile artifact
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --save-dev @aws-sdk/client-s3@3.1142.0 --no-audit --no-fund
+          mkdir -p /tmp/b2-node-artifact
+          cp package.json package-lock.json /tmp/b2-node-artifact/
+          cat package.json | sed -n '/"devDependencies"/,/^  }/p'
+          echo "LOCKFILE_ARTIFACT_READY=true"
+      
+      - name: Upload dependency artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b2-node-dependency-lock
+          path: /tmp/b2-node-artifact/
+          retention-days: 1
