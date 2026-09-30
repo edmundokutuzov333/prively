@@ -24,8 +24,8 @@ test.describe('integral journey A.1 anonymous', () => {
     }))));
     console.log('A1.1 AGE_GATE_TEXT_PRESENT=', /idade|18\+|maior de idade/i.test(text));
     console.log('A1.1 SECURITY_EXPECTED_FROM_VERCEL_CONFIG=', JSON.stringify({ CSP_FRAME_ANCESTORS: "frame-ancestors 'none'", HSTS: 'max-age=31536000; includeSubDomains; preload', X_FRAME_OPTIONS: 'DENY' }));
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog')).toContainText(/18 anos ou mais/i);
+    await expect(page.getByTestId('age-gate')).toBeVisible();
+    await expect(page.getByTestId('age-gate')).toContainText(/18 anos ou mais/i);
     await expect(page.getByRole('button').filter({ hasText: /confirm/i })).toBeVisible();
     expect(screenshot).toBeTruthy();
   });
