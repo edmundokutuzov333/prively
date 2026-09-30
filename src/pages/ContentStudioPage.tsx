@@ -5,7 +5,7 @@ import { Ficha } from '@/design/Ficha';
 import { Botao } from '@/design/Botao';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuth } from '@/app/session';
-import { mediaKind, prepareMediaUpload, uploadMediaResumable } from '@/lib/mediaUpload';
+import { mediaKind, prepareMediaUpload, startStreamtapeRemoteUpload, uploadMediaResumable } from '@/lib/mediaUpload';
 
 type Channel = { id: string; handle: string; display_name: string; bio: string | null };
 type ContentRow = {
@@ -27,7 +27,7 @@ type ContentRow = {
 type PendingUpload = {
   fileName: string;
   progress: number;
-  state: 'preparing' | 'uploading' | 'queued' | 'failed';
+  state: 'preparing' | 'uploading' | 'queued' | 'streamtape' | 'failed';
   error?: string;
 };
 
@@ -61,7 +61,14 @@ function contentErrorMessage(t: (key: string, options?: Record<string, unknown>)
     'ppv_price_required',
     'tier_required',
     'price_visibility_mismatch',
-    'participant_consent_required'
+    'participant_consent_required',
+    'streamtape_auth_error',
+    'streamtape_unavailable',
+    'streamtape_rejected',
+    'streamtape_upload_failed',
+    'b2_url_expired',
+    'streamtape_not_ready',
+    'video_delivery_required'
   ]);
   return known.has(code) ? t(`content.errors.${code}`) : t('content.errors.generic');
 }
@@ -224,11 +231,20 @@ export function ContentStudioPage() {
           }
         }
 
-        setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
-          ...item,
-          state: 'queued',
-          progress: 100,
-        } : item));
+        if (mediaKind(file) === 'video') {
+          await startStreamtapeRemoteUpload(finalized.assetId);
+          setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
+            ...item,
+            state: 'streamtape',
+            progress: 100,
+          } : item));
+        } else {
+          setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? {
+            ...item,
+            state: 'queued',
+            progress: 100,
+          } : item));
+        }
       }
 
       setCaption('');
