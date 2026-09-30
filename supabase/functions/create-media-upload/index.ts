@@ -29,6 +29,12 @@ async function requireUser(request: Request): Promise<{ client: SupabaseClient; 
   return { client, user: data.user };
 }
 
+function serviceClient(): SupabaseClient {
+  return createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return optionsResponse(request);
   if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405, request);
@@ -86,6 +92,27 @@ Deno.serve(async (request) => {
     ) {
       return jsonResponse({ code: "media_upload_plan_invalid" }, 500, request);
     }
+
+    const admin = serviceClient();
+    const { error: providerError } = await admin
+      .from("media_assets")
+      .update({
+        storage_provider: "backblaze_b2",
+        metadata: {
+          storage_provider: "backblaze_b2",
+          bucket: b2Bucket(),
+        },
+      })
+      .eq("id", plan.assetId);
+
+    if (providerError) return jsonResponse({ code: "media_provider_update_failed" }, 500, request);
+
+    const { error: uploadRecordError } = await admin
+      .from("media_uploads")
+      .update({ bucket_id: b2Bucket() })
+      .eq("id", plan.uploadId);
+
+    if (uploadRecordError) return jsonResponse({ code: "media_upload_record_update_failed" }, 500, request);
 
     const uploadUrl = await presignUpload(plan.path, body.mimeType, 15 * 60);
 
