@@ -55,10 +55,23 @@ function derivativeRoot(asset: Record<string, unknown>): string {
   const storagePath = String(asset.storage_path ?? "");
   const assetId = String(asset.id ?? "");
   const parts = storagePath.split("/");
-  if (parts.length < 4 || parts[1] !== "media" || parts[2] !== assetId) {
-    throw new Error("invalid_asset_storage_path");
+
+  // Current B2 contract: users/{user_id}/media/{asset_id}.{ext}
+  if (
+    parts.length === 4 &&
+    parts[0] === "users" &&
+    parts[2] === "media" &&
+    parts[3].startsWith(assetId + ".")
+  ) {
+    return `${parts[0]}/${parts[1]}/media/${assetId}`;
   }
-  return `${parts[0]}/media/${assetId}/`;
+
+  // Legacy contract: {user_id}/media/{asset_id}/original/{filename}
+  if (parts.length >= 5 && parts[1] === "media" && parts[2] === assetId && parts[3] === "original") {
+    return `${parts[0]}/media/${assetId}/`;
+  }
+
+  throw new Error("invalid_asset_storage_path");
 }
 
 function safeDerivativePath(asset: Record<string, unknown>, value: unknown): string {
