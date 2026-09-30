@@ -213,7 +213,7 @@ select ok(
 
 reset role;
 update public.kyc_verifications
-set status='pending',updated_at=now()
+set status='pending'
 where user_id=current_setting('app.phase5_client_id')::uuid;
 set local role authenticated;
 select set_config('request.jwt.claim.sub',current_setting('app.phase5_client_id'),true);
@@ -230,7 +230,7 @@ select ok(
 
 reset role;
 update public.kyc_verifications
-set status='approved',updated_at=now()
+set status='approved'
 where user_id=current_setting('app.phase5_client_id')::uuid;
 
 select set_config('app.internal_write','on',true);
