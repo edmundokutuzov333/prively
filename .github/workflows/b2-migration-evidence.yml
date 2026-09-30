@@ -12,11 +12,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 2 --connect-timeout 15 "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2-migration-real-20260930" | tee /tmp/b2-migration-evidence.json
+          curl --silent --show-error --retry 2 --connect-timeout 15 -w '\nHTTP_STATUS:%{http_code}\n' "https://gaonupelgtpfthouyobh.supabase.co/functions/v1/health?nonce=b2-migration-real-20260930" | tee /tmp/b2-migration-evidence.raw
           python - <<'PY'
           import json
-          with open("/tmp/b2-migration-evidence.json","r",encoding="utf-8") as f:
-              data=json.load(f)
+          raw=open("/tmp/b2-migration-evidence.raw","r",encoding="utf-8").read()
+          print(raw)
+          payload, status = raw.rsplit("\nHTTP_STATUS:",1)
+          assert status.strip() == "200", raw
+          data=json.loads(payload)
           print(json.dumps(data, indent=2))
           assert data["ok"] is True, data
           assert len(data["syntheticInput"]) == 6, data
