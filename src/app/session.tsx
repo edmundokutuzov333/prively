@@ -41,12 +41,18 @@ export function SessionProvider({ children }: PropsWithChildren) {
       return;
     }
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      setLoading(false);
-      if (data.session) void registerSession();
-    });
+    void supabase.auth.getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+        setLoading(false);
+        if (data.session) void registerSession();
+      })
+      .catch(() => {
+        if (!active) return;
+        setSession(null);
+        setLoading(false);
+      });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);

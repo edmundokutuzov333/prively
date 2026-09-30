@@ -180,6 +180,16 @@ export function App() {
         <Route path="/admin/entrar" element={<AuthPage mode="signIn" portal="admin" />} />
         <Route path="/recuperar" element={<RecoveryPage />} />
 
+        {!featureFlags.referral ? <Route path="/estudio/referral" element={<Navigate to="/404" replace />} /> : null}
+        {!featureFlags.agency ? <Route path="/admin/agencia" element={<Navigate to="/404" replace />} /> : null}
+        {!liveRoutesEnabled ? <>
+          <Route path="/lives" element={<Navigate to="/404" replace />} />
+          <Route path="/live-privada" element={<Navigate to="/404" replace />} />
+          <Route path="/chamadas" element={<Navigate to="/404" replace />} />
+          <Route path="/estudio/lives" element={<Navigate to="/404" replace />} />
+          <Route path="/estudio/chamadas" element={<Navigate to="/404" replace />} />
+        </> : null}
+
         {phase2RoutesEnabled ? <Route element={<ExperienceGuard />}>
           <Route element={<WorkspaceLayout variant="client" />}>
             <Route path="/descobrir" element={<ClientDiscoverCorePage />} />

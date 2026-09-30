@@ -195,7 +195,7 @@ test.describe('platform route contract', () => {
 
   test('language selector changes document language', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /language|idioma|langue/i }).click();
+    await page.getByTestId('language-selector').click();
     await page.getByRole('button', { name: /en/i }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
