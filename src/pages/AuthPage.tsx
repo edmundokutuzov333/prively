@@ -9,6 +9,7 @@ import { Ficha } from '@/design/Ficha';
 import { Botao } from '@/design/Botao';
 import { Escudo } from '@/design/Escudo';
 import { requireSupabase } from '@/lib/supabase';
+import { syncServerAuthSession } from '@/app/session';
 import { CREATOR_TERMS_VERSION, creatorTermDeclarations, type CreatorTermDeclarationKey } from '@/content/creatorTerms';
 
 type Mode = 'signIn' | 'signUp';
@@ -122,6 +123,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
           return;
         }
 
+        await syncServerAuthSession(data.session);
         navigate(effectivePortal === 'admin' ? '/admin' : effectivePortal === 'creator' ? '/estudio' : '/descobrir', { replace: true });
         return;
       }
@@ -172,6 +174,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
         return;
       }
 
+      await syncServerAuthSession(data.session);
       setMessage(t(signupRole === 'creator' ? 'auth.creatorRegistered' : 'auth.clientRegistered'));
       navigate(signupRole === 'creator' ? '/verificacao' : '/descobrir', { replace: true });
     } catch (submissionError) {

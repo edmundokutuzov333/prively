@@ -13,12 +13,13 @@ import {
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { Cordao } from '@/design/Cordao';
 import { supportedLanguages } from '@/lib/i18n';
 import { homeCopy } from '@/content/homeCopy';
+import { persistAgeVerification, readAgeVerification } from '@/lib/ageGate';
 
 const pillarIcons = [Sparkle, ChatsCircle, Wallet] as const;
 const linkButtonBase = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[2px] px-4 py-3 text-sm font-semibold no-underline transition-colors';
@@ -28,9 +29,30 @@ const outlineLinkButton = `${linkButtonBase} border border-bone-50/15 bg-transpa
 export function HomePage() {
   const { t, i18n } = useTranslation();
   const reduced = useReducedMotion();
+  const [ageVerified, setAgeVerified] = useState(readAgeVerification);
   const [curtainOpen, setCurtainOpen] = useState(false);
   const language = supportedLanguages.includes(i18n.language as (typeof supportedLanguages)[number]) ? i18n.language : 'pt-MZ';
   const copy = homeCopy[language as keyof typeof homeCopy] ?? homeCopy['pt-MZ'];
+
+  useEffect(() => {
+    if (ageVerified) return;
+    document.title = 'Prively · ' + t('ageGate.title');
+  }, [ageVerified, t]);
+
+  if (!ageVerified) {
+    return <section data-testid="age-gate" role="dialog" aria-modal="true" aria-labelledby="prively-age-gate-title" className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-5 py-10 md:px-8">
+      <Ficha variant="focus" className="w-full max-w-xl p-7 md:p-10">
+        <p className="mb-3 text-sm text-bone-300">{t('ageGate.eyebrow')}</p>
+        <h1 id="prively-age-gate-title" className="font-display text-5xl leading-[.92] text-bone-50">{t('ageGate.title')}</h1>
+        <p className="mt-5 text-sm leading-6 text-bone-300">{t('ageGate.body')}</p>
+        <div className="mt-8 grid gap-3">
+          <button type="button" data-testid="age-gate-confirm" onClick={() => { persistAgeVerification(); setAgeVerified(true); }} className={primaryLinkButton}>{t('ageGate.confirm')}</button>
+          <Link to="/legal/privacidade" className={outlineLinkButton}>{t('ageGate.leave')}</Link>
+        </div>
+        <p className="mt-6 text-xs leading-5 text-bone-500">{t('ageGate.policy')}</p>
+      </Ficha>
+    </section>;
+  }
 
   return (
     <div className="overflow-hidden">

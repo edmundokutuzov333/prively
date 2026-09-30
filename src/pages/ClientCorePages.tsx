@@ -272,20 +272,55 @@ export function ClientFeedCorePage() {
 export function ClientProfileCorePage({ handle }: { handle: string }) {
   const [channel, setChannel] = useState<Channel | null>(null);
   const [posts, setPosts] = useState<{ id: string; caption: string | null; visibility: string; price: number | null; is_story: boolean }[]>([]);
+  const [tier, setTier] = useState<{ id: string; name: string; price_month: number; discounts: Record<string, number> } | null>(null);
+  const [period, setPeriod] = useState(1);
+  const [showSubscribe, setShowSubscribe] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    const sb = requireSupabase();
+    const channelResult = await sb.from('channels').select('id,owner_id,handle,display_name,bio,city,bairro,province').eq('handle', handle).maybeSingle();
+    if (channelResult.error) throw channelResult.error;
+    if (!channelResult.data) { setChannel(null); return; }
+    setChannel(channelResult.data as Channel);
+
+    const [postsResult, tierResult] = await Promise.all([
+      sb.from('posts').select('id,caption,visibility,price,is_story').eq('channel_id', channelResult.data.id).eq('status', 'published').order('created_at', { ascending: false }).limit(50),
+      sb.from('subscription_tiers').select('id,name,price_month,discounts').eq('channel_id', channelResult.data.id).eq('rank', 1).maybeSingle(),
+    ]);
+    if (postsResult.error) throw postsResult.error;
+    if (tierResult.error) throw tierResult.error;
+    setPosts(postsResult.data ?? []);
+    setTier(tierResult.data as typeof tier | null);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      const sb = requireSupabase();
-      const channelResult = await sb.from('channels').select('id,owner_id,handle,display_name,bio,city,bairro,province').eq('handle', handle).maybeSingle();
-      if (channelResult.error) throw channelResult.error;
-      if (!channelResult.data) { setChannel(null); return; }
-      setChannel(channelResult.data as Channel);
-      const postsResult = await sb.from('posts').select('id,caption,visibility,price,is_story').eq('channel_id', channelResult.data.id).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
-      if (postsResult.error) throw postsResult.error;
-      setPosts(postsResult.data ?? []);
-    };
     void load().catch((value: unknown) => setError(value instanceof Error ? value.message : 'Falha ao carregar perfil.'));
   }, [handle]);
+
+  const subscribe = async () => {
+    if (!tier || subscribing) return;
+    setSubscribing(true);
+    setActionError(null);
+    const { error: rpcError } = await requireSupabase().rpc('subscribe_to_tier', {
+      _tier: tier.id,
+      _period_months: period,
+      _idem: 'subscription-ui:' + tier.id + ':' + period + ':' + crypto.randomUUID(),
+    });
+    if (rpcError) {
+      setActionError(rpcError.code ?? rpcError.message);
+      setSubscribing(false);
+      return;
+    }
+    setNotice('Subscrição activada.');
+    setShowSubscribe(false);
+    setSubscribing(false);
+  };
+
+  const subscriptionPrice = tier ? Math.round(tier.price_month * period * (1 - (tier.discounts?.[String(period)] ?? 0))) : 0;
 
   if (error) return <PageFrame title="Perfil" intro="Não foi possível carregar o perfil."><p role="alert" className="text-sm text-danger">{error}</p></PageFrame>;
   if (!channel) return <PageFrame title="Perfil indisponível" intro="O perfil não foi encontrado."><EstadoVazio title="Perfil não encontrado" body="Confirma o identificador do perfil." /></PageFrame>;
@@ -293,8 +328,35 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
   return <PageFrame title={channel.display_name} intro={'@' + channel.handle} detail={channel.bio ?? 'Perfil Prively.'}>
     <Ficha variant="focus">
       <p className="text-sm text-bone-400">{channel.city ?? 'Cidade não definida'}{channel.bairro ? ' · ' + channel.bairro : ''}{channel.province ? ' · ' + channel.province : ''}</p>
-      <div className="mt-4 flex flex-wrap gap-2"><Botao type="button" onClick={() => void requireSupabase().rpc('follow_channel', { _channel: channel.id })}>Seguir grátis</Botao><Link to="/mensagens" className="inline-flex min-h-11 items-center rounded-md border border-bone-50/10 px-4 text-sm text-bone-50 no-underline">Mensagem</Link></div>
+      {notice ? <p role="status" className="mt-3 text-sm text-ok">{notice}</p> : null}
+      {actionError ? <p role="alert" className="mt-3 text-sm text-danger">{actionError}</p> : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Botao type="button" onClick={() => void requireSupabase().rpc('follow_channel', { _channel: channel.id })}>Seguir grátis</Botao>
+        <Link to="/mensagens" className="inline-flex min-h-11 items-center rounded-md border border-bone-50/10 px-4 text-sm text-bone-50 no-underline">Mensagem</Link>
+        {tier ? <Botao type="button" onClick={() => setShowSubscribe(true)}>Assinar · {formatMznFromCents(subscriptionPrice)}</Botao> : null}
+      </div>
     </Ficha>
+
+    {showSubscribe && tier ? <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/85 p-5">
+      <Ficha variant="focus" className="w-full max-w-md p-6">
+        <h2 className="font-display text-3xl text-bone-50">Confirmar subscrição</h2>
+        <p className="mt-2 text-sm text-bone-300">{tier.name} · preço por período</p>
+        <label className="mt-5 block text-sm text-bone-300">Período
+          <select value={period} onChange={(event) => setPeriod(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-md bg-ink-800 px-3 text-bone-50">
+            <option value="1">1 mês</option>
+            <option value="3">3 meses</option>
+            <option value="6">6 meses</option>
+            <option value="12">12 meses</option>
+          </select>
+        </label>
+        <p className="mt-4 font-display text-3xl text-bone-50">{formatMznFromCents(subscriptionPrice)}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Botao variant="outline" type="button" onClick={() => setShowSubscribe(false)}>Cancelar</Botao>
+          <Botao type="button" loading={subscribing} onClick={() => void subscribe()}>Confirmar</Botao>
+        </div>
+      </Ficha>
+    </div> : null}
+
     <div className="mt-6 grid gap-4 md:grid-cols-2">{posts.map((post) => <Ficha key={post.id}><Link to={'/post/' + post.id} className="text-bone-50 no-underline">{post.caption ?? 'Publicação'}</Link><p className="mt-2 text-xs text-bone-500">{post.is_story ? 'Story' : post.visibility}</p>{post.price ? <p className="mt-2 font-display text-xl text-bone-50">{formatMznFromCents(post.price)}</p> : null}</Ficha>)}{!posts.length ? <EstadoVazio title="Sem publicações" body="Esta criadora ainda não publicou conteúdo visível." /> : null}</div>
   </PageFrame>;
 }

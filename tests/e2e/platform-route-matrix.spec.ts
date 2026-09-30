@@ -195,8 +195,13 @@ test.describe('platform route contract', () => {
 
   test('language selector changes document language', async ({ page }) => {
     await page.goto('/');
+    const ageGate = page.getByTestId('age-gate-confirm');
+    if (await ageGate.isVisible()) {
+      await ageGate.click();
+      await page.goto('/');
+    }
     await page.getByTestId('language-selector').click();
-    await page.getByRole('button', { name: /en/i }).click();
+    await page.getByRole('button', { name: /^EN$/i }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });

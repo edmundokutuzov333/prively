@@ -80,9 +80,9 @@ with checks as (
     and has_function_privilege('authenticated','public.create_support_ticket(text,text,text,text)','EXECUTE')
     and has_function_privilege('authenticated','public.hide_creator_from_feed(uuid)','EXECUTE')
   union all select 'participant_consent_upload_contract',
-    not has_function_privilege('anon','public.create_media_upload(uuid,text,text,bigint,text,text)','EXECUTE')
+    to_regprocedure('public.create_media_upload(uuid,text,text,bigint,text,text)') is null
+    and to_regprocedure('public.create_media_upload(uuid,text,text,bigint,text,text,boolean)') is not null
     and not has_function_privilege('anon','public.create_media_upload(uuid,text,text,bigint,text,text,boolean)','EXECUTE')
-    and not has_function_privilege('authenticated','public.create_media_upload(uuid,text,text,bigint,text,text)','EXECUTE')
     and has_function_privilege('authenticated','public.create_media_upload(uuid,text,text,bigint,text,text,boolean)','EXECUTE')
     and exists (
       select 1 from information_schema.columns

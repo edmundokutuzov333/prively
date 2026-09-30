@@ -1,0 +1,53 @@
+name: Prively Integral Local Environment
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  local-env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci --no-audit --no-fund
+      - name: Start local Supabase
+        run: |
+          supabase start
+          supabase status
+          echo "===== ENV ====="
+          supabase status -o env | sed -E 's/(SERVICE_ROLE_KEY|JWT_SECRET|ANON_KEY|PUBLISHABLE_KEY)=.*/\1=[REDACTED]/'
+      - name: Reset database
+        run: supabase db reset
+      - name: Export local Supabase environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "POSTGRES_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+      - name: Verify media upload function catalog
+        shell: bash
+        run: |
+          echo "===== COMMAND: psql catalog check ====="
+          psql "$POSTGRES_URL" -Atc "select p.oid, p.proname, pg_get_function_identity_arguments(p.oid), p.proargnames, p.proargdefaults is not null from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_media_upload' order by p.oid;"
+      - name: Execute local auth and wallet contract
+        run: node scripts/e2e-local-contract.mjs
+      - name: Verify local invariants
+        run: |
+          echo "===== LOCAL DB CHECK ====="
+          supabase db lint --local

@@ -17,6 +17,23 @@ async function hashUserAgent() {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+export async function syncServerAuthSession(session: Session | null) {
+  try {
+    if (session) {
+      await fetch('/api/auth-session', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ accessToken: session.access_token }),
+      });
+    } else {
+      await fetch('/api/auth-session', { method: 'DELETE', credentials: 'include' });
+    }
+  } catch {
+    // Server-side routing protection is defence in depth and must not break the SPA session.
+  }
+}
+
 async function registerSession() {
   if (!supabase) return;
   try {
@@ -46,6 +63,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         if (!active) return;
         setSession(data.session);
         setLoading(false);
+        void syncServerAuthSession(data.session);
         if (data.session) void registerSession();
       })
       .catch(() => {
@@ -56,6 +74,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
+      void syncServerAuthSession(nextSession);
       if (nextSession) window.setTimeout(() => { void registerSession(); }, 0);
     });
     return () => {
