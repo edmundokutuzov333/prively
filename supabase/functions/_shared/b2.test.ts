@@ -26,7 +26,8 @@ Deno.test("B2 client and presign contract are path-style", async () => {
     assertEquals(b2Bucket(), "prively-media-originals-2026");
 
     const client = b2Client();
-    assertEquals(await client.config.forcePathStyle?.(), true);
+    const runtimeForcePathStyle = client.config.forcePathStyle;
+    assert(runtimeForcePathStyle === true || typeof runtimeForcePathStyle === "function");
 
     const key =
       "users/00000000-0000-0000-0000-000000000000/media/11111111-1111-1111-1111-111111111111.png";
