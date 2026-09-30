@@ -14,6 +14,12 @@ double_confirm_changes = true
 major_version = 17
 
 # Authenticated user requests: the gateway validates the JWT.
+[functions.get-video-playback-url]
+verify_jwt = true
+[functions.streamtape-remote-upload]
+verify_jwt = true
+[functions.streamtape-check-status]
+verify_jwt = false
 [functions.ai-response-assistant]
 verify_jwt = true
 [functions.chat-attachment-upload-url]
