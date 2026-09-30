@@ -1,12 +1,32 @@
+import { createHmac, randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.VITE_SUPABASE_URL;
 const anon = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !anon || !service) throw new Error('missing_local_e2e_env');
+const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+if (!url || !anon || !service || !jwtSecret) throw new Error('missing_local_e2e_env');
 
 const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
+
+function signAccessToken(userId: string, aal: 'aal1' | 'aal2', sessionId: string) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const payload = {
+    aud: 'authenticated',
+    exp: Math.floor(Date.now() / 1000) + 120,
+    iat: Math.floor(Date.now() / 1000),
+    iss: url + '/auth/v1',
+    role: 'authenticated',
+    aal,
+    session_id: sessionId,
+    sub: userId,
+  };
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const signingInput = encode(header) + '.' + encode(payload);
+  const signature = createHmac('sha256', jwtSecret).update(signingInput).digest('base64url');
+  return signingInput + '.' + signature;
+}
 
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -18,8 +38,11 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
   const email = `e2e-ui-client-${ts}@example.test`;
   const password = `PrivelyUiE2E!${ts}`;
   const handle = `ui_client_${String(ts).slice(-6)}`;
+  let createdUserId: string | null = null;
+  let adminUserId: string | null = null;
 
-  await page.goto('/idade');
+  try {
+    await page.goto('/idade');
   await page.getByTestId('age-gate-confirm').click();
   console.log('A.2.5 AGE_GATE target=', page.url());
 
@@ -41,6 +64,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
   if (users.error) throw users.error;
   const created = users.data.users.find((u) => u.email === email);
   if (!created) throw new Error('signup_user_not_found');
+  createdUserId = created.id;
   console.log('A.2.6 DB auth.users=', JSON.stringify({
     id: created.id,
     email_confirmed_at: created.email_confirmed_at,
@@ -55,11 +79,13 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
   if (!message?.ID) throw new Error('confirmation_mail_not_found');
   const messageDetail = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`).then((r) => r.json());
   const body = JSON.stringify(messageDetail);
-  const verifyMatch = body.includes('/auth/v1/verify');
-  console.log('A.2.6 MAILPIT confirmation_present=', Boolean(verifyMatch));
+  const verifyUrl = body.match(/https?:\\/\\/[^"\\\\s]+\\/auth\\/v1\\/verify[^"\\\\s]*/)?.[0];
+  if (!verifyUrl) throw new Error('confirmation_verify_link_not_found');
+  console.log('A.2.6 MAILPIT confirmation_present=true');
+  const verifyResponse = await fetch(verifyUrl, { redirect: 'manual' });
+  console.log('A.2.7 AUTH verify HTTP status=', verifyResponse.status);
+  expect([200, 301, 302, 303, 307, 308]).toContain(verifyResponse.status);
 
-  const confirmed = await admin.auth.admin.updateUserById(created.id, { email_confirm: true });
-  if (confirmed.error) throw confirmed.error;
   const afterConfirm = await admin.auth.admin.getUserById(created.id);
   if (afterConfirm.error) throw afterConfirm.error;
   console.log('A.2.8 DB auth.users email_confirmed_at=', afterConfirm.data.user?.email_confirmed_at ?? null);
@@ -106,9 +132,44 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
   console.log('A.3.12 STORAGE prively-kyc=', JSON.stringify(objects.data));
   expect(objects.data?.length ?? 0).toBeGreaterThanOrEqual(2);
 
-  const blocked = await admin.rpc('approve_kyc', { _kyc: kyc.data?.[0]?.id, _approved: true, _reason: 'AAL1 negative control' });
-  console.log('A.3.13 admin approve via service session=', JSON.stringify({ data: blocked.data, error: blocked.error?.message ?? null }));
-  console.log('A.3.13 VERDICT=AAL2_ADMIN_EXTERNAL_SETUP_REQUIRED');
+  const kycId = kyc.data?.[0]?.id;
+  if (!kycId) throw new Error('kyc_id_missing');
 
-  await admin.auth.admin.deleteUser(created.id);
-});
+  const adminEmail = `e2e-admin-${ts}@example.test`;
+  const adminPassword = `PrivelyAdminE2E!${ts}`;
+  const createdAdmin = await admin.auth.admin.createUser({ email: adminEmail, password: adminPassword, email_confirm: true });
+  if (createdAdmin.error || !createdAdmin.data.user) throw createdAdmin.error ?? new Error('admin_user_create_failed');
+  adminUserId = createdAdmin.data.user.id;
+  const adminRole = await admin.from('user_roles').upsert({ user_id: adminUserId, role: 'admin' }, { onConflict: 'user_id,role' });
+  if (adminRole.error) throw adminRole.error;
+
+  const aal1Token = signAccessToken(adminUserId, 'aal1', randomUUID());
+  const aal1Response = await fetch(`${url}/rest/v1/rpc/approve_kyc`, {
+    method: 'POST',
+    headers: { apikey: anon, Authorization: 'Bearer ' + aal1Token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _kyc: kycId, _approved: true, _reason: 'AAL1 negative control' }),
+  });
+  const aal1Body = await aal1Response.text();
+  console.log('A.3.13 AAL1 approve HTTP=', aal1Response.status, 'body=', aal1Body);
+  expect([401, 403]).toContain(aal1Response.status);
+
+  const aal2Token = signAccessToken(adminUserId, 'aal2', randomUUID());
+  const aal2Response = await fetch(`${url}/rest/v1/rpc/approve_kyc`, {
+    method: 'POST',
+    headers: { apikey: anon, Authorization: 'Bearer ' + aal2Token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _kyc: kycId, _approved: true, _reason: 'AAL2 positive control' }),
+  });
+  const aal2Body = await aal2Response.text();
+  console.log('A.3.13 AAL2 approve HTTP=', aal2Response.status, 'body=', aal2Body);
+  expect(aal2Response.status).toBe(204);
+
+  const finalKyc = await admin.from('kyc_verifications').select('status,reviewed_by,reviewed_at').eq('id', kycId).single();
+  if (finalKyc.error) throw finalKyc.error;
+  const finalProfile = await admin.from('profiles').select('status,age_verified_at').eq('id', created.id).single();
+  if (finalProfile.error) throw finalProfile.error;
+  console.log('A.3.14 DB final KYC=', JSON.stringify(finalKyc.data));
+  console.log('A.3.14 DB final profile=', JSON.stringify(finalProfile.data));
+  expect(finalKyc.data.status).toBe('approved');
+  expect(finalProfile.data.age_verified_at).toBeTruthy();
+
+  }
