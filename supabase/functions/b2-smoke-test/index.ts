@@ -1,4 +1,4 @@
-import { DeleteObjectCommand } from "npm:@aws-sdk/client-s3@3.1142.0";
+import { DeleteObjectCommand, PutBucketCorsCommand } from "npm:@aws-sdk/client-s3@3.1142.0";
 import { b2Bucket, b2Client, presignDownload, presignUpload } from "../_shared/b2.ts";
 
 function env(name: string): string {
@@ -20,10 +20,26 @@ function authHeader(request: Request): string {
   return value;
 }
 
+async function configureB2Cors() {
+  await b2Client().send(new PutBucketCorsCommand({
+    Bucket: b2Bucket(),
+    CORSConfiguration: {
+      CORSRules: [{
+        AllowedOrigins: ["https://prively.vercel.app", "http://localhost:4173"],
+        AllowedMethods: ["GET", "HEAD", "PUT"],
+        AllowedHeaders: ["content-type"],
+        ExposeHeaders: ["ETag"],
+        MaxAgeSeconds: 3600,
+      }],
+    },
+  }));
+}
+
 async function runDirectB2Smoke() {
   const key = "__smoke__/b2/" + new Date().toISOString().replace(/[:.]/g, "-") + "-" + crypto.randomUUID() + ".txt";
   const payload = "PRIVELY-B2-SMOKE-" + crypto.randomUUID();
   const bucket = b2Bucket();
+  await configureB2Cors();
   const uploadUrl = await presignUpload(key, "text/plain", 300);
   const uploadResponse = await fetch(uploadUrl, {
     method: "PUT",
@@ -43,6 +59,8 @@ async function runDirectB2Smoke() {
     bucket,
     key,
     uploadStatus: uploadResponse.status,
+    corsPreflightStatus: preflight.status,
+    corsAllowOrigin: preflight.headers.get("access-control-allow-origin"),
     downloadStatus: downloadResponse.status,
     contentMatches,
     cleanup: "deleted",
