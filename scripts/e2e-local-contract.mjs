@@ -84,11 +84,22 @@ const signedIn = await publicClient.auth.signInWithPassword({ email: clientEmail
 if (signedIn.error) throw signedIn.error;
 console.log('AUTH login=', JSON.stringify({ user_id: signedIn.data.user?.id, aal: signedIn.data.session?.user?.aal ?? 'aal1', access_token_present: Boolean(signedIn.data.session?.access_token) }));
 
-const ageVerifiedAt = new Date().toISOString();
-const ageVerification = await admin.from('profiles').update({ age_verified_at: ageVerifiedAt }).eq('id', clientId).select('id,age_verified_at').single();
-if (ageVerification.error) throw ageVerification.error;
-console.log('DB age verification=', JSON.stringify(ageVerification.data));
-if (!ageVerification.data?.age_verified_at) throw new Error('age_verification_not_applied');
+const kycResult = await admin.rpc('apply_kyc_result',{
+  _user_id:clientId,
+  _provider:'local-e2e',
+  _provider_ref:'local-e2e-client-' + ts,
+  _status:'approved',
+  _min_age_verified:true,
+  _reason:null,
+  _document_expires_at:new Date(Date.now()+365*24*60*60*1000).toISOString()
+});
+console.log('RPC apply_kyc_result=', JSON.stringify({data:kycResult.data,error:kycResult.error?.message ?? null}));
+if (kycResult.error) throw kycResult.error;
+
+const verifiedProfile = await admin.from('profiles').select('id,age_verified_at,status').eq('id',clientId).single();
+if (verifiedProfile.error) throw verifiedProfile.error;
+console.log('DB verified profile=', JSON.stringify(verifiedProfile.data));
+if (!verifiedProfile.data?.age_verified_at || verifiedProfile.data.status !== 'active') throw new Error('kyc_approval_did_not_activate_profile');
 
 const wallet = await publicClient.rpc('get_wallet_summary');
 console.log('RPC get_wallet_summary=', JSON.stringify({data:wallet.data,error:wallet.error?.message ?? null}));
