@@ -5,9 +5,11 @@ Updated: 2026-09-30
 ## Open items
 
 ### 1. Node migration verification is not yet certified
-Status: OPEN
+Status: BLOCKED / SCRIPT REMOVED FROM MAIN
 
-The migration script has previously only been exercised through an Edge Runtime harness, and that harness failed before the exact Node migration body completed.
+The migration script was removed from `main` on 2026-09-30 because a normal Node 24 execution against the real Supabase Storage and B2 credentials could not be performed in the available environments. The GitHub Actions verification run failed before migration because the required GitHub Secrets were absent. The local execution environment also has none of the required Supabase/B2 credentials.
+
+This is intentional: the migration code is not kept in production until it has been validated end-to-end in normal Node.
 
 Required closure:
 - execute `scripts/migrate-storage-to-b2.mjs` in a normal Node 24 environment;
@@ -35,14 +37,12 @@ Status: OPEN
 
 The migration script uses `@aws-sdk/client-s3` through a dynamic Node import. The repository package manifest/lockfile still needs the dependency to be declared explicitly and verified with `npm ci`.
 
-A temporary Node verification workflow installs the SDK only for the test run and produces an updated dependency artifact. The artifact must be applied to `package.json` and `package-lock.json` after successful verification.
+The temporary Node verification workflow was removed after the credential gate failed. The repository still needs an explicit dependency declaration if/when the migration script is reinstated.
 
 ### 4. Temporary B2 verification workflow
-Status: TEMPORARY
+Status: REMOVED
 
-`.github/workflows/b2-node-migration-verification.yml` exists only to run the migration in normal Node 24 and capture evidence.
-
-It must be removed from `main` after the test completes.
+The temporary Node verification workflow was removed after the GitHub Actions run confirmed that `SUPABASE_SERVICE_ROLE_KEY`, `B2_KEY_ID` and `B2_APPLICATION_KEY` were unavailable.
 
 ## Completion gate
 
