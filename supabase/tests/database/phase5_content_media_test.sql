@@ -211,9 +211,17 @@ select ok(
   'client can view a fully approved published post'
 );
 
+reset role;
 update public.kyc_verifications
 set status='pending',updated_at=now()
 where user_id=current_setting('app.phase5_client_id')::uuid;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('app.phase5_client_id'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase5_client_id'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
 
 select ok(
   not public.can_view_post(
@@ -223,11 +231,11 @@ select ok(
   'client without approved KYC cannot view Streamtape media'
 );
 
+reset role;
 update public.kyc_verifications
 set status='approved',updated_at=now()
 where user_id=current_setting('app.phase5_client_id')::uuid;
 
-reset role;
 select set_config('app.internal_write','on',true);
 update public.posts
 set visibility='subscribers'
