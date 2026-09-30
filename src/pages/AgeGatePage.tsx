@@ -24,7 +24,7 @@ export function AgeGatePage() {
         </div>
       </div>
       <div className="mt-8 grid gap-3">
-        <Botao onClick={() => { persistAgeVerification(); navigate(role === 'creator' ? '/registo?role=creator' : '/entrar'); }}>
+        <Botao data-testid="age-gate-confirm" onClick={() => { persistAgeVerification(); navigate(role === 'creator' ? '/registo?role=creator' : '/entrar'); }}>
           <WarningCircle size={19} weight="duotone" />
           {t('ageGate.confirm')}
         </Botao>
