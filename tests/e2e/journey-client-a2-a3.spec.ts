@@ -120,7 +120,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.2.10 DB profiles=', JSON.stringify(profile.data));
     expect(profile.data.handle).toBe(handle);
 
-    const legal = await admin.from('legal_acceptances').select('document_type,version').eq('user_id', created.id).order('created_at', { ascending: false });
+    const legal = await admin.from('legal_acceptances').select('document_type,version').eq('user_id', created.id).order('accepted_at', { ascending: false });
     if (legal.error) throw legal.error;
     const consent = await admin.from('consent_records').select('consent_type,version').eq('user_id', created.id).order('created_at', { ascending: false });
     if (consent.error) throw consent.error;
