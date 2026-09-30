@@ -224,10 +224,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  not public.can_view_post(
-    current_setting('app.phase5_post_id')::uuid,
-    current_setting('app.phase5_client_id')::uuid
-  ),
+  not public.can_view_post(current_setting('app.phase5_post_id')::uuid),
   'client without approved KYC cannot view Streamtape media'
 );
 
@@ -250,10 +247,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  not public.can_view_post(
-    current_setting('app.phase5_post_id')::uuid,
-    current_setting('app.phase5_client_id')::uuid
-  ),
+  not public.can_view_post(current_setting('app.phase5_post_id')::uuid),
   'client without subscription cannot view subscriber-only Streamtape media'
 );
 
@@ -281,10 +275,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  public.can_view_post(
-    current_setting('app.phase5_post_id')::uuid,
-    current_setting('app.phase5_client_id')::uuid
-  ),
+  public.can_view_post(current_setting('app.phase5_post_id')::uuid),
   'subscribed client can view subscriber-only Streamtape media'
 );
 
