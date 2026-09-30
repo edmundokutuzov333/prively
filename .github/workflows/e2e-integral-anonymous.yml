@@ -11,6 +11,10 @@ jobs:
   anonymous:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VITE_SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
+      VITE_APP_ENV: development
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
