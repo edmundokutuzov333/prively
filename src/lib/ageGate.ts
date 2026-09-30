@@ -9,5 +9,5 @@ export function readAgeVerification(): boolean {
 
 export function persistAgeVerification(): void {
   window.localStorage.setItem(AGE_GATE_KEY, '1');
-  document.cookie = AGE_GATE_COOKIE;
+  document.cookie = `${AGE_GATE_COOKIE}${window.location.protocol === 'https:' ? '' : ''}`;
 }
