@@ -50,10 +50,8 @@ function serviceClient(): SupabaseClient {
   });
 }
 
-function isB2Original(path: string, assetPath: string, provider: unknown, backend: ReturnType<typeof mediaBackend>): boolean {
-  if (path !== assetPath) return false;
-  if (provider === "backblaze_b2") return true;
-  return backend === "b2";
+function isB2Original(path: string, assetPath: string, provider: unknown): boolean {
+  return path === assetPath && provider === "backblaze_b2";
 }
 
 Deno.serve(async (request) => {
@@ -98,7 +96,7 @@ Deno.serve(async (request) => {
       return jsonResponse({ code: "media_path_missing" }, 500, request, correlationId);
     }
 
-    const backend = mediaBackend();
+    mediaBackend();
     const admin = serviceClient();
     const storage = admin.storage.from("prively-private");
     const watermarkPath = typeof access.watermark_path === "string" ? access.watermark_path : null;
@@ -126,7 +124,6 @@ Deno.serve(async (request) => {
       primaryPath,
       access.path,
       access.storage_provider,
-      backend,
     );
 
     let signedUrl: string;
