@@ -112,7 +112,11 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     await page.waitForURL(/\/descobrir|\/verificacao/);
     console.log('A.2.9 UI post-login=', page.url());
 
-    const logged = await page.evaluate(() => Boolean(localStorage.getItem('sb-gaonupelgtpfthouyobh-auth-token')));
+    const authStorageKeys = await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) => key.includes('auth-token'))
+    );
+    const logged = authStorageKeys.length > 0;
+    console.log('A.2.9 browser auth storage keys=', authStorageKeys);
     console.log('A.2.9 browser auth storage present=', logged);
 
     const profile = await admin.from('profiles').select('id,handle,display_name,status,age_verified_at').eq('id', created.id).single();
