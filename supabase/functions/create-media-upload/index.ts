@@ -100,7 +100,7 @@ Deno.serve(async (request) => {
       uploadHeaders: {
         "Content-Type": body.mimeType,
       },
-      expiresAt: typeof plan.expiresAt === "string" ? plan.expiresAt : new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
       expiresIn: 900,
     }, 200, request);
   } catch (error) {
