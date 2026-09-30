@@ -1,6 +1,6 @@
 # Estado da Plataforma Prively
 
-**Data:** 29 de Setembro de 2026  
+**Data:** 30 de Setembro de 2026  
 **Regra da percentagem:** só é indicada quando existe uma fracção objectivamente verificável. `N/D` significa que dar um número seria inventar precisão.
 
 | Módulo | Estado | Evidência | % verificável |
@@ -9,6 +9,7 @@
 | Age/KYC | PARCIAL | KYC RPCs, RLS, AAL2 indirecto via `has_permission`; sandbox não validado | N/D |
 | Perfis | PARCIAL | Profiles + RLS + admin users RPC | N/D |
 | Conteúdo/Media | PARCIAL | upload, processing, access, worker contracts; E2E não repetido | N/D |
+| B2 Media Originals | REAL·FLAG | Backblaze B2 real para originals; PUT/GET/CORS smoke real; Edge Functions activas | N/D |
 | Cortina/Acesso | REAL·FLAG | `can_view_post`, age gate e media processing gates presentes | N/D |
 | Carteira/Top-up | PARCIAL | reconcile=0, zero saldos negativos, webhook/idempotência no código | N/D |
 | Assinaturas/PPV | PARCIAL | contratos financeiros e testes Phase 6 presentes | N/D |
