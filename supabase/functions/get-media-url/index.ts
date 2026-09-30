@@ -1,10 +1,11 @@
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
-import { corsFor } from "../_shared/cors.ts";
+import { corsFor, optionsResponse } from "../_shared/cors.ts";
+import { presignDownload } from "../_shared/b2.ts";
 
-function jsonResponse(body: unknown, status = 200): Response {
+function jsonResponse(body: unknown, status = 200, request?: Request): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsFor(), "Content-Type": "application/json" },
+    headers: { ...corsFor(request), "Content-Type": "application/json" },
   });
 }
 
@@ -35,20 +36,21 @@ function serviceClient(): SupabaseClient {
 }
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return jsonResponse({ ok: true });
-  if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405);
+  if (request.method === "OPTIONS") return optionsResponse(request);
+  if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405, request);
 
   try {
     const { client } = await requireUser(request);
     const payload = await request.json() as { assetId?: unknown; variant?: unknown };
 
     if (typeof payload.assetId !== "string" || !/^[0-9a-f-]{36}$/i.test(payload.assetId)) {
-      return jsonResponse({ code: "invalid_asset_id" }, 400);
+      return jsonResponse({ code: "invalid_asset_id" }, 400, request);
     }
 
+    // Permission is evaluated through the caller's Supabase JWT/RLS context.
     const { data, error } = await client.rpc("get_media_access", { _asset: payload.assetId });
     if (error || !data || typeof data !== "object") {
-      return jsonResponse({ code: error?.code ?? "media_forbidden" }, 403);
+      return jsonResponse({ code: error?.code ?? "media_forbidden" }, 403, request);
     }
 
     const access = data as {
@@ -67,7 +69,7 @@ Deno.serve(async (request) => {
     };
 
     if (typeof access.path !== "string") {
-      return jsonResponse({ code: "media_path_missing" }, 500);
+      return jsonResponse({ code: "media_path_missing" }, 500, request);
     }
 
     const admin = serviceClient();
@@ -76,7 +78,7 @@ Deno.serve(async (request) => {
     const variant = payload.variant === "face_blur" || payload.variant === "original" ? payload.variant : "default";
     const faceBlurPath = typeof access.face_blur_path === "string" ? access.face_blur_path : null;
     const useFaceBlur = variant === "face_blur";
-    if (useFaceBlur && !faceBlurPath) return jsonResponse({ code: "face_blur_unavailable" }, 404);
+    if (useFaceBlur && !faceBlurPath) return jsonResponse({ code: "face_blur_unavailable" }, 404, request);
     const useWatermark = !useFaceBlur && access.watermark_enabled === true && Boolean(watermarkPath);
 
     const primaryPath = useFaceBlur
@@ -87,13 +89,18 @@ Deno.serve(async (request) => {
           ? access.hls_path
           : access.path;
 
-    const signed = await storage.createSignedUrl(primaryPath, 60);
-    if (signed.error || !signed.data?.signedUrl) {
-      return jsonResponse({ code: "signed_url_failed" }, 500);
-    }
+    const isOriginalB2 = primaryPath === access.path;
+    const signedUrl = isOriginalB2
+      ? await presignDownload(primaryPath, 60)
+      : await (async () => {
+          const signed = await storage.createSignedUrl(primaryPath, 60);
+          if (signed.error || !signed.data?.signedUrl) throw new Error("signed_url_failed");
+          return signed.data.signedUrl;
+        })();
 
     let thumbnailUrl: string | null = null;
     let captionUrl: string | null = null;
+
     if (typeof access.caption_path === "string") {
       const caption = await storage.createSignedUrl(access.caption_path, 60);
       if (!caption.error && caption.data?.signedUrl) captionUrl = caption.data.signedUrl;
@@ -107,27 +114,27 @@ Deno.serve(async (request) => {
     return jsonResponse({
       assetId: access.asset_id ?? payload.assetId,
       kind: access.kind ?? null,
-      url: signed.data.signedUrl,
+      url: signedUrl,
       thumbnailUrl,
       captionUrl,
-      source: useFaceBlur
-        ? "face_blur"
-        : useWatermark
-          ? "watermark"
-          : primaryPath === access.path
-            ? "original"
+      source: isOriginalB2
+        ? "backblaze_b2"
+        : useFaceBlur
+          ? "face_blur"
+          : useWatermark
+            ? "watermark"
             : "hls",
       variant,
-      expiresIn: typeof access.expires_in === "number" ? access.expires_in : 60,
+      expiresIn: 60,
       processingStatus: typeof access.processing_status === "string" ? access.processing_status : null,
       watermark: {
         enabled: access.watermark_enabled === true,
         applied: useWatermark,
         text: typeof access.watermark_text === "string" ? access.watermark_text : null,
       },
-    });
+    }, 200, request);
   } catch (error) {
     const code = error instanceof Error ? error.message : "media_url_error";
-    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400);
+    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400, request);
   }
 });
