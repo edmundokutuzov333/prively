@@ -2,8 +2,8 @@ create or replace function public.refresh_media_processing_status(_asset uuid)
 returns text
 language plpgsql
 security definer
-set search_path=public
-as $$
+set search_path=public,pg_temp
+as $
 declare
   a public.media_assets;
   has_failed boolean:=false;
