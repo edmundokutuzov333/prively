@@ -94,14 +94,25 @@ Deno.serve(async (request) => {
     }
 
     const admin = serviceClient();
+    const { data: assetRecord, error: assetReadError } = await admin
+      .from("media_assets")
+      .select("metadata")
+      .eq("id", plan.assetId)
+      .single();
+
+    if (assetReadError) return jsonResponse({ code: "media_provider_read_failed" }, 500, request);
+
+    const nextMetadata = {
+      ...(assetRecord?.metadata && typeof assetRecord.metadata === "object" ? assetRecord.metadata : {}),
+      storage_provider: "backblaze_b2",
+      bucket: b2Bucket(),
+    };
+
     const { error: providerError } = await admin
       .from("media_assets")
       .update({
         storage_provider: "backblaze_b2",
-        metadata: {
-          storage_provider: "backblaze_b2",
-          bucket: b2Bucket(),
-        },
+        metadata: nextMetadata,
       })
       .eq("id", plan.assetId);
 
