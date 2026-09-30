@@ -26,13 +26,13 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
   await page.goto('/registo');
   await expect(page.getByRole('heading')).toBeVisible();
   await page.locator('input[autocomplete="username"]').fill(handle);
-  await page.getByLabel(/email/i).fill(email);
+  await page.locator('input[type="email"]').fill(email);
   const signupCheckboxes = page.locator('input[type="checkbox"]');
   await expect(signupCheckboxes).toHaveCount(3);
   await signupCheckboxes.nth(0).check();
   await signupCheckboxes.nth(1).check();
   await signupCheckboxes.nth(2).check();
-  await page.getByLabel(/palavra-passe|password/i).fill(password);
+  await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: /registar|criar conta/i }).click();
   await expect(page.getByRole('status')).toContainText(/confirma/i);
   console.log('A.2.6 UI signup status=confirmation_required');
