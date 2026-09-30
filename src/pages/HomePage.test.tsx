@@ -14,7 +14,6 @@ describe('HomePage', () => {
 
   it('presents both real entry paths without showing explicit content', () => {
     persistAgeVerification();
-    persistAgeVerification();
     render(<MemoryRouter><HomePage /></MemoryRouter>);
 
     expect(screen.getByRole('heading', { name: 'Menos público, muito mais Privê.' })).toBeVisible();
@@ -24,6 +23,7 @@ describe('HomePage', () => {
   });
 
   it('keeps the curtain interaction local to the landing page', () => {
+    persistAgeVerification();
     render(<MemoryRouter><HomePage /></MemoryRouter>);
 
     const curtain = screen.getByRole('button', { name: 'Abrir a cortina' });
