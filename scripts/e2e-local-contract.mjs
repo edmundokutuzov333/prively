@@ -83,6 +83,12 @@ const signedIn = await publicClient.auth.signInWithPassword({ email: clientEmail
 if (signedIn.error) throw signedIn.error;
 console.log('AUTH login=', JSON.stringify({ user_id: signedIn.data.user?.id, aal: signedIn.data.session?.user?.aal ?? 'aal1', access_token_present: Boolean(signedIn.data.session?.access_token) }));
 
+const ageVerifiedAt = new Date().toISOString();
+const ageVerification = await admin.from('profiles').update({ age_verified_at: ageVerifiedAt }).eq('id', clientId).select('id,age_verified_at').single();
+if (ageVerification.error) throw ageVerification.error;
+console.log('DB age verification=', JSON.stringify(ageVerification.data));
+if (!ageVerification.data?.age_verified_at) throw new Error('age_verification_not_applied');
+
 const wallet = await publicClient.rpc('get_wallet_summary');
 console.log('RPC get_wallet_summary=', JSON.stringify({data:wallet.data,error:wallet.error?.message ?? null}));
 
