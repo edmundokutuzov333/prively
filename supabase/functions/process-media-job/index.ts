@@ -108,22 +108,6 @@ async function auditProcessingRead(
   if (error) throw new Error("processing_access_audit_failed");
 }
 
-async function sha256Stream(body: ReadableStream<Uint8Array>): Promise<string> {
-  const hasher = await createSHA256();
-  const reader = body.getReader();
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      hasher.update(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  return hasher.digest();
-}
 
 async function executeProviderJob(
   admin: ReturnType<typeof serviceClient>,
