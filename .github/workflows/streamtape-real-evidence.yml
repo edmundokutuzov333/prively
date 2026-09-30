@@ -36,13 +36,14 @@ jobs:
       - name: Install project dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Install static ffmpeg
+        run: npm install --no-save --package-lock=false ffmpeg-static
+
       - name: Validate runner tools
         shell: bash
         run: |
-          command -v ffmpeg
           command -v jq
           command -v node
-          ffmpeg -version | head -n 1
           jq --version
           node --version
 
