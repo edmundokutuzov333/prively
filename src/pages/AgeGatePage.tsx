@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { Botao } from '@/design/Botao';
+import { persistAgeVerification } from '@/lib/ageGate';
 
 export function AgeGatePage() {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ export function AgeGatePage() {
         </div>
       </div>
       <div className="mt-8 grid gap-3">
-        <Botao onClick={() => navigate(role === 'creator' ? '/registo?role=creator' : '/entrar')}>
+        <Botao onClick={() => { persistAgeVerification(); navigate(role === 'creator' ? '/registo?role=creator' : '/entrar'); }}>
           <WarningCircle size={19} weight="duotone" />
           {t('ageGate.confirm')}
         </Botao>
