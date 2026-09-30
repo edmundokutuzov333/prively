@@ -5,7 +5,11 @@ export type MediaUploadPlan = {
   uploadId: string;
   assetId: string;
   path: string;
-  bucket: 'prively-private';
+  key: string;
+  bucket: string;
+  provider: 'supabase' | 'backblaze_b2';
+  uploadUrl?: string;
+  uploadHeaders?: Record<string, string>;
   expiresAt: string;
 };
 
@@ -50,34 +54,113 @@ export async function prepareMediaUpload(
   participantsConsent: boolean,
 ): Promise<MediaUploadPlan> {
   const sb = requireSupabase();
-  const { data, error } = await sb.rpc('create_media_upload', {
-    _post: postId,
-    _kind: kindForMime(file.type),
-    _mime_type: file.type,
-    _file_size: file.size,
-    _sha256: null,
-    _original_filename: file.name,
-    _participants_consent: participantsConsent,
+  const { data, error } = await sb.functions.invoke('create-media-upload', {
+    body: {
+      postId,
+      kind: kindForMime(file.type),
+      mimeType: file.type,
+      fileSize: file.size,
+      originalFilename: file.name,
+      participantsConsent,
+    },
   });
 
   if (error || !data) {
     throw new Error(error?.message ?? 'media_upload_prepare_failed');
   }
 
+  if (
+    typeof data.uploadId !== 'string' ||
+    typeof data.assetId !== 'string' ||
+    typeof data.path !== 'string' ||
+    typeof data.uploadUrl !== 'string' ||
+    typeof data.expiresAt !== 'string'
+  ) {
+    throw new Error('media_upload_plan_invalid');
+  }
+
+  const provider = data.provider === 'backblaze_b2' || data.provider === 'supabase'
+    ? data.provider
+    : 'backblaze_b2';
+
+  const uploadHeaders = typeof data.uploadHeaders === 'object' && data.uploadHeaders
+    ? Object.fromEntries(Object.entries(data.uploadHeaders).map(([key, value]) => [key, String(value)]))
+    : undefined;
+
+  if (provider === 'backblaze_b2' && uploadHeaders?.['Content-Type'] !== file.type) {
+    throw new Error('media_upload_content_type_mismatch');
+  }
+
   return {
-    uploadId: String(data.uploadId),
-    assetId: String(data.assetId),
-    path: String(data.path),
-    bucket: 'prively-private',
-    expiresAt: String(data.expiresAt),
+    uploadId: data.uploadId,
+    assetId: data.assetId,
+    path: data.path,
+    key: String(data.key ?? data.path),
+    bucket: String(data.bucket ?? (provider === 'backblaze_b2' ? 'prively-media-originals-2026' : 'prively-private')),
+    provider,
+    uploadUrl: data.uploadUrl,
+    uploadHeaders: provider === 'backblaze_b2' ? uploadHeaders : undefined,
+    expiresAt: data.expiresAt,
   };
 }
 
-export async function uploadMediaResumable(
+async function uploadDirectToB2(
   file: File,
   plan: MediaUploadPlan,
   onProgress?: (progress: MediaUploadProgress) => void,
-): Promise<MediaFinalizeResult> {
+): Promise<void> {
+  if (!plan.uploadUrl || !plan.uploadHeaders) {
+    throw new Error('media_upload_plan_invalid');
+  }
+
+  const signedContentType = plan.uploadHeaders['Content-Type'];
+  if (signedContentType !== file.type) {
+    throw new Error('media_upload_content_type_mismatch');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', plan.uploadUrl!);
+    xhr.timeout = 5 * 60 * 1000;
+
+    for (const [key, value] of Object.entries(plan.uploadHeaders!)) {
+      xhr.setRequestHeader(key, value);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      onProgress?.({
+        uploadedBytes: event.loaded,
+        totalBytes: event.total,
+        percentage: event.total ? (event.loaded / event.total) * 100 : 0,
+      });
+    };
+
+    xhr.onerror = () => reject(new Error('b2_upload_network_error'));
+    xhr.ontimeout = () => reject(new Error('b2_upload_timeout'));
+    xhr.onabort = () => reject(new Error('b2_upload_aborted'));
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.({
+          uploadedBytes: file.size,
+          totalBytes: file.size,
+          percentage: 100,
+        });
+        resolve();
+        return;
+      }
+      reject(new Error(`b2_upload_failed_${xhr.status}`));
+    };
+
+    xhr.send(file);
+  });
+}
+
+async function uploadToSupabaseResumable(
+  file: File,
+  plan: MediaUploadPlan,
+  onProgress?: (progress: MediaUploadProgress) => void,
+): Promise<void> {
   const sb = requireSupabase();
   const { data: signedData, error: signedError } = await sb.storage
     .from('prively-private')
@@ -129,8 +212,20 @@ export async function uploadMediaResumable(
       })
       .catch(reject);
   });
+}
 
-  const { data: finalizeData, error: finalizeError } = await sb.rpc('finalize_media_upload', {
+export async function uploadMediaResumable(
+  file: File,
+  plan: MediaUploadPlan,
+  onProgress?: (progress: MediaUploadProgress) => void,
+): Promise<MediaFinalizeResult> {
+  if (plan.provider === 'backblaze_b2') {
+    await uploadDirectToB2(file, plan, onProgress);
+  } else {
+    await uploadToSupabaseResumable(file, plan, onProgress);
+  }
+
+  const { data: finalizeData, error: finalizeError } = await requireSupabase().rpc('finalize_media_upload', {
     _upload: plan.uploadId,
     _reported_sha256: null,
     _file_size: file.size,

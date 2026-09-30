@@ -62,7 +62,7 @@ jobs:
             echo "No Deno tests found"
             exit 1
           fi
-          deno test --allow-env --allow-read "${tests[@]}"
+          deno test --config supabase/functions/deno.json --allow-env --allow-read --allow-net "${tests[@]}"
 
   database:
     runs-on: ubuntu-latest
