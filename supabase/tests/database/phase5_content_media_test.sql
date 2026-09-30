@@ -118,7 +118,7 @@ begin
   begin
     ignored:=(
       public.create_media_upload(
-        v_post_id,'video','video/mp4',104857601,repeat('b',64),'too-large.mp4'
+        v_post_id,'video','video/mp4',104857601,repeat('b',64),'too-large.mp4',true
       )
     )::text;
     raise exception 'oversized video was accepted';

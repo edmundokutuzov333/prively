@@ -124,7 +124,7 @@ begin
       and (select relrowsecurity from pg_class where oid='public.notifications'::regclass)
       and (select relrowsecurity from pg_class where oid='public.chat_rate_limits'::regclass)
     union all select 3, exists(select 1 from pg_policies where schemaname='public' and tablename='messages' and policyname='messages_member' and qual ilike '%conversation_members%')
-    union all select 4, not exists(select 1 from pg_policies where schemaname='public' and tablename='messages' and (coalesce(qual,'') ilike '%messages.conversation_id = messages.conversation_id%' or coalesce(qual,'') ilike '%m.conversation_id = m.conversation_id%'))
+    union all select 4, not exists(select 1 from pg_policies where schemaname='public' and tablename='messages' and policyname='messages_member' and (coalesce(qual,'') ilike '%messages.conversation_id = messages.conversation_id%' or coalesce(qual,'') ilike '%m.conversation_id = m.conversation_id%'))
     union all select 5, not exists(select 1 from pg_policies where schemaname='public' and tablename in ('messages','conversations','conversation_members','notifications') and policyname in ('admin_read_all','admin_manage_all'))
     union all select 6, not has_table_privilege('anon','public.chat_rate_limits','SELECT') and not has_table_privilege('authenticated','public.chat_rate_limits','SELECT') and not has_table_privilege('authenticated','public.chat_rate_limits','UPDATE')
     union all select 7, has_function_privilege('authenticated','public.can_view_post(uuid)','EXECUTE') and not has_function_privilege('authenticated','public.can_view_post(uuid,uuid)','EXECUTE')
