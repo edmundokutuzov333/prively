@@ -40,8 +40,8 @@ test.describe('integral journey A.1 anonymous', () => {
     expect(page.url()).toMatch(/\/entrar\?next=.*feed|\/verificacao|\/estado\/acesso-negado/);
   });
 
-  test('A.1.3 confirm age creates only age verification state', async ({ page }) => {
-    await page.goto('/');
+  test('A.1.3 confirm age persists verification before authentication', async ({ page }) => {
+    await page.goto('/idade?role=client');
     await page.waitForLoadState('networkidle');
     const before = await page.evaluate(() => ({
       localStorage: { ...localStorage },
@@ -64,7 +64,7 @@ test.describe('integral journey A.1 anonymous', () => {
     }));
     console.log('A1.3 AFTER=', JSON.stringify(after));
     console.log('A1.3 SESSION_PRESENT=', Boolean(after.localStorage['supabase.auth.token'] || after.cookies.match(/sb-/i)));
-    expect(after.url).toMatch(/\/|\/idade/);
+    expect(after.url).toMatch(/\/entrar/);
     expect(after.localStorage['prively.age_verified']).toBe('1');
     expect(after.cookies).toMatch(/prively_age_verified=1/);
   });
