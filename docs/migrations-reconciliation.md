@@ -278,8 +278,8 @@ OBSOLETA: 1
 NÃO VERIFICADO: 0
 TOTAL LOCAL-ONLY INICIAL: 99
 TOTAL REMOTE-ONLY INICIAL: 43
-LOCAL ACTIVO PÓS-RESTAURAÇÃO: 179
-REMOTE PÓS-REPARAÇÃO: 179
+LOCAL ACTIVO FINAL: 183
+REMOTE FINAL: 183
 ```
 
 ## 7. Fecho da P1
@@ -301,9 +301,23 @@ Em 30 de Setembro de 2026, o histórico de migrações foi reconciliado por time
 
 Estado verificável:
 ```text
-migrations locais activas: 179
-migrations remotas: 179
+migrations locais activas: 183
+migrations remotas: 183
 
 remotas sem timestamp local: 0
 locais sem timestamp remoto: 0
 ```
+
+
+## 9. Fecho P1/P2
+
+P1 e P2 foram validadas no CI completo do commit `99e1ac27fcfccb75d3b8c416937da6fb9dc37b10`.
+
+- migrations locais/remotas: 183/183, sem drift por timestamp
+- Database: success, incluindo reset de zero, lint, canonical pgTAP e suites SQL nativas
+- Edge Functions contract tests: success
+- Quality: success
+- E2E/accessibility: 139 passed, 0 failed, 1 skipped; o único skip é o teste opcional de headers condicionado por `PLAYWRIGHT_EXPECT_HEADERS`
+- upload legado sem consentimento: execução revogada; contrato seguro de 7 argumentos mantido
+- visibilidade de posts: clientes não recebem posts com media pendente; assets não eliminados têm de estar `ready` antes da leitura
+- canonical pgTAP: executado com os 9 ficheiros TAP explícitos; suites nativas continuam separadas para evitar que SQL procedural seja interpretado como TAP pelo `supabase test db`
