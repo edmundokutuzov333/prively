@@ -199,7 +199,6 @@ export function ClientFeedCorePage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<FeedPost[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [soundOn, setSoundOn] = useState(() => window.localStorage.getItem('prively.feed.sound') === '1');
   useEffect(() => {
     const load = async () => {
       if (!user) return;
