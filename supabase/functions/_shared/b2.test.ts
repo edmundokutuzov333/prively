@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
-import { b2Bucket, b2Client, b2ClientConfig, presignUpload } from "./b2.ts";
+import { B2AuthError, B2UnavailableError, b2Bucket, b2Client, b2ClientConfig, mapB2Error, presignUpload } from "./b2.ts";
 import { PutObjectCommand } from "npm:@aws-sdk/client-s3@3.1142.0";
 
 Deno.test("B2 client and presign contract are path-style", async () => {
@@ -58,4 +58,30 @@ Deno.test("B2 client and presign contract are path-style", async () => {
     restore("B2_KEY_ID", previous.keyId);
     restore("B2_APPLICATION_KEY", previous.appKey);
   }
+});
+
+Deno.test("B2 authentication errors are not treated as transient", () => {
+  const forbidden = mapB2Error({
+    name: "AccessDenied",
+    $metadata: { httpStatusCode: 403 },
+  });
+  assert(forbidden instanceof B2AuthError);
+  assertEquals(forbidden.code, "b2_auth_error");
+
+  const invalidKey = mapB2Error({
+    name: "InvalidAccessKeyId",
+    message: "The AWS Access Key Id you provided does not exist in our records.",
+    $metadata: { httpStatusCode: 403 },
+  });
+  assert(invalidKey instanceof B2AuthError);
+  assertEquals(invalidKey.code, "b2_auth_error");
+});
+
+Deno.test("B2 transport failures are retryable", () => {
+  const timeout = mapB2Error({
+    name: "TimeoutError",
+    message: "socket timed out",
+  });
+  assert(timeout instanceof B2UnavailableError);
+  assertEquals(timeout.code, "b2_unavailable");
 });
