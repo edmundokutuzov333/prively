@@ -8,20 +8,6 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['scripts/**/*.mjs'],
-    languageOptions: {
-      globals: {
-        Buffer: 'readonly',
-        console: 'readonly',
-        fetch: 'readonly',
-        process: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        URL: 'readonly'
-      }
-    }
-  },
-  {
     files: ['**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,
