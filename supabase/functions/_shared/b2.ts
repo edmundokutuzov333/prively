@@ -25,6 +25,14 @@ export class B2UnavailableError extends Error {
   }
 }
 
+export class B2AuthError extends Error {
+  readonly code = "b2_auth_error";
+  constructor(message = "Backblaze B2 authentication failed.") {
+    super(message);
+    this.name = "B2AuthError";
+  }
+}
+
 export class B2ConfigurationError extends Error {
   readonly code = "b2_configuration_error";
   constructor(message: string) {
@@ -77,16 +85,26 @@ export function b2Client(): S3Client {
   return new S3Client(b2ClientConfig());
 }
 
-function mapB2Error(error: unknown): Error {
-  const status = typeof error === "object" && error !== null && "$metadata" in error
-    ? Number((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode ?? 0)
-    : 0;
+export function mapB2Error(error: unknown): Error {
+  const metadata = typeof error === "object" && error !== null && "$metadata" in error
+    ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+    : undefined;
+  const status = Number(metadata?.httpStatusCode ?? 0);
+  const record = typeof error === "object" && error !== null
+    ? error as Record<string, unknown>
+    : {};
+  const code = String(record.code ?? record.Code ?? record.name ?? "");
+  const message = error instanceof Error ? error.message : String(record.message ?? error ?? "");
 
-  if (status === 404 || (error instanceof Error && /not.?found|nosuchkey/i.test(error.message))) {
+  if (status === 404 || /NoSuchKey|NoSuchObject|NotFound|not.?found/i.test(`${code} ${message}`)) {
     return new B2ObjectNotFoundError();
   }
 
-  if (status >= 500 || status === 429 || status === 0) {
+  if (status === 401 || status === 403 || /AccessDenied|InvalidAccessKeyId|SignatureDoesNotMatch|InvalidToken|ExpiredToken|AuthorizationHeaderMalformed|Credential/i.test(`${code} ${message}`)) {
+    return new B2AuthError();
+  }
+
+  if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504 || /TimeoutError|RequestTimeout|NetworkingError|ECONNRESET|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ETIMEDOUT/i.test(`${code} ${message}`)) {
     return new B2UnavailableError();
   }
 
