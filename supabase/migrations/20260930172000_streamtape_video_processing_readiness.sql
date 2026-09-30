@@ -33,30 +33,6 @@ begin
   end if;
 
   if a.kind='video' then
-    select exists(
-      select 1 from public.media_processing_jobs j
-      where j.asset_id=a.id
-        and j.job_type in ('integrity','moderation')
-        and j.status in ('failed','blocked')
-    ),
-    exists(
-      select 1 from public.media_processing_jobs j
-      where j.asset_id=a.id
-        and j.job_type in ('integrity','moderation')
-        and j.status in ('queued','processing')
-    )
-    into has_failed,has_active;
-
-    if has_failed then
-      update public.media_assets set processing_status='failed',ready_at=null where id=a.id;
-      return 'failed';
-    end if;
-
-    if has_active then
-      update public.media_assets set processing_status='processing',ready_at=null where id=a.id;
-      return 'processing';
-    end if;
-
     update public.media_assets
     set processing_status='ready',ready_at=coalesce(ready_at,now())
     where id=a.id;
