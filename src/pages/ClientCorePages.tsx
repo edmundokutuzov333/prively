@@ -200,8 +200,6 @@ export function ClientFeedCorePage() {
   const [rows, setRows] = useState<FeedPost[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(() => window.localStorage.getItem('prively.feed.sound') === '1');
-  const [economyMode, setEconomyMode] = useState(() => window.localStorage.getItem('prively.economy') === '1');
-
   useEffect(() => {
     const load = async () => {
       if (!user) return;
@@ -219,16 +217,32 @@ export function ClientFeedCorePage() {
       const hydrated = await Promise.all(posts.map(async (post) => {
         const asset = first.get(String(post.id));
         if (!asset) return { ...post, media: null } as FeedPost;
-        const direct = await sb.functions.invoke('get-media-url', { body: { assetId: asset.id } });
-        if (!direct.error && direct.data?.url) {
-          return { ...post, media: {
-            assetId: String(asset.id),
-            kind: asset.kind,
-            locked: false,
-            url: String(direct.data.url),
-            thumbnailUrl: direct.data.thumbnailUrl ?? null,
-            watermark: direct.data.watermark ?? { enabled: Boolean(asset.watermark_enabled), text: asset.watermark_text },
-          } } as FeedPost;
+        if (asset.kind === 'video') {
+          const playback = await sb.functions.invoke('get-video-playback-url', {
+            body: { asset_id: asset.id },
+          });
+          if (!playback.error && playback.data?.embed_url) {
+            return { ...post, media: {
+              assetId: String(asset.id),
+              kind: 'video',
+              locked: false,
+              url: String(playback.data.embed_url),
+              thumbnailUrl: null,
+              watermark: { enabled: Boolean(asset.watermark_enabled), text: asset.watermark_text },
+            } } as FeedPost;
+          }
+        } else {
+          const direct = await sb.functions.invoke('get-media-url', { body: { assetId: asset.id } });
+          if (!direct.error && direct.data?.url) {
+            return { ...post, media: {
+              assetId: String(asset.id),
+              kind: asset.kind,
+              locked: false,
+              url: String(direct.data.url),
+              thumbnailUrl: direct.data.thumbnailUrl ?? null,
+              watermark: direct.data.watermark ?? { enabled: Boolean(asset.watermark_enabled), text: asset.watermark_text },
+            } } as FeedPost;
+          }
         }
         const preview = await sb.functions.invoke('get-media-preview', { body: { assetId: asset.id } });
         return { ...post, media: preview.error ? null : {
@@ -247,17 +261,13 @@ export function ClientFeedCorePage() {
 
   return <PageFrame icon={FilmStrip} title="Feed" intro="Vídeos curtos e publicações públicas. O som começa desligado e o conteúdo pago permanece protegido.">
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-      <label className="flex items-center gap-2 text-sm text-bone-300"><input type="checkbox" checked={soundOn} onChange={(event) => { const next = event.target.checked; setSoundOn(next); window.localStorage.setItem('prively.feed.sound', next ? '1' : '0'); }} /> Som</label>
-      <label className="flex items-center gap-2 text-sm text-bone-300"><input type="checkbox" checked={economyMode} onChange={(event) => { const next = event.target.checked; setEconomyMode(next); window.localStorage.setItem('prively.economy', next ? '1' : '0'); }} /> Modo económico</label>
-    </div>
     {!rows.length && !error ? <EstadoVazio title="O feed ainda está vazio" body="Publicações públicas aparecem aqui à medida que forem publicadas." /> : null}
     <div className="mx-auto max-w-xl snap-y snap-mandatory space-y-4 overflow-y-auto pb-4 md:max-h-[calc(100vh-10rem)]">
       {rows.map((post) => <article key={post.id} className="snap-start overflow-hidden rounded-xl border border-bone-50/8 bg-ink-900">
         <Link to={'/post/' + post.id} className="block no-underline">
           <div className="relative aspect-[9/16] bg-black">
             {post.media?.kind === 'image' && post.media.url ? <img src={post.media.url} alt={post.caption ?? 'Publicação'} className="h-full w-full object-cover" loading="lazy" /> : null}
-            {post.media?.kind === 'video' && post.media.url ? <video src={economyMode ? undefined : post.media.url} poster={post.media.thumbnailUrl ?? undefined} muted={!soundOn} playsInline preload={economyMode ? 'none' : 'metadata'} className="h-full w-full object-cover" /> : null}
+            {post.media?.kind === 'video' && post.media.url ? <iframe src={post.media.url} title={post.caption ?? 'Vídeo da publicação'} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="h-full w-full border-0" /> : null}
             {post.media?.kind === 'audio' ? <div className="flex h-full items-center justify-center px-8 text-center text-sm text-bone-300">Áudio disponível na publicação</div> : null}
             {post.media?.locked ? <Cortina priceLabel={post.price ? formatMznFromCents(post.price) : 'Conteúdo bloqueado'} thumbnailUrl={post.media.thumbnailUrl} /> : null}
             {post.media?.watermark?.enabled && post.media.watermark.text ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20"><span className="rotate-[-18deg] select-none text-xl font-semibold tracking-[0.2em] text-white">{post.media.watermark.text}</span></div> : null}
