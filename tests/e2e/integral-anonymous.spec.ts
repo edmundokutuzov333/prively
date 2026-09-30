@@ -51,7 +51,7 @@ test.describe('integral journey A.1 anonymous', () => {
     console.log('A1.3 BEFORE=', JSON.stringify(before));
     const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
     console.log('A1.3 BODY=', body.slice(0, 1200));
-    const confirm = page.getByRole('button').filter({ hasText: /confirm/i }).first();
+    const confirm = page.getByTestId('age-gate-confirm');
     if (await confirm.count()) {
       await confirm.click();
       await page.waitForLoadState('networkidle').catch(() => {});
