@@ -20,6 +20,8 @@ verify_jwt = true
 verify_jwt = true
 [functions.chat-attachment-url]
 verify_jwt = true
+[functions.create-media-upload]
+verify_jwt = true
 [functions.create-order]
 verify_jwt = true
 [functions.financial-export]
