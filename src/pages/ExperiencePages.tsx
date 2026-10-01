@@ -12,6 +12,7 @@ import { PageFrame } from '@/pages/PageFrame';
 import { SocialPostActions } from '@/features/social/SocialPostActions';
 import { requireSupabase } from '@/lib/supabase';
 import { formatMznFromCents } from '@/lib/money';
+import { platformErrorKey } from '@/lib/errors';
 import { ReportButton } from '@/features/safety/ReportButton';
 
 function DevSessionNote() {
@@ -189,7 +190,7 @@ export function ClientPostPage() {
       _idem: 'ppv-ui:' + post.id + ':' + crypto.randomUUID(),
     });
     if (rpcError) {
-      setActionError(rpcError.code ?? rpcError.message);
+      setActionError(platformErrorKey(rpcError));
       setUnlocking(false);
       return;
     }
@@ -219,7 +220,16 @@ export function ClientPostPage() {
       <p className="mt-3 text-sm text-bone-500">{t('post.visibilityValues.' + post.visibility)} · {post.is_story ? t('post.story') : t('post.publication')}</p>
     </div>
 
-    {actionError ? <p role="alert" className="text-sm text-danger">{actionError}</p> : null}
+    {actionError ? (
+      <div role="alert" className="flex flex-col gap-3 rounded-control border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger sm:flex-row sm:items-center sm:justify-between">
+        <span>{t(actionError)}</span>
+        {actionError === 'errors.insufficient_funds' ? (
+          <Link to="/carteira" className="inline-flex min-h-10 items-center justify-center rounded-control border border-bone-50/15 px-3 font-semibold text-bone-50 no-underline">
+            {t('phase6Spend.topUpAction')}
+          </Link>
+        ) : null}
+      </div>
+    ) : null}
     <Ficha variant="focus" className="overflow-hidden p-2 md:p-4">
       {media.length ? <div className="grid gap-4">
         {media.map((asset) => <figure key={asset.assetId} className="relative overflow-hidden rounded-md border border-bone-50/8 bg-black">
