@@ -10,6 +10,9 @@ select ok(has_function_privilege('authenticated','public.get_media_access(uuid)'
 select ok((select relrowsecurity from pg_class where oid='public.media_access_logs'::regclass),'media access logs RLS enabled');
 select ok(to_regprocedure('public.can_view_post(uuid,uuid)') is not null,'two-argument can_view_post exists');
 select ok(to_regprocedure('public.can_view_post(uuid)') is not null,'one-argument can_view_post exists');
+select ok(pg_get_functiondef('public.can_view_post(uuid,uuid)'::regprocedure) like '%when ''public'' then true%','can_view_post keeps public visibility');
+select ok(pg_get_functiondef('public.can_view_post(uuid,uuid)'::regprocedure) like '%when ''followers'' then exists%','can_view_post keeps followers visibility');
+select ok(pg_get_functiondef('public.can_view_post(uuid,uuid)'::regprocedure) like '%when ''ppv'' then exists%','can_view_post keeps PPV visibility');
 
 do $$
 declare
