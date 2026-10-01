@@ -86,6 +86,7 @@ select lives_ok($$
   )
 $$,'request_payout creates a real payout hold');
 
+set local role service_role;
 select is(
   (select balance from public.balances where owner_id='71400000-0000-0000-0000-000000000001'::uuid and account='creator_available'),
   40000::bigint,
@@ -97,6 +98,8 @@ select is(
   2::bigint,
   'payout hold creates creator and escrow ledger entries'
 );
+
+set local role authenticated;
 
 select is(
   (select public.request_payout(
