@@ -65,9 +65,10 @@ begin
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
   values(channel,creator,'creator_test','Creator Test',1000,1500);
 
+  set local role postgres;
+  delete from public.balances where owner_id=buyer and account='wallet';
   insert into public.balances(owner_id,account,balance)
-  values(buyer,'wallet',1000000)
-  on conflict(owner_id,account) do update set balance=excluded.balance;
+  values(buyer,'wallet',1000000);
 
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
