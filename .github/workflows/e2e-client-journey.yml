@@ -43,6 +43,6 @@ jobs:
       - name: Run A1
         run: npx playwright test tests/e2e/journey-client-a1.spec.ts --reporter=list
       - name: Run A2-A3
-        run: npx playwright test tests/e2e/journey-client-a2-a3-v2.spec.ts --reporter=list
+        run: npx playwright test tests/e2e/journey-client-a2-a3.spec.ts --reporter=list
       - name: Typecheck and build
         run: npm run build

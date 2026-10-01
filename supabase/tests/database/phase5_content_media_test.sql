@@ -43,7 +43,9 @@ begin
   on conflict do nothing;
 
   insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
-  values(creator,'native-test','approved','native:'||creator::text,now());
+  values
+    (creator,'native-test','approved','native:'||creator::text,now()),
+    (client,'native-test','approved','native:'||client::text,now());
 
   insert into public.creator_terms_acceptances(user_id,version,source,declarations)
   values(

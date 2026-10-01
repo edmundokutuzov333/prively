@@ -18,3 +18,38 @@ Deno.test("error codes preserve retry semantics", () => {
   if ((expired as Error & {code?: string}).code !== "b2_url_expired") throw new Error("expired_mapping_failed");
   if ((mapStreamtapeError(new StreamtapeRejectedError("provider_message")) as Error & {code?: string}).code !== "streamtape_rejected") throw new Error("rejected_code_contract_failed");
 });
+
+Deno.test("HTTP 403 with an expired B2 source is not misclassified as provider auth", async () => {
+  const originalFetch = globalThis.fetch;
+  const oldLogin = Deno.env.get("STREAMTAPE_API_USERNAME");
+  const oldKey = Deno.env.get("STREAMTAPE_API_PASSWORD");
+
+  Deno.env.set("STREAMTAPE_API_USERNAME", "test");
+  Deno.env.set("STREAMTAPE_API_PASSWORD", "test");
+
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ status: 403, msg: "Request has expired" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  try {
+    let received: unknown = null;
+    try {
+      const { remoteUpload } = await import("./streamtape.ts");
+      await remoteUpload("https://example.invalid/test.mp4");
+    } catch (error) {
+      received = error;
+    }
+
+    if (!(received instanceof B2UrlExpiredError)) {
+      throw new Error("b2_expiry_misclassified");
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (oldLogin === undefined) Deno.env.delete("STREAMTAPE_API_USERNAME");
+    else Deno.env.set("STREAMTAPE_API_USERNAME", oldLogin);
+    if (oldKey === undefined) Deno.env.delete("STREAMTAPE_API_PASSWORD");
+    else Deno.env.set("STREAMTAPE_API_PASSWORD", oldKey);
+  }
+});

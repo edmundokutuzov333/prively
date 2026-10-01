@@ -55,6 +55,7 @@ jobs:
       - id: config
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -106,6 +107,23 @@ jobs:
         run: supabase db push
       - name: Deploy Edge Functions
         run: supabase functions deploy --all
+      - name: Capture literal Streamtape CLI deploy output
+        shell: bash
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -o pipefail
+          supabase functions deploy streamtape-remote-upload --project-ref "$SUPABASE_PROJECT_REF" 2>&1 | tee streamtape-remote-upload.deploy.txt
+          supabase functions deploy streamtape-check-status --project-ref "$SUPABASE_PROJECT_REF" 2>&1 | tee streamtape-check-status.deploy.txt
+          supabase functions deploy get-video-playback-url --project-ref "$SUPABASE_PROJECT_REF" 2>&1 | tee get-video-playback-url.deploy.txt
+      - name: Upload literal Streamtape deployment output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamtape-cli-deploy-output
+          path: '*.deploy.txt'
+          if-no-files-found: warn
+          retention-days: 14
       - name: Record deployment metadata
         run: echo "Supabase deployment completed for $SUPABASE_PROJECT_REF at ${{ needs.gate.outputs.sha }}"
 

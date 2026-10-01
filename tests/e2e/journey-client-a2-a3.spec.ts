@@ -88,12 +88,17 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     if (!message?.ID) throw new Error('confirmation_mail_not_found');
 
     const messageDetail = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`).then((r) => r.json());
-    const body = JSON.stringify(messageDetail);
-    const verifyUrlMatch = body.includes('/auth/v1/verify');
-    if (!verifyUrlMatch) throw new Error('confirmation_verify_link_not_found');
+    const messageHtml = String(messageDetail.HTML ?? messageDetail.Body ?? messageDetail.Text ?? '');
+    const verifyHrefMatch = messageHtml.match(/href="([^"]*\/auth\/v1\/verify[^"]*)"/i);
+    const rawVerifyUrl = verifyHrefMatch?.[1]?.replaceAll('&amp;', '&');
+    if (!rawVerifyUrl) throw new Error('confirmation_verify_link_not_found');
 
+    const verifyUrl = rawVerifyUrl.startsWith('http')
+      ? rawVerifyUrl
+      : new URL(rawVerifyUrl, url).toString();
+    const verifyResponse = await page.request.get(verifyUrl);
     console.log('A.2.6 MAILPIT confirmation_present=true');
-    console.log('A.2.7 AUTH verify endpoint observed=true');
+    console.log('A.2.7 AUTH verify endpoint observed=', verifyResponse.status());
 
     const afterConfirm = await admin.auth.admin.getUserById(created.id);
     if (afterConfirm.error) throw afterConfirm.error;
@@ -107,7 +112,11 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     await page.waitForURL(/\/descobrir|\/verificacao/);
     console.log('A.2.9 UI post-login=', page.url());
 
-    const logged = await page.evaluate(() => Boolean(localStorage.getItem('sb-gaonupelgtpfthouyobh-auth-token')));
+    const authStorageKeys = await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) => key.includes('auth-token'))
+    );
+    const logged = authStorageKeys.length > 0;
+    console.log('A.2.9 browser auth storage keys=', authStorageKeys);
     console.log('A.2.9 browser auth storage present=', logged);
 
     const profile = await admin.from('profiles').select('id,handle,display_name,status,age_verified_at').eq('id', created.id).single();
@@ -115,9 +124,9 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.2.10 DB profiles=', JSON.stringify(profile.data));
     expect(profile.data.handle).toBe(handle);
 
-    const legal = await admin.from('legal_acceptances').select('document_type,version').eq('user_id', created.id).order('created_at', { ascending: false });
+    const legal = await admin.from('legal_acceptances').select('document_type,version').eq('user_id', created.id).order('accepted_at', { ascending: false });
     if (legal.error) throw legal.error;
-    const consent = await admin.from('consent_records').select('consent_type,version').eq('user_id', created.id).order('created_at', { ascending: false });
+    const consent = await admin.from('consent_records').select('consent_type,version').eq('user_id', created.id).order('consented_at', { ascending: false });
     if (consent.error) throw consent.error;
     console.log('A.2.10 DB legal=', JSON.stringify(legal.data));
     console.log('A.2.10 DB consent=', JSON.stringify(consent.data));

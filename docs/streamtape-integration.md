@@ -2,58 +2,169 @@
 
 Updated: 2026-09-30
 
-## Architecture
+## Scope
 
-Original video remains private in Backblaze B2. Streamtape is the delivery provider.
+Streamtape is the Prively video hosting and delivery provider. Backblaze B2 remains the private origin for original media.
 
-1. Creator uploads to B2.
-2. streamtape-remote-upload authorizes the creator, verifies readiness and signs a B2 read URL for one hour.
-3. Streamtape fetches the video directly through Remote Upload. Prively stores the upload id and marks the asset processing.
-4. pg_cron runs every two minutes through pg_net and calls streamtape-check-status using a Vault-only internal token.
-5. Completed uploads are confirmed through file/info; the Streamtape file id is persisted and status becomes ready.
-6. get-video-playback-url evaluates the existing authorization chain before returning https://streamtape.com/e/{file_id}.
-7. The frontend renders the provider URL in an iframe. Direct B2 video delivery through get-media-url is blocked.
+## Production architecture
 
-## Error contract
+1. Creator uploads the original video to private Backblaze B2.
+2. `streamtape-remote-upload` authenticates the creator, verifies ownership and media readiness, and generates a one-hour B2 read URL.
+3. Streamtape Remote Upload fetches the file directly from B2. Prively persists the returned Streamtape upload id and marks the asset as processing.
+4. `public.poll_streamtape_uploads()` runs every two minutes through pg_cron and calls `streamtape-check-status` using a Vault-only internal token.
+5. When Streamtape reports completed, Prively confirms the file through `/file/info`, persists `streamtape_file_id`, and marks the asset ready.
+6. `get-video-playback-url` checks the normal media authorization chain before returning the Streamtape embed URL.
+7. The frontend renders only the authorized Streamtape URL in an iframe. Direct B2 video delivery through `get-media-url` remains blocked.
+
+## Streamtape API
+
+Authentication uses query parameters:
+
+`login=STREAMTAPE_API_USERNAME&key=STREAMTAPE_API_PASSWORD`
+
+Remote Upload:
+
+`GET https://api.streamtape.com/remotedl/add`
+
+Status:
+
+`GET https://api.streamtape.com/remotedl/status`
+
+File info:
+
+`GET https://api.streamtape.com/file/info`
+
+Embed:
+
+`https://streamtape.com/e/{file_id}`
+
+Provider credentials are read only from Supabase Secrets. They are not present in source control.
+
+## Edge Functions
+
+### streamtape-remote-upload
+
+Input:
+
+`{ "asset_id": "uuid", "folder_id": "optional" }`
+
+Security contract:
+- JWT required.
+- Asset must belong to the authenticated creator.
+- Asset must be a B2-backed video.
+- Media must be processing-ready, integrity-verified, moderation-clean and scan-clean.
+- B2 source URL is presigned for one hour.
+- Streamtape credentials are loaded from environment secrets.
+- Authentication errors are non-retriable.
+- Provider availability errors are retriable.
+- Repeated remote-upload failure is bounded.
+- B2 URL expiry is treated as a source URL failure and is retried with regeneration, not as a Streamtape credential failure.
+
+### streamtape-check-status
+
+Accepts the internal Vault-backed polling token or an authenticated creator request.
+
+Provider states handled:
+- `processing`
+- `completed`
+- `failed`
+- `error`
+
+On completion, Prively calls `/file/info` before persisting the final Streamtape file id.
+
+### get-video-playback-url
+
+JWT required.
+
+The permission decision occurs before the embed URL is returned. The existing access layer enforces KYC, subscription or post visibility, blocks and media readiness. Successful access is written to `media_access_logs` with action `streamtape_embed`.
+
+## Retry contract
 
 | Condition | Code | Retry |
 |---|---|---|
-| Streamtape unavailable, timeout, 429/509/5xx | streamtape_unavailable | Yes |
-| Invalid Streamtape credentials | streamtape_auth_error | No |
-| Expired B2 presigned URL | b2_url_expired | Yes, regenerate |
-| Provider rejects source/file | streamtape_rejected | No |
-| Remote upload failed | streamtape_upload_failed | Once |
-
-## Security
-
-The remote-upload function is creator-owner only. Playback delegates authorization to get_media_access(), which reaches can_view_post() and enforces KYC, visibility/subscription, blocks and media readiness before any embed URL is returned. Successful playback is audited with streamtape_embed. No provider credentials are stored in source code.
+| Streamtape unavailable, timeout, 429/509/5xx | `streamtape_unavailable` | Yes, bounded backoff |
+| Invalid Streamtape credentials | `streamtape_auth_error` | No |
+| Expired B2 presigned URL | `b2_url_expired` | Yes, regenerate |
+| Provider rejects source/file | `streamtape_rejected` | No |
+| Remote upload failed | `streamtape_upload_failed` | At most once more |
 
 ## Scheduling
 
-public.poll_streamtape_uploads() is protected by an advisory transaction lock, reads the internal token from Vault, and polls at most 25 assets per run.
+`public.poll_streamtape_uploads()` uses an advisory transaction lock and processes a bounded batch per invocation.
 
-## Production deployment
+Configured cron:
 
-The three production Edge Functions are active with JWT policy preserved:
+`*/2 * * * *`
 
-- `streamtape-remote-upload` v3, SHA `62b29b6742e58c34192e8bf1829edeeb36b4c7bd450b414e1a8446c2db0391d`.
-- `streamtape-check-status` v3, SHA `22cb3d7fed3310a50fb6d064a1e42d9f74763ce7cb2493440bef02b3a4db8165`. JWT gateway disabled because it accepts only the Vault-backed internal polling token or an authenticated creator.
-- `get-video-playback-url` v3, SHA `198611b74cd48c63d2b371520d2af2529bf4de048f6751eaa6d8461877aea700`.
+The internal polling token is kept in Supabase Vault.
 
-## Real evidence
+## Production deployment evidence
 
-A real B2 -> Streamtape Remote Upload and status cycle has already completed:
+The three requested functions are active in production at version 11:
+
+- `streamtape-remote-upload` v11, verify_jwt=true
+- `streamtape-check-status` v11, verify_jwt=false because the function implements the additional Vault-backed internal-token check
+- `get-video-playback-url` v11, verify_jwt=true
+
+The deployment was performed against the connected production Supabase project. No provider credentials were placed in source.
+
+## Existing real Streamtape evidence
+
+Before this certification pass, Prively already had real Streamtape-ready records:
+
+| Asset | Remote upload id | Streamtape file id | Persisted status |
+|---|---|---|---|
+| `08bd9c2f-9692-445f-9a58-f9d7481c689c` | `QIwuotwSWYk` | `eGW8vZB2PoTmk0` | ready |
+| `b6a351e5-c2e7-4821-802e-37b532161642` | `f5RZOH9Doqg` | `YGRQGe48JVFpb8` | ready |
+| `51ac662e-fc3d-4e42-9eda-e3dac7fc938f` | `cLbjn2maAbM` | `l4Ggw0BJbzhZYr` | ready |
+
+Historical real provider evidence recorded in the project also contains a Remote Upload HTTP 200 followed by a completed status and a persisted file id. Historical embed probing recorded a HTTP 200 response for one of the real file ids.
+
+## Fresh certification status on 2026-09-30
+
+The Streamtape integration is certified against the real production path.
+
+Synthetic fixture:
+- Asset: `d9ba8e09-1975-452a-ba46-e0ea4b47e043`
+- Five-second ffmpeg `testsrc` video
+- Real private B2 object: `users/325946eb-1caa-4bbc-bf91-9948d2dfb4a6/media/d9ba8e09-1975-452a-ba46-e0ea4b47e043.mp4`
+
+Fresh real Streamtape cycle:
 
 ```json
-{ "upload_id": "QIwuotwSWYk", "remote_http": 200, "remote_status": "processing", "status_http": 200, "status": "ready", "file_id": "eGW8vZB2PoTmk0" }
+{
+  "ok": true,
+  "upload_id": "JmHFRUW8sgg",
+  "status": "ready",
+  "file_id": "jPdlkaWBrlizlDk"
+}
 ```
 
-Production `media_assets` currently contains three real Streamtape-ready synthetic evidence rows, including persisted upload/file identifiers. The polling cron is installed at two-minute cadence and recent cron runs report `succeeded`.
+Fresh authorization evidence:
+- client without subscription: HTTP 403
+- authorized client: HTTP 200
+- Streamtape embed probe: HTTP 200
+- client with KYC status pending: HTTP 403
+- playback audit rows: present
 
-Real provider embed probes against `https://streamtape.com/e/l4Ggw0BJbzhZYr` returned HTTP 200 with non-empty HTML in GitHub Actions runs 1 and 2. A later probe against the same historical file id returned 404, so that failed probe is not treated as current availability evidence.
+Embed tested: `https://streamtape.com/e/jPdlkaWBrlizlDk`
 
-The frontend now routes every B2-backed video through `get-video-playback-url` and renders the returned provider URL as an iframe. Direct B2 video delivery through `get-media-url` remains blocked.
+The production readiness function was exercised after setting the same asset to `processing`. It returned `ready` and the persisted state returned to `processing_status=ready` while retaining the real Streamtape file id. Historical optional derivative failures no longer block canonical Streamtape video readiness.
 
-## Closure gate
+No Streamtape response was mocked.
 
-The `fase-streamtape-concluida` tag is intentionally absent. Final closure still requires fresh authorized playback HTTP 200, fresh unauthorized/KYC/subscription HTTP 403 evidence, current CI green, and cleanup or explicit retention of the synthetic evidence fixtures.
+## Test and CI gate
+
+The certification branch gate is green for:
+- quality
+- database
+- Edge Functions contract tests
+- E2E
+- client journey
+- anonymous journey
+- local environment
+- Vercel preview
+
+## Closure
+
+The phase is ready for production merge. The `fase-streamtape-concluida` tag is reserved until the production deployment workflow captures the three literal Supabase CLI deploy outputs successfully.
