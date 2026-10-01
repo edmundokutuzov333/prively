@@ -113,6 +113,14 @@ errors: { unauthorized: 'Your session expired. Sign in again.', forbidden: 'You 
     loadError: 'Could not load discovery.',
   },
 
+  phase13Safety: {
+    panic: 'Activate panic',
+    panicAria: 'Activate panic alert',
+    panicTriggered: 'Alert created',
+    panicError: 'Could not activate the alert',
+    safetyPage: 'Safety',
+  },
+
   phase6Spend: { topUpAction: 'Top up wallet' },
 
   phase5Topup: {
