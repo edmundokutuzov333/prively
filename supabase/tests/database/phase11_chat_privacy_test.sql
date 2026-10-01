@@ -76,11 +76,18 @@ where id in (
   '71100000-0000-0000-0000-000000000003'
 );
 
+insert into public.kyc_verifications(user_id,provider,status,reviewed_at)
+values
+  ('71100000-0000-0000-0000-000000000001','manual','approved',now()),
+  ('71100000-0000-0000-0000-000000000002','manual','approved',now()),
+  ('71100000-0000-0000-0000-000000000003','manual','approved',now())
+on conflict do nothing;
+
 insert into public.channels(owner_id,handle,display_name,dm_mode,is_seed)
 values
-  ('71100000-0000-0000-0000-000000000002','p11free','Phase 11 Free','free',true),
-  ('71100000-0000-0000-0000-000000000002','p11off','Phase 11 Off','off',true),
-  ('71100000-0000-0000-0000-000000000002','p11subs','Phase 11 Subscribers','subscribers',true)
+  ('71100000-0000-0000-0000-000000000002','p11free_7110000001','Phase 11 Free','free',true),
+  ('71100000-0000-0000-0000-000000000002','p11off_7110000001','Phase 11 Off','off',true),
+  ('71100000-0000-0000-0000-000000000002','p11subs_7110000001','Phase 11 Subscribers','subscribers',true)
 on conflict (handle) do nothing;
 
 select set_config('request.jwt.claim.sub','71100000-0000-0000-0000-000000000001',true);
@@ -100,7 +107,7 @@ select set_config('app.internal_write','off',true);
 
 select lives_ok($$
   select public.create_conversation(
-    (select id from public.channels where handle='p11free')
+    (select id from public.channels where handle='p11free_7110000001')
   )
 $$,'participant can create free conversation');
 
@@ -108,7 +115,7 @@ set local role service_role;
 insert into public.messages(conversation_id,sender_id,kind,body)
 values(
   (select id from public.conversations
-   where channel_id=(select id from public.channels where handle='p11free')
+   where channel_id=(select id from public.channels where handle='p11free_7110000001')
      and client_id='71100000-0000-0000-0000-000000000001'),
   '71100000-0000-0000-0000-000000000001',
   'text',
@@ -121,20 +128,20 @@ select is((
   from public.messages
   where conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free')
+    where channel_id=(select id from public.channels where handle='p11free_7110000001')
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),1::bigint,'participant reads conversation messages');
 
 select throws_ok($$
   select public.create_conversation(
-    (select id from public.channels where handle='p11off')
+    (select id from public.channels where handle='p11off_7110000001')
   )
 $$,'dm_closed','DM off is enforced');
 
 select throws_ok($$
   select public.create_conversation(
-    (select id from public.channels where handle='p11subs')
+    (select id from public.channels where handle='p11subs_7110000001')
   )
 $$,'subscription_required','subscriber DM requires active subscription');
 
@@ -151,7 +158,7 @@ select is((
   from public.messages
   where conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free')
+    where channel_id=(select id from public.channels where handle='p11free_7110000001')
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),0::bigint,'nonparticipant reads no messages');
@@ -174,7 +181,7 @@ select is((
   select count(*) from public.conversation_members cm
   where cm.conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free')
+    where channel_id=(select id from public.channels where handle='p11free_7110000001')
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),2::bigint,'conversation has exactly two members');
@@ -194,7 +201,7 @@ select set_config('request.jwt.claims',json_build_object(
 select throws_ok($$
   select public.send_message_guarded(
     (select id from public.conversations
-     where channel_id=(select id from public.channels where handle='p11free')
+     where channel_id=(select id from public.channels where handle='p11free_7110000001')
        and client_id='71100000-0000-0000-0000-000000000001'),
     'blocked direct rpc probe',
     'text',
@@ -208,7 +215,7 @@ select is((
   select count(*) from public.messages
   where conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free')
+    where channel_id=(select id from public.channels where handle='p11free_7110000001')
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),1::bigint,'blocked RPC created no extra message');
