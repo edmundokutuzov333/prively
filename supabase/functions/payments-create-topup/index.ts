@@ -1,7 +1,7 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
 import { requiredEnv, updateTopup } from "../_shared/payments.ts";
-import { amountUnit, providerAmountToCentavos } from "../_shared/money.ts";
+import { providerAmountToCentavos } from "../_shared/money.ts";
 import { getPaymentProvider } from "../_shared/payment-provider.ts";
 
 Deno.serve(async (request) => {
@@ -64,7 +64,7 @@ Deno.serve(async (request) => {
     }
 
     const provider = getPaymentProvider();
-    const providerUnit = amountUnit();
+    const providerUnit = Deno.env.get("PAYSUITE_AMOUNT_UNIT") ?? "unverified";
 
     try {
       const charge = await provider.createCharge({
