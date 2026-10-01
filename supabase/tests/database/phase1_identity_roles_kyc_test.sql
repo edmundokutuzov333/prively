@@ -30,6 +30,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object('sub','71000000-0000-0000-0000-000000000001','role','authenticated','aal','aal1')::text,true);
+select set_config('app.internal_write','off',true);
 
 select throws_ok(
   'update public.profiles set status=''active'', age_verified_at=now(), self_excluded_until=now()+interval ''1 day'' where id=''71000000-0000-0000-0000-000000000001''',
@@ -68,6 +69,8 @@ select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001') = false
 
 reset role;
 set local role service_role;
+select set_config('request.jwt.claim.role','service_role',true);
+select set_config('request.jwt.claims',json_build_object('role','service_role')::text,true);
 select public.approve_kyc(
   (select id from public.kyc_verifications where user_id='71000000-0000-0000-0000-000000000001' limit 1),
   true,
@@ -83,6 +86,8 @@ select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001') = true,
 
 reset role;
 set local role service_role;
+select set_config('request.jwt.claim.role','service_role',true);
+select set_config('request.jwt.claims',json_build_object('role','service_role')::text,true);
 select public.approve_kyc(
   (select id from public.kyc_verifications where user_id='71000000-0000-0000-0000-000000000001' limit 1),
   false,

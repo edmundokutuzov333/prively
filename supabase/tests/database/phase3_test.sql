@@ -38,10 +38,13 @@ begin
   values
     (buyer,'manual','pending','phase3:'||buyer::text),
     (creator,'manual','pending','phase3:'||creator::text);
+  insert into public.user_roles(user_id,role) values (creator,'creator'),(creator,'compliance') on conflict do nothing;
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
   perform set_config('request.jwt.claims',json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2')::text,true);
   set local role service_role;
+  perform set_config('request.jwt.claim.role','service_role',true);
+  perform set_config('request.jwt.claims',json_build_object('role','service_role')::text,true);
   perform public.approve_kyc(
     (select id from public.kyc_verifications where user_id=buyer limit 1),
     true,
@@ -58,11 +61,6 @@ begin
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
   perform set_config('request.jwt.claims',json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text)::text,true);
-  insert into public.user_roles(user_id,role) values
-    (creator,'creator'),
-    (creator,'compliance')
-  on conflict do nothing;
-
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
   values(channel,creator,'creator_test','Creator Test',1000,1500);
 
