@@ -59,6 +59,9 @@ begin
   values(creator,'terms','1.0'),(creator,'privacy','1.0'),(creator,'content_prohibited','1.0')
   on conflict do nothing;
 
+  perform set_config('request.jwt.claim.sub',creator::text,true);
+  perform set_config('request.jwt.claim.role','service_role',true);
+  perform set_config('request.jwt.claims',json_build_object('sub',creator::text,'role','service_role')::text,true);
   set local role service_role;
   channel_id := public.create_creator_channel('phase7_channel','Phase 7 Creator','Publication contract test');
   set local role postgres;
