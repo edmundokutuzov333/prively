@@ -80,7 +80,7 @@ errors: { unauthorized: 'Your session expired. Sign in again.', forbidden: 'You 
     stateBackend: 'This state must be connected to the real flow that produced it before it is exposed as a production experience.'
   },
   phase6Spend: { topUpAction: 'Top up wallet' },
-  phase10Ppv: { title: 'Purchases', intro: 'Real PPV and subscription history, ordered by transaction date.', ppv: 'PPV', subscription: 'Subscription', emptyTitle: 'No purchases', emptyBody: 'Your real purchases and subscriptions will appear here.', receipt: 'Receipt', downloadReceipt: 'Download receipt', downloadingReceipt: 'Generating receipt…', downloadError: 'Could not generate the receipt. Try again.', unknownPurchase: 'Prively purchase' },
+
   phase5Topup: {
     intro: 'Real balance, top-ups and financial history.',
     balance: 'Available to spend',
