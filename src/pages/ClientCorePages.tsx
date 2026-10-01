@@ -79,7 +79,7 @@ function useDiscoveryChannels(filters: {
         const next = (data ?? []) as Channel[];
         setRows(next);
         if (!hasFilters) setDirectoryRows(next);
-      } catch (errorValue: unknown) {
+      } catch {
         if (!active) return;
         setError(i18n.t('phase12Discovery.loadError'));
       } finally {
