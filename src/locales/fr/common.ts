@@ -82,6 +82,7 @@ errors: { unauthorized: 'Votre session a expiré. Reconnectez-vous.', forbidden:
   },
   phase10Ppv: { title: 'Achats', intro: 'Historique réel des PPV et abonnements, trié par date de transaction.', ppv: 'PPV', subscription: 'Abonnement', contentPurchased: 'Contenu acheté', paid: 'Payé', period: '{{count}} mois', emptyTitle: 'Aucun achat', emptyBody: 'Vos achats PPV et abonnements réels apparaîtront ici.', downloadReceipt: 'Télécharger le reçu', receiptUnavailable: 'Reçu indisponible', loadError: "Impossible de charger l’historique des achats." },
   phase12Discovery: {
+    loading: 'Chargement de la découverte...',
     title: 'Découvrir des créatrices',
     intro: 'Trouve de vraies créatrices par profil, localisation, contenu et disponibilité.',
     search: 'Rechercher un profil ou @handle',
