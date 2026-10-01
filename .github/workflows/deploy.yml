@@ -59,7 +59,6 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           PRIVELY_HEALTH_URL: ${{ secrets.PRIVELY_HEALTH_URL }}
         run: |
           if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_PROJECT_REF" ] && [ -n "$SUPABASE_DB_PASSWORD" ]; then
@@ -67,7 +66,7 @@ jobs:
           else
             echo "supabase_ready=false" >> "$GITHUB_OUTPUT"
           fi
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ]; then
             echo "vercel_ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "vercel_ready=false" >> "$GITHUB_OUTPUT"
@@ -150,7 +149,6 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: npx vercel@61.0.0 deploy --prod --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
 
   post-deploy-health:
