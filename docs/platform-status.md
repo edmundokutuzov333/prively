@@ -1,6 +1,6 @@
 # Estado da Plataforma Prively
 
-**Data:** 30 de Setembro de 2026  
+**Data: 1 de Outubro de 2026
 **Regra da percentagem:** só é indicada quando existe uma fracção objectivamente verificável. `N/D` significa que dar um número seria inventar precisão.
 
 | Módulo | Estado | Evidência | % verificável |
@@ -38,8 +38,8 @@
 
 Bloqueadores:
 - CI do commit de correcção ainda não executado.
-- Drift de migrações.
-- Vercel rate-limited.
-- E2E não revalidado após correcção.
-- carga/concorrência não executadas.
-- integrações externas não validadas em sandbox.
+- Reconciliacao logica ainda requer decisao/procedimento: 205 ficheiros locais versus 203 versoes remotas, com renumeracoes entre historicos.
+- Backup restore drill continua bloqueado sem staging Supabase.
+- Projecto Vercel oficial Prively nao existe na equipa Vercel ligada ao conector.
+- CI da correccao actual ainda em execucao.
+- Integrações externas não validadas em sandbox.
