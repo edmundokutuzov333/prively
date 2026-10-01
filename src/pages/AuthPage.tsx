@@ -17,6 +17,20 @@ type Portal = 'client' | 'creator' | 'admin';
 type AuthPageProps = { mode: Mode; portal?: Portal };
 type Values = { email: string; password: string; handle?: string; ageConfirmed?: boolean; termsAccepted?: boolean; privacyAccepted?: boolean } & Partial<Record<CreatorTermDeclarationKey, boolean>>;
 
+async function withTimeout<T>(promise: Promise<T>, ms = 15000): Promise<T> {
+  let timeoutId: number | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('auth_request_timeout')), ms);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+}
+
 export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -105,10 +119,10 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       const email = values.email.trim().toLowerCase();
 
       if (mode === 'signIn') {
-        const { data, error: signInError } = await sb.auth.signInWithPassword({
+        const { data, error: signInError } = await withTimeout(sb.auth.signInWithPassword({
           email,
           password: values.password
-        });
+        }));
 
         if (signInError || !data.user || !data.session) {
           setError(describeAuthError(signInError));
@@ -126,7 +140,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       }
 
       const signupRole = role === 'creator' ? 'creator' : 'client';
-      const { data, error: signUpError } = await sb.auth.signUp({
+      const { data, error: signUpError } = await withTimeout(sb.auth.signUp({
         email,
         password: values.password,
         options: {
@@ -143,7 +157,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
             }
           }
         }
-      });
+      }));
 
       if (signUpError) {
         setError(describeAuthError(signUpError));
@@ -182,7 +196,12 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       setMessage(t(signupRole === 'creator' ? 'auth.creatorRegistered' : 'auth.clientRegistered'));
       navigate(signupRole === 'creator' ? '/verificacao' : '/descobrir', { replace: true });
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : t('auth.genericError'));
+      const message = submissionError instanceof Error && submissionError.message === 'auth_request_timeout'
+        ? t('auth.authServiceTimeout')
+        : submissionError instanceof Error
+          ? submissionError.message
+          : t('auth.genericError');
+      setError(message);
     }
   };
 
