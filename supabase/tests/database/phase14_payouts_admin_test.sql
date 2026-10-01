@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(19);
 
 select ok(to_regclass('public.payouts') is not null, 'payouts exists');
 select ok((select relrowsecurity from pg_class where oid='public.payouts'::regclass), 'payouts RLS enabled');
@@ -85,6 +85,16 @@ select lives_ok($$
     'phase14-idem-001'
   )
 $$,'request_payout creates a real payout hold');
+
+set local role service_role;
+select diag(
+  format(
+    'phase14 payout fixture state: balance=%s payout_holds=%s payout_rows=%s',
+    coalesce((select balance from public.balances where owner_id='71400000-0000-0000-0000-000000000001'::uuid and account='creator_available'), -1),
+    (select count(*) from public.ledger_entries where owner_id='71400000-0000-0000-0000-000000000001'::uuid and kind='payout_hold'),
+    (select count(*) from public.payouts where owner_id='71400000-0000-0000-0000-000000000001'::uuid)
+  )
+);
 
 set local role service_role;
 select is(
