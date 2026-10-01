@@ -1,0 +1,35 @@
+name: Prively Phase 13 Safety CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/database/phase13_safety_test.sql'
+      - 'supabase/functions/trigger-panic/**'
+      - '.github/workflows/phase13-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase13_database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+      - name: Start local Supabase
+        run: supabase start
+      - name: Rebuild database from zero
+        run: supabase db reset
+      - name: Run Phase 13 safety suite
+        run: supabase test db supabase/tests/database/phase13_safety_test.sql
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
