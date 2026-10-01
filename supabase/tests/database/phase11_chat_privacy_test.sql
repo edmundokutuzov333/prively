@@ -70,7 +70,8 @@ with checks as (
     and pg_get_functiondef('public.create_conversation(uuid)'::regprocedure) ilike '%subscription_required%'
   union all
   select 8, 'guarded message RPC',
-    has_function_privilege('authenticated','public.send_message_v2(uuid,text,text,uuid,text)','EXECUTE')
+    has_function_privilege('authenticated','public.send_message_guarded(uuid,text,text,uuid,text)','EXECUTE')
+    and has_function_privilege('authenticated','public.send_message_v2(uuid,text,text,uuid,text)','EXECUTE')
     and not has_function_privilege('authenticated','public.send_message(uuid,text)','EXECUTE')
   union all
   select 9, 'realtime message publication',
@@ -97,6 +98,7 @@ declare
   channel_id uuid;
   conversation_id uuid;
   blocked boolean := false;
+  privacy_version text;
 begin
   select p.id into u1 from public.profiles p order by p.created_at limit 1;
   select p.id into u2 from public.profiles p where p.id <> u1 order by p.created_at limit 1;
@@ -114,7 +116,7 @@ begin
   insert into public.channels(owner_id, handle, display_name, dm_mode, is_seed)
   values (
     u2,
-    ('phase11test_' || substr(replace(gen_random_uuid()::text,'-',''),1,16))::citext,
+    ('p11' || substr(replace(gen_random_uuid()::text,'-',''),1,18))::citext,
     'Phase 11 Test Channel',
     'free',
     true
@@ -122,6 +124,13 @@ begin
   returning id into channel_id;
 
   perform set_config('request.jwt.claim.sub',u1::text,true);
+
+  select coalesce(value #>> '{}','1.0')
+    into privacy_version
+  from public.platform_settings
+  where key='legal.communication_privacy_version';
+
+  perform public.accept_communication_privacy('conversation',privacy_version);
 
   insert into public.conversations(client_id,creator_id,channel_id)
   values(u1,u2,channel_id)
@@ -134,13 +143,16 @@ begin
   insert into public.blocks(owner_id,blocked_user_id) values(u2,u1);
 
   begin
-    perform public.send_message_v2(
+    perform public.send_message_guarded(
       conversation_id,'blocked direct rpc probe','text',null,
       'phase11-test-' || gen_random_uuid()::text
     );
   exception
     when others then
-      blocked := sqlerrm = 'blocked: blocked' or sqlerrm = 'blocked';
+      blocked := sqlerrm = 'user_blocked: user_blocked'
+        or sqlerrm = 'user_blocked'
+        or sqlerrm = 'blocked: blocked'
+        or sqlerrm = 'blocked';
   end;
 
   if not blocked then
