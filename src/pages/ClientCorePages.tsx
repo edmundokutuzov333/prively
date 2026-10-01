@@ -23,6 +23,8 @@ type Channel = {
   city: string | null;
   bairro: string | null;
   province: string | null;
+  follower_count: number;
+  is_following: boolean;
 };
 
 type MediaPreview = {
@@ -45,55 +47,100 @@ type FeedPost = {
   media: MediaPreview | null;
 };
 
-function useChannels() {
+function useDiscoveryChannels(filters: {
+  search: string;
+  city: string;
+  bairro: string;
+  province: string;
+}) {
   const [rows, setRows] = useState<Channel[]>([]);
+  const [directoryRows, setDirectoryRows] = useState<Channel[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const load = async () => {
-    try {
-      const result = await requireSupabase()
-        .from('channels')
-        .select('id,owner_id,handle,display_name,bio,city,bairro,province')
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (result.error) throw result.error;
-      setRows((result.data ?? []) as Channel[]);
-    } catch (errorValue: unknown) {
-      setError(errorValue instanceof Error ? errorValue.message : 'Falha ao carregar criadoras.');
-    }
+  const [loading, setLoading] = useState(true);
+  const [reloadNonce, setReloadNonce] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    const hasFilters = Boolean(filters.search.trim() || filters.city || filters.bairro || filters.province);
+    const timeout = window.setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: rpcError } = await requireSupabase().rpc('discover_channels', {
+          _search: filters.search.trim() || null,
+          _city: filters.city || null,
+          _bairro: filters.bairro || null,
+          _province: filters.province || null,
+          _limit: 100,
+          _offset: 0,
+        });
+        if (rpcError) throw rpcError;
+        if (!active) return;
+        const next = (data ?? []) as Channel[];
+        setRows(next);
+        if (!hasFilters) setDirectoryRows(next);
+      } catch (errorValue: unknown) {
+        if (!active) return;
+        setError(i18n.t('phase12Discovery.loadError'));
+      } finally {
+        if (active) setLoading(false);
+      }
+    }, hasFilters ? 250 : 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [filters.search, filters.city, filters.bairro, filters.province, reloadNonce]);
+
+  return {
+    rows,
+    directoryRows,
+    error,
+    loading,
+    reload: () => setReloadNonce((value) => value + 1),
+    patchFollowing: (channelId: string, isFollowing: boolean) => {
+      const patch = (current: Channel[]) => current.map((row) => row.id === channelId
+        ? { ...row, is_following: isFollowing, follower_count: Math.max(0, row.follower_count + (isFollowing ? 1 : -1)) }
+        : row);
+      setRows(patch);
+      setDirectoryRows(patch);
+    },
   };
-  useEffect(() => { void load(); }, []);
-  return { rows, error, reload: load };
 }
 
 export function ClientDiscoverCorePage() {
-  const { rows, error } = useChannels();
-  const { user } = useAuth();
-  const [following, setFollowing] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('');
+  const [bairro, setBairro] = useState('');
   const [province, setProvince] = useState('');
   const [kind, setKind] = useState<'all' | 'image' | 'video' | 'audio'>('all');
   const [agendaOnly, setAgendaOnly] = useState(false);
   const [agendaChannels, setAgendaChannels] = useState<string[]>([]);
   const [channelKinds, setChannelKinds] = useState<Record<string, string[]>>({});
   const [cursor, setCursor] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const { rows, directoryRows, error, loading, reload, patchFollowing } = useDiscoveryChannels({
+    search,
+    city,
+    bairro,
+    province,
+  });
+  const { user } = useAuth();
 
   useEffect(() => {
-    const load = async () => {
-      if (!user) return;
+    const loadMetadata = async () => {
       const sb = requireSupabase();
-      const [followResult, availabilityResult, postsResult, mediaResult] = await Promise.all([
-        sb.from('follows').select('channel_id').eq('follower_id', user.id).limit(500),
-        sb.from('availability_slots').select('channel_id,starts_at,ends_at').gte('ends_at', new Date().toISOString()).limit(500),
-        sb.from('posts').select('id,channel_id').eq('status', 'published').eq('is_story', false).limit(500),
-        sb.from('media_assets').select('post_id,kind').is('deleted_at', null).limit(1000),
+      const [availabilityResult, postsResult, mediaResult] = await Promise.all([
+        sb.from('availability_slots').select('channel_id,starts_at,ends_at').gte('ends_at', new Date().toISOString()).limit(1000),
+        sb.from('posts').select('id,channel_id').eq('status', 'published').eq('is_story', false).limit(1000),
+        sb.from('media_assets').select('post_id,kind').is('deleted_at', null).limit(2000),
       ]);
-      if (followResult.error) throw followResult.error;
       if (availabilityResult.error) throw availabilityResult.error;
       if (postsResult.error) throw postsResult.error;
       if (mediaResult.error) throw mediaResult.error;
 
-      setFollowing((followResult.data ?? []).map((row) => String(row.channel_id)));
       setAgendaChannels([...new Set((availabilityResult.data ?? []).map((row) => String(row.channel_id)))]);
       const kindsByPost = new Map<string, string[]>();
       for (const asset of mediaResult.data ?? []) {
@@ -113,83 +160,194 @@ export function ClientDiscoverCorePage() {
       }
       setChannelKinds(byChannel);
     };
-    void load().catch(() => undefined);
-  }, [user]);
+    void loadMetadata().catch(() => {
+      setActionError(i18n.t('phase12Discovery.loadError'));
+    });
+  }, []);
+
+  useEffect(() => {
+    setCursor(0);
+  }, [search, city, bairro, province, kind, agendaOnly]);
 
   const toggleFollow = async (channelId: string) => {
     if (!user) return;
-    const isFollowing = following.includes(channelId);
+    setActionError(null);
+    const row = rows.find((item) => item.id === channelId);
+    if (!row) return;
+    const isFollowing = row.is_following;
     const { error: rpcError } = await requireSupabase().rpc(
       isFollowing ? 'unfollow_channel' : 'follow_channel',
       { _channel: channelId },
     );
-    if (rpcError) return;
-    setFollowing((current) => isFollowing
-      ? current.filter((id) => id !== channelId)
-      : [...current, channelId]);
+    if (rpcError) {
+      setActionError(i18n.t('phase12Discovery.followError'));
+      return;
+    }
+    patchFollowing(channelId, !isFollowing);
   };
 
-  const cities = useMemo(() => [...new Set(rows.map((row) => row.city).filter(Boolean) as string[])].sort(), [rows]);
-  const provinces = useMemo(() => [...new Set(rows.map((row) => row.province).filter(Boolean) as string[])].sort(), [rows]);
+  const cities = useMemo(
+    () => [...new Set(directoryRows.map((row) => row.city).filter(Boolean) as string[])].sort(),
+    [directoryRows],
+  );
+  const provinces = useMemo(
+    () => [...new Set(directoryRows.map((row) => row.province).filter(Boolean) as string[])].sort(),
+    [directoryRows],
+  );
+  const bairros = useMemo(
+    () => [...new Set(directoryRows
+      .filter((row) => !city || row.city === city)
+      .filter((row) => !province || row.province === province)
+      .map((row) => row.bairro)
+      .filter(Boolean) as string[])].sort(),
+    [directoryRows, city, province],
+  );
 
   const filtered = useMemo(() => rows.filter((row) => {
-    const query = search.trim().toLowerCase();
-    const matchesQuery = !query || row.display_name.toLowerCase().includes(query) || row.handle.toLowerCase().includes(query);
-    const matchesCity = !city || row.city === city;
-    const matchesProvince = !province || row.province === province;
-    const matchesAgenda = !agendaOnly || agendaChannels.includes(row.id);
+    const agendaMatch = !agendaOnly || agendaChannels.includes(row.id);
     const kinds = channelKinds[row.id] ?? [];
-    const matchesKind = kind === 'all' || kinds.includes(kind);
-    return matchesQuery && matchesCity && matchesProvince && matchesAgenda && matchesKind;
-  }), [rows, search, city, province, agendaOnly, agendaChannels, channelKinds, kind]);
+    const kindMatch = kind === 'all' || kinds.includes(kind);
+    return agendaMatch && kindMatch;
+  }), [rows, agendaOnly, agendaChannels, channelKinds, kind]);
 
-  const swipeRows = filtered.slice(cursor, cursor + 1);
-  const activeSwipe = swipeRows[0];
+  const activeSwipe = filtered[cursor];
+  const hasFilters = Boolean(search.trim() || city || bairro || province || kind !== 'all' || agendaOnly);
+  const scope = [city, bairro].filter(Boolean).join(' · ');
+
+  const clearFilters = () => {
+    setSearch('');
+    setCity('');
+    setBairro('');
+    setProvince('');
+    setKind('all');
+    setAgendaOnly(false);
+    setCursor(0);
+  };
+
+  const widenLocation = () => {
+    setBairro('');
+    setCity('');
+    setCursor(0);
+  };
 
   return (
-    <PageFrame icon={Compass} title="Descobrir criadoras" intro="Pesquisa por perfil, localização, tipo de conteúdo e disponibilidade social.">
-      {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-      <div className="grid gap-3 rounded-md border border-bone-50/8 bg-ink-900/70 p-4 md:grid-cols-5">
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar perfil" className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50" />
-        <select value={city} onChange={(event) => setCity(event.target.value)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50"><option value="">Todas as cidades</option>{cities.map((value) => <option key={value}>{value}</option>)}</select>
-        <select value={province} onChange={(event) => setProvince(event.target.value)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50"><option value="">Todas as províncias</option>{provinces.map((value) => <option key={value}>{value}</option>)}</select>
-        <select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50"><option value="all">Todos os conteúdos</option><option value="image">Fotografia</option><option value="video">Vídeo</option><option value="audio">Áudio</option></select>
-        <label className="flex min-h-11 items-center gap-3 rounded-md bg-ink-800 px-3 text-sm text-bone-300"><input type="checkbox" checked={agendaOnly} onChange={(event) => setAgendaOnly(event.target.checked)} /> Agenda aberta</label>
+    <PageFrame icon={Compass} title={i18n.t('phase12Discovery.title')} intro={i18n.t('phase12Discovery.intro')}>
+      {error || actionError ? <p role="alert" className="text-sm text-danger">{error ?? actionError}</p> : null}
+
+      <div className="grid gap-3 rounded-md border border-bone-50/8 bg-ink-900/70 p-4 md:grid-cols-6">
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder={i18n.t('phase12Discovery.search')}
+          className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50 md:col-span-2"
+          aria-label={i18n.t('phase12Discovery.search')}
+        />
+        <select value={city} onChange={(event) => setCity(event.target.value)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50">
+          <option value="">{i18n.t('phase12Discovery.allCities')}</option>
+          {cities.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <select value={bairro} onChange={(event) => setBairro(event.target.value)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50">
+          <option value="">{i18n.t('phase12Discovery.allBairros')}</option>
+          {bairros.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <select value={province} onChange={(event) => setProvince(event.target.value)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50">
+          <option value="">{i18n.t('phase12Discovery.allProvinces')}</option>
+          {provinces.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)} className="min-h-11 rounded-md bg-ink-800 px-3 text-sm text-bone-50">
+          <option value="all">{i18n.t('phase12Discovery.allContent')}</option>
+          <option value="image">{i18n.t('phase12Discovery.image')}</option>
+          <option value="video">{i18n.t('phase12Discovery.video')}</option>
+          <option value="audio">{i18n.t('phase12Discovery.audio')}</option>
+        </select>
+        <label className="flex min-h-11 items-center gap-3 rounded-md bg-ink-800 px-3 text-sm text-bone-300 md:col-span-2">
+          <input type="checkbox" checked={agendaOnly} onChange={(event) => setAgendaOnly(event.target.checked)} />
+          {i18n.t('phase12Discovery.agendaOpen')}
+        </label>
       </div>
+
+      {loading ? <p className="mt-4 text-sm text-bone-500" role="status" aria-live="polite">{i18n.t('phase12Discovery.loading')}</p> : null}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         <div className="space-y-4">
-          {filtered.map((row) => {
-            const isFollowing = following.includes(row.id);
-            return <Ficha key={row.id} variant={activeSwipe?.id === row.id ? 'focus' : 'default'}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="truncate text-xl text-bone-50">{row.display_name}</p>
-                  <p className="mt-1 text-sm text-bone-400">@{row.handle}</p>
-                  <p className="mt-2 text-sm text-bone-400">{row.city ?? 'Cidade não definida'}{row.bairro ? ' · ' + row.bairro : ''}{row.province ? ' · ' + row.province : ''}</p>
-                </div>
-              </div>
-              {row.bio ? <p className="mt-4 text-sm leading-6 text-bone-300">{row.bio}</p> : null}
+          {!loading && !filtered.length ? (
+            <Ficha>
+              <EstadoVazio
+                title={scope ? i18n.t('phase12Discovery.emptyScope', { scope }) : i18n.t('phase12Discovery.emptyTitle')}
+                body={i18n.t('phase12Discovery.emptyBody')}
+              />
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link to={'/c/' + row.handle} className="inline-flex min-h-10 items-center rounded-md border border-bone-50/10 px-3 text-sm text-bone-50 no-underline">Abrir perfil</Link>
-                <Botao variant={isFollowing ? 'outline' : 'primary'} type="button" onClick={() => void toggleFollow(row.id)}>{isFollowing ? 'A seguir' : 'Seguir grátis'}</Botao>
+                {scope ? <Botao type="button" onClick={widenLocation}>{i18n.t('phase12Discovery.viewWholeCity')}</Botao> : null}
+                {hasFilters ? <Botao variant="outline" type="button" onClick={clearFilters}>{i18n.t('phase12Discovery.clearFilters')}</Botao> : null}
+                {!directoryRows.length ? <Botao variant="outline" type="button" onClick={reload}>{i18n.t('phase12Discovery.refresh')}</Botao> : null}
               </div>
-            </Ficha>;
+            </Ficha>
+          ) : null}
+
+          {filtered.map((row) => {
+            const isFollowing = row.is_following;
+            return (
+              <Ficha key={row.id} variant={activeSwipe?.id === row.id ? 'focus' : 'default'}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-xl text-bone-50">{row.display_name}</p>
+                    <p className="mt-1 text-sm text-bone-400">@{row.handle}</p>
+                    <p className="mt-2 text-sm text-bone-400">
+                      {row.city ?? 'Cidade não definida'}
+                      {row.bairro ? ' · ' + row.bairro : ''}
+                      {row.province ? ' · ' + row.province : ''}
+                    </p>
+                    {row.follower_count > 0 ? (
+                      <p className="mt-1 text-xs text-bone-500">
+                        {i18n.t('phase12Discovery.followerCount', { count: row.follower_count })}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                {row.bio ? <p className="mt-4 text-sm leading-6 text-bone-300">{row.bio}</p> : null}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link to={'/c/' + row.handle} className="inline-flex min-h-10 items-center rounded-md border border-bone-50/10 px-3 text-sm text-bone-50 no-underline">
+                    {i18n.t('phase12Discovery.openProfile')}
+                  </Link>
+                  <Botao
+                    variant={isFollowing ? 'outline' : 'primary'}
+                    type="button"
+                    onClick={() => void toggleFollow(row.id)}
+                  >
+                    {isFollowing ? i18n.t('phase12Discovery.following') : i18n.t('phase12Discovery.follow')}
+                  </Botao>
+                </div>
+              </Ficha>
+            );
           })}
-          {!filtered.length ? <EstadoVazio title="Nenhuma criadora encontrada" body="Ajusta os filtros ou pesquisa outro perfil." /> : null}
         </div>
 
         <Ficha variant="focus" className="h-fit">
-          <p className="text-xs uppercase tracking-[0.16em] text-bone-500">Swipe de descoberta</p>
-          {activeSwipe ? <>
-            <p className="mt-3 font-display text-4xl text-bone-50">{activeSwipe.display_name}</p>
-            <p className="mt-1 text-sm text-bone-400">@{activeSwipe.handle}</p>
-            <div className="mt-6 grid grid-cols-2 gap-2">
-              <Botao variant="outline" type="button" onClick={() => setCursor((value) => Math.min(filtered.length - 1, value + 1))}>Passar</Botao>
-              <Botao type="button" onClick={() => void toggleFollow(activeSwipe.id)}>Seguir</Botao>
-            </div>
-            <Link to={'/c/' + activeSwipe.handle} className="mt-3 block text-center text-sm text-bone-300 underline underline-offset-4">Abrir perfil</Link>
-          </> : <EstadoVazio title="Sem cartões" body="Ajusta os filtros para iniciar o swipe." />}
+          <p className="text-xs uppercase tracking-[0.16em] text-bone-500">{i18n.t('phase12Discovery.swipe')}</p>
+          {activeSwipe ? (
+            <>
+              <p className="mt-3 font-display text-4xl text-bone-50">{activeSwipe.display_name}</p>
+              <p className="mt-1 text-sm text-bone-400">@{activeSwipe.handle}</p>
+              <div className="mt-6 grid grid-cols-2 gap-2">
+                <Botao
+                  variant="outline"
+                  type="button"
+                  onClick={() => setCursor((value) => Math.min(Math.max(filtered.length - 1, 0), value + 1))}
+                  disabled={filtered.length <= 1}
+                >
+                  {i18n.t('phase12Discovery.pass')}
+                </Botao>
+                <Botao type="button" onClick={() => void toggleFollow(activeSwipe.id)}>
+                  {activeSwipe.is_following ? i18n.t('phase12Discovery.following') : i18n.t('phase12Discovery.follow')}
+                </Botao>
+              </div>
+              <Link to={'/c/' + activeSwipe.handle} className="mt-3 block text-center text-sm text-bone-300 underline underline-offset-4">
+                {i18n.t('phase12Discovery.openProfile')}
+              </Link>
+            </>
+          ) : (
+            <EstadoVazio title={i18n.t('phase12Discovery.noCards')} body={i18n.t('phase12Discovery.noCardsBody')} />
+          )}
         </Ficha>
       </div>
     </PageFrame>
