@@ -98,7 +98,7 @@ export function ContentStudioPage() {
   const [handleState, setHandleState] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'>('idle');
 
   const [caption, setCaption] = useState('');
-  const [visibility, setVisibility] = useState<'public' | 'followers' | 'subscribers' | 'tier' | 'ppv'>('subscribers');
+  const [visibility, setVisibility] = useState<'public' | 'followers' | 'subscribers' | 'tier' | 'ppv' | 'private'>('subscribers');
   const [tierRank, setTierRank] = useState('1');
   const [price, setPrice] = useState('');
   const [isStory, setIsStory] = useState(false);
@@ -393,7 +393,7 @@ export function ContentStudioPage() {
         <div className="mt-7 space-y-5">
           <label><span className="mb-2 block text-sm text-bone-300">{t('content.caption')}</span><textarea value={caption} onChange={(event)=>setCaption(event.target.value)} rows={5} maxLength={5000} className="w-full rounded-md border border-input bg-ink-850 p-3 text-bone-50 outline-none" placeholder={t('content.captionPlaceholder')} /></label>
           <div className="grid gap-5 md:grid-cols-3">
-            <label><span className="mb-2 block text-sm text-bone-300">{t('content.visibility')}</span><select value={visibility} onChange={(event)=>setVisibility(event.target.value as typeof visibility)} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none"><option value="public">{t('content.public')}</option><option value="followers">{t('content.followers')}</option><option value="subscribers">{t('content.subscribers')}</option><option value="tier">{t('content.tier')}</option><option value="ppv">{t('content.ppv')}</option></select></label>
+            <label><span className="mb-2 block text-sm text-bone-300">{t('content.visibility')}</span><select value={visibility} onChange={(event)=>setVisibility(event.target.value as typeof visibility)} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none"><option value="public">{t('content.public')}</option><option value="followers">{t('content.followers')}</option><option value="subscribers">{t('content.subscribers')}</option><option value="tier">{t('content.tier')}</option><option value="ppv">{t('content.ppv')}</option><option value="private">{t('content.private')}</option></select></label>
             {visibility === 'tier' ? <label><span className="mb-2 block text-sm text-bone-300">{t('content.tierRank')}</span><input value={tierRank} onChange={(event)=>setTierRank(event.target.value.replace(/\D/g,'').slice(0,1))} inputMode="numeric" min="1" max="4" className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" /></label> : <div />}
             {visibility === 'ppv' ? <label><span className="mb-2 block text-sm text-bone-300">{t('content.price')}</span><input value={price} onChange={(event)=>setPrice(event.target.value)} inputMode="decimal" className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" placeholder="0.00" /></label> : <div />}
           </div>
