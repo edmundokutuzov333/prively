@@ -25,7 +25,7 @@ async function sql(text, params = []) {
 async function internalSql(text, params = []) {
   const client = await pool.connect();
   try {
-    await client.query("select set_config('app.internal_write','on',true)");
+    await client.query("select set_config('app.internal_write','on',false)");
     return await client.query(text, params);
   } finally {
     client.release();
@@ -237,7 +237,7 @@ try {
     await internalSql("delete from public.channels where id=$1", [ids.channel]);
     await internalSql("delete from auth.users where id = any($1::uuid[])", [[ids.buyer, ids.creator, ids.livePayer]]);
     await internalSql("update public.platform_settings set value='false'::jsonb where key='wallet.production_enabled'");
-    await internalSql("select set_config('app.internal_write','off',true)");
+    await internalSql("select set_config('app.internal_write','off',false)");
   } catch (error) {
     console.error("cleanup_failed", error);
     process.exitCode = 1;
