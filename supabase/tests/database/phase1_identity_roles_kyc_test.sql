@@ -41,7 +41,7 @@ select is((select status from public.profiles where id='71000000-0000-0000-0000-
 select ok((select age_verified_at from public.profiles where id='71000000-0000-0000-0000-000000000001') is null,'protected age_verified_at cannot be changed');
 select ok((select self_excluded_until from public.profiles where id='71000000-0000-0000-0000-000000000001') is null,'protected self exclusion cannot be changed');
 
-select ok(not public.has_role('71000000-0000-0000-0000-000000000001','admin'),'unassigned admin role returns false');
+select is(public.has_role('71000000-0000-0000-0000-000000000001','admin'),false,'unassigned admin role returns false');
 
 do $$
 begin
@@ -64,18 +64,28 @@ update public.profiles
 set status='active',age_verified_at=now(),self_excluded_until=null
 where id='71000000-0000-0000-0000-000000000001';
 
-select ok(not public.is_age_verified('71000000-0000-0000-0000-000000000001'),'pending KYC is not age verified');
+select is(public.is_age_verified('71000000-0000-0000-0000-000000000001'),false,'pending KYC is not age verified');
 
+reset role;
 update public.kyc_verifications
 set status='approved',reviewed_by='71000000-0000-0000-0000-000000000002',reviewed_at=now()
 where user_id='71000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object('sub','71000000-0000-0000-0000-000000000001','role','authenticated','aal','aal1')::text,true);
 
-select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001'),'approved KYC enables age verification');
+select is(public.is_age_verified('71000000-0000-0000-0000-000000000001'),true,'approved KYC enables age verification');
 
+reset role;
 update public.kyc_verifications set status='rejected' where user_id='71000000-0000-0000-0000-000000000001';
-select ok(not public.is_age_verified('71000000-0000-0000-0000-000000000001'),'rejected KYC disables age verification');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object('sub','71000000-0000-0000-0000-000000000001','role','authenticated','aal','aal1')::text,true);
+select is(public.is_age_verified('71000000-0000-0000-0000-000000000001'),false,'rejected KYC disables age verification');
 
-select is(has_function_privilege('authenticated','public.approve_kyc(uuid,boolean,text,uuid)'),false,'authenticated cannot execute approve_kyc');
+select ok(has_function_privilege('authenticated','public.approve_kyc(uuid,boolean,text,uuid)') = false,'authenticated cannot execute approve_kyc');
 
 reset role;
 
