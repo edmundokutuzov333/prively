@@ -71,3 +71,37 @@ Acceptance proof:
 Open gates:
 - suite local/CI completa ainda não executada nesta sessão por falha de resolução DNS de github.com no runner disponível;
 - build Vercel de produção não certificada neste ciclo.
+
+## Fase 5
+Status: IMPLEMENTED / FINAL CI VERIFICATION PENDING
+
+Recarga de carteira:
+- topups e payment_webhook_events hardened contra escrita directa por authenticated;
+- create_topup_intent() com idempotência, KYC, flag de produção e limites server-side;
+- credit_topup() protegido contra amount mismatch e pagamento de topups terminais;
+- expire_pending_topups() mantido a cada 10 minutos;
+- topups adicionado ao supabase_realtime;
+- /carteira ligado a Realtime de balances e topups;
+- retry real para failed/expired/cancelled;
+- provider adapter manual e fail-closed enquanto PaySuite estiver UNVERIFIED;
+- payments-create-topup ACTIVE v35;
+- payments-webhook ACTIVE v34;
+- suite phase5_topup_test.sql e teste do provider adicionados ao CI.
+
+Production verification:
+- wallet.production_enabled=false;
+- topups=0 linhas;
+- direct DML privileges para authenticated removidos;
+- topups em supabase_realtime;
+- reconcile_ledger()=0.
+
+Acceptance proof:
+- docs/reports/fase-5-topup.md
+- supabase/tests/database/phase5_topup_test.sql
+- supabase/functions/_shared/payment-provider.test.ts
+
+Open gates:
+- testes CLI/CI/typecheck/lint/build ainda não executados nesta sessão;
+- PaySuite/sandbox permanece UNVERIFIED;
+- Vercel production build continua não certificada;
+- migration reconciliation 0.6 continua aberta.
