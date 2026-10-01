@@ -243,4 +243,4 @@ Pronto para certificação final: não, porque 0.6/0.7/Vercel/Fase 8 ainda não 
 - 0.7: `scripts/backup-db.mjs` e `.github/workflows/backup.yml` estão versionados. O script usa o bucket dedicado `B2_BACKUP_BUCKET`. Restore drill continua bloqueado sem staging Supabase.
 - Vercel: a equipa ligada não contém um projecto `prively`. Não foi criado deployment alternativo.
 - Fase 8: as três Edge Functions de media estão activas nas versões 39, 13 e 11 e o readiness fail-closed está aplicado. Secret B2, CORS externo e vídeo novo em staging continuam sem evidência operacional.
-- Fase 10 permanece bloqueada.
+- Fase 10: implementação fechada na main; certificação final permanece dependente dos gates 0.6, 0.7, Vercel e Fase 8.
