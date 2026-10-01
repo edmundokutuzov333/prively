@@ -1,6 +1,26 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod";
-import { requireUser, serviceClient } from "../_shared/auth.ts";
-import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
+
+const env = (name: string): string => {
+  const value = Deno.env.get(name);
+  if (!value) throw new Error("missing_env:" + name);
+  return value;
+};
+
+const cors = (request: Request): HeadersInit => {
+  const origin = request.headers.get("origin") ?? "";
+  const allowed = (Deno.env.get("APP_ALLOWED_ORIGINS") ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+  return {
+    "Access-Control-Allow-Origin": origin && allowed.includes(origin) ? origin : "null",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+    "Content-Type": "application/json",
+  };
+};
+
+const respond = (request: Request, body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: cors(request) });
 
 const schema = z.object({
   kycId: z.string().uuid(),
@@ -9,41 +29,46 @@ const schema = z.object({
 });
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return optionsResponse(request);
-  if (request.method !== "POST") return jsonResponse({ code: "method_not_allowed" }, 405, request);
+  if (request.method === "OPTIONS") return new Response("ok", { headers: cors(request) });
+  if (request.method !== "POST") return respond(request, { code: "method_not_allowed" }, 405);
 
   try {
-    const { client, user } = await requireUser(request);
-    const body = schema.parse(await request.json());
+    const client = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), {
+      global: { headers: { Authorization: request.headers.get("Authorization") ?? "" } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
+    const admin = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError || !authData.user) return respond(request, { code: "unauthorized" }, 401);
+
+    const body = schema.parse(await request.json());
     const { data: permitted, error: permissionError } = await client.rpc("has_permission", {
-      _uid: user.id,
+      _uid: authData.user.id,
       _permission: "admin.kyc",
     });
 
-    if (permissionError || permitted !== true) {
-      return jsonResponse({ code: "forbidden" }, 403, request);
-    }
+    if (permissionError || permitted !== true) return respond(request, { code: "forbidden" }, 403);
 
-    const { error } = await serviceClient().rpc("approve_kyc", {
+    const { error } = await admin.rpc("approve_kyc", {
       _kyc: body.kycId,
       _approved: body.approved,
       _reason: body.reason ?? null,
-      _reviewer: user.id,
+      _reviewer: authData.user.id,
     });
 
     if (error) {
       const code = error.message.split(":")[0].trim();
-      const status = code === "kyc_not_found" ? 404 : code === "forbidden" ? 403 : 422;
-      return jsonResponse({ code }, status, request);
+      return respond(request, { code }, code === "kyc_not_found" ? 404 : code === "forbidden" ? 403 : 422);
     }
 
-    return jsonResponse({ ok: true, status: body.approved ? "approved" : "rejected" }, 200, request);
+    return respond(request, { ok: true, status: body.approved ? "approved" : "rejected" });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return jsonResponse({ code: "invalid_kyc_payload" }, 400, request);
-    }
+    if (error instanceof z.ZodError) return respond(request, { code: "invalid_kyc_payload" }, 400);
     const code = error instanceof Error ? error.message : "kyc_review_failed";
-    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400, request);
+    return respond(request, { code }, code === "unauthorized" ? 401 : 400);
   }
 });
