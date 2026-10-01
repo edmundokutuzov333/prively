@@ -179,16 +179,6 @@ select is((
   )
 ),2::bigint,'conversation has exactly two members');
 
-insert into public.messages(conversation_id,sender_id,kind,body)
-values(
-  (select id from public.conversations
-   where channel_id=(select id from public.channels where handle='p11free')
-     and client_id='71100000-0000-0000-0000-000000000001'),
-  '71100000-0000-0000-0000-000000000001',
-  'text',
-  'phase11 realtime isolation probe'
-);
-
 insert into public.blocks(owner_id,blocked_user_id)
 values('71100000-0000-0000-0000-000000000002','71100000-0000-0000-0000-000000000001');
 
