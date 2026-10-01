@@ -31,21 +31,6 @@
       #boot-fallback{margin-top:10px}
       #boot-fallback button{min-height:42px;padding:0 14px;border:0;border-radius:10px;background:#c72e57;color:white;font-weight:600;cursor:pointer}
     </style>
-    <script>
-      window.setTimeout(function(){
-        var shell=document.getElementById('boot-shell');
-        var message=document.getElementById('boot-message');
-        if(!shell || !message) return;
-        message.textContent='A interface está a demorar mais do que o esperado.';
-        if(!document.getElementById('boot-fallback')){
-          var fallback=document.createElement('div');
-          fallback.id='boot-fallback';
-          fallback.innerHTML='<button type="button" onclick="location.reload()">Actualizar página</button>';
-          var card=shell.querySelector('.boot-card');
-          if(card) card.appendChild(fallback);
-        }
-      },12000);
-    </script>
 
     <script type="module" src="/src/main.tsx"></script>
   </body>
