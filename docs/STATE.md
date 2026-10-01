@@ -236,6 +236,31 @@ Status: IMPLEMENTED / TRANSVERSAL GATE CERTIFICATION PENDING
 Pronto para certificação final: não, porque 0.6/0.7/Vercel/Fase 8 ainda não estão verdes.
 
  
+## Fase 11
+Status: IMPLEMENTED / RUNTIME HARDENING APPLIED / CI CERTIFICATION PENDING
+
+Chat em tempo real, regras de DM e privacidade:
+- migration forward-only `20261001164200_phase11_chat_privacy_runtime_contract` aplicada em produção;
+- blocks limitado a gestão própria e sem políticas administrativas genéricas;
+- messages, message_attachments e message_locked_content protegidos por membership + bloqueio bilateral;
+- create_conversation() endurecido para age verification, auto-conversa, bloqueio, dm_mode=off e dm_mode=subscribers;
+- send_message() legado revogado para authenticated; send_message_v2/send_message_guarded permanecem como caminhos protegidos;
+- bucket `prively-chat` continua privado;
+- `chat-attachment-upload-url` ACTIVE v33 e `chat-attachment-url` ACTIVE v34;
+- aviso de privacidade já presente no ecrã de chat;
+- Realtime de messages permanece publicado e o frontend usa filtro por conversation_id;
+- prova transaccional remota de bloqueio passou sem criar mensagem;
+- suite `supabase/tests/database/phase11_chat_privacy_test.sql` foi tornada auto-contida, com utilizadores temporários e rollback, e entrou no CI canónico e native;
+- ADR-015 registado em `docs/decisions.md` para manter chat em Supabase Storage separado do media B2.
+
+Acceptance proof:
+- docs/reports/fase-11-chat.md
+- supabase/tests/database/phase11_chat_privacy_test.sql
+
+Open gates:
+- execução integral do CI final do commit da Fase 11 ainda não é observável através do wrapper GitHub ligado nesta sessão;
+- E2E real de duas sessões WebSocket ainda não executado;
+- bloqueadores transversais 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
 ## Gate transversal 2026-10-01
 
 - CI Phase 9: a lista de suites SQL foi corrigida no commit `8c1544dca2232ef32922a35463fe971c7f03ec09`. O run push correspondente não é observável através do conector GitHub ligado nesta sessão, portanto não é marcado como verde.
