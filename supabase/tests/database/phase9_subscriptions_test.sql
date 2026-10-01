@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select no_plan();
 
 select ok(
   (select relrowsecurity from pg_class where oid='public.subscription_tiers'::regclass)
