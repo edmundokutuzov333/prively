@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(27);
 
 select ok(to_regclass('public.conversations') is not null, 'conversations exists');
 select ok(to_regclass('public.conversation_members') is not null, 'conversation_members exists');
@@ -97,6 +97,16 @@ select public.accept_communication_privacy(
 
 set local role authenticated;
 select set_config('app.internal_write','off',true);
+
+select is((
+  select count(*)
+  from public.messages
+  where conversation_id=(
+    select id from public.conversations
+    where channel_id=(select id from public.channels where handle='p11free')
+      and client_id='71100000-0000-0000-0000-000000000001'
+  )
+),1::bigint,'participant reads conversation messages');
 
 select lives_ok($$
   select public.create_conversation(
