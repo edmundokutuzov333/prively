@@ -167,7 +167,7 @@ CREATE POLICY balances_owner_read ON public.balances
 DROP POLICY IF EXISTS balances_admin_read ON public.balances;
 CREATE POLICY balances_admin_read ON public.balances
   FOR SELECT TO authenticated
-  USING (SELECT private.is_platform_admin());
+  USING ((SELECT private.is_platform_admin()));
 
 DROP POLICY IF EXISTS balances_insert_blocked ON public.balances;
 CREATE POLICY balances_insert_blocked ON public.balances
