@@ -82,6 +82,7 @@ errors: { unauthorized: 'A tua sessão expirou. Entra novamente.', forbidden: 'N
   },
   phase10Ppv: { title: 'Compras', intro: 'Histórico real de PPV e subscrições, ordenado pela data da transacção.', ppv: 'PPV', subscription: 'Subscrição', contentPurchased: 'Conteúdo adquirido', paid: 'Pago', period: '{{count}} mês(es)', emptyTitle: 'Sem compras', emptyBody: 'Os teus conteúdos PPV e subscrições reais aparecerão aqui.', downloadReceipt: 'Descarregar recibo', receiptUnavailable: 'Recibo indisponível', loadError: 'Não foi possível carregar o histórico de compras.' },
   phase12Discovery: {
+    loading: 'A carregar a descoberta...',
     title: 'Descobrir criadoras',
     intro: 'Encontra criadoras reais por perfil, localização, conteúdo e disponibilidade.',
     search: 'Pesquisar perfil ou @handle',
