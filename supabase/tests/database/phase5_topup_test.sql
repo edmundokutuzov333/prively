@@ -161,15 +161,17 @@ begin
     'phase5-provider-ref',
     'paid',
     10000,
-    'phase5-provider-tx'
+    'phase5-provider-tx-1'
   );
 
-  perform public.credit_topup(
-    'phase5-provider-ref',
-    'paid',
-    10000,
-    'phase5-provider-tx-duplicate'
-  );
+  for i in 2..10 loop
+    perform public.credit_topup(
+      'phase5-provider-ref',
+      'paid',
+      10000,
+      'phase5-provider-tx-' || i::text
+    );
+  end loop;
 
   begin
     perform public.credit_topup(
