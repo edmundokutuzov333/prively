@@ -182,7 +182,7 @@ begin
   insert into public.posts(id,channel_id,caption,visibility,status,min_tier_rank)
   values
     (post_subscribers,channel,'Subscriber post','subscribers','published',null),
-    (post_tier,channel,'Tier post','tier',2);
+    (post_tier,channel,'Tier post','tier','published',2);
 
   perform set_config('request.jwt.claims',
     json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2')::text,true);
