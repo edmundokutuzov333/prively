@@ -35,17 +35,32 @@ begin
 
   perform set_config('app.internal_write','on',true);
   update public.profiles
-  set status='active',age_verified_at=now()
+  set status='active'
   where id in (creator,client);
 
   insert into public.user_roles(user_id,role)
   values(creator,'creator')
   on conflict do nothing;
 
-  insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
+  insert into public.kyc_verifications(user_id,provider,status,provider_ref)
   values
-    (creator,'manual','approved','native:'||creator::text,now()),
-    (client,'manual','approved','native:'||client::text,now());
+    (creator,'manual','pending','native:'||creator::text),
+    (client,'manual','pending','native:'||client::text);
+
+  set local role service_role;
+  perform public.approve_kyc(
+    (select id from public.kyc_verifications where user_id=creator limit 1),
+    true,
+    'phase5-creator-approved',
+    creator
+  );
+  perform public.approve_kyc(
+    (select id from public.kyc_verifications where user_id=client limit 1),
+    true,
+    'phase5-client-approved',
+    creator
+  );
+  set local role postgres;
 
   insert into public.creator_terms_acceptances(user_id,version,source,declarations)
   values(
