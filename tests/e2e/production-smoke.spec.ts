@@ -13,7 +13,7 @@ test('[production-smoke] production root boots with visible UI', async ({ page }
       if (message.type() === 'error') pageErrors.push(message.text());
     });
 
-    const response = await page.goto(process.env.PRIVELY_PRODUCTION_URL ?? 'https://privately.vercel.app/', {
+    const response = await page.goto(process.env.PRIVELY_PRODUCTION_URL ?? 'https://prively.vercel.app/', {
       waitUntil: 'domcontentloaded',
       timeout: 30_000,
     });
