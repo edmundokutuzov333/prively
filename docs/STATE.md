@@ -143,3 +143,38 @@ Open gates:
 - Prively CI no commit e005bc2aab6b620beefeec1321bc23e5da42c729 ainda em execução;
 - bloqueador transversal 0.6 de reconciliação de migrações continua aberto;
 - Vercel production build não certificada.
+
+
+## Fase 7
+Status: IMPLEMENTED / FINAL CI CERTIFICATION PENDING
+
+Publicação de conteúdo com visibilidade granular:
+- content_consents criado com RLS, unicidade por post e trigger imutável;
+- attest_post_content_consent() criado para persistir a declaração de maiores de 18 anos e consentimento;
+- publish_post() exige consentimento antes de qualquer publicação;
+- publish_scheduled_posts() ignora posts agendados sem consentimento;
+- DML directo por authenticated em posts removido; a escrita passa pelo RPC de conteúdo;
+- /estudio/conteudo passou a persistir consentimento e suporta publicação imediata ou agendada;
+- i18n pt-MZ/en/fr actualizado;
+- suite phase7_content_publication_test.sql criada com 30 assertions;
+- suite adicionada ao CI.
+
+Production verification:
+- migration 20261001150000_phase7_content_publication_contract aplicada;
+- content_consents em produção = 0 linhas após prova transaccional rollback;
+- posts INSERT/UPDATE/DELETE por authenticated = false;
+- prively-publish-posts activo a cada minuto;
+- publish_post() e publish_scheduled_posts() contêm a guarda de consentimento;
+- reconcile_ledger() = 0;
+- prova transaccional real passou: consentimento obrigatório, PPV sem preço bloqueado e scheduled invisível antes de publish_at.
+
+Acceptance proof:
+- docs/reports/fase-7-content-publication.md
+- supabase/tests/database/phase7_content_publication_test.sql
+
+Open gates:
+- CI completo / supabase test db ainda não certificado como verde nesta execução;
+- bloqueador transversal 0.6 de reconciliação de migrações continua aberto;
+- Vercel production project continua não certificado;
+- smoke E2E de produção continua com o problema de selector de autenticação já existente em /entrar.
+- Fase 8 não inicia antes de estes gates serem resolvidos.
