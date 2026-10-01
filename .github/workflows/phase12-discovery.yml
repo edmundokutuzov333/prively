@@ -1,0 +1,34 @@
+name: Prively Phase 12 Discovery CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/database/phase12_discovery_test.sql'
+      - '.github/workflows/phase12-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase12_database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+      - name: Start local Supabase
+        run: supabase start
+      - name: Rebuild database from zero
+        run: supabase db reset
+      - name: Run Phase 12 discovery suite
+        run: supabase test db supabase/tests/database/phase12_discovery_test.sql
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
