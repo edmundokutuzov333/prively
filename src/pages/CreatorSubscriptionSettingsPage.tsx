@@ -73,17 +73,6 @@ export function CreatorSubscriptionSettingsPage() {
         : nextChannels[0]?.id ?? '';
       setChannelId(nextChannelId);
 
-      if (nextChannelId) {
-        const tierResult = await sb
-          .from('subscription_tiers')
-          .select('id,channel_id,name,rank,price_month,discounts')
-          .eq('channel_id', nextChannelId)
-          .order('rank', { ascending: true });
-        if (tierResult.error) throw tierResult.error;
-        setTiers((tierResult.data ?? []) as Tier[]);
-      } else {
-        setTiers([]);
-      }
     } catch (value: unknown) {
       setError(platformErrorKey(value));
     } finally {
@@ -94,6 +83,27 @@ export function CreatorSubscriptionSettingsPage() {
   useEffect(() => {
     void load();
   }, [user]);
+
+  useEffect(() => {
+    const loadTiers = async () => {
+      if (!channelId) {
+        setTiers([]);
+        return;
+      }
+      try {
+        const result = await requireSupabase()
+          .from('subscription_tiers')
+          .select('id,channel_id,name,rank,price_month,discounts')
+          .eq('channel_id', channelId)
+          .order('rank', { ascending: true });
+        if (result.error) throw result.error;
+        setTiers((result.data ?? []) as Tier[]);
+      } catch (value: unknown) {
+        setError(platformErrorKey(value));
+      }
+    };
+    void loadTiers();
+  }, [channelId]);
 
   const selectedTier = useMemo(
     () => tiers.find((tier) => tier.rank === rank) ?? null,
