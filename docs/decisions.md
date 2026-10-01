@@ -100,3 +100,11 @@
 **Decisão:** a Fase 13 reutiliza os contratos existentes e acrescenta apenas o hardening forward-only necessário: `create_panic_event()` com validação da localização, DML directo do cliente revogado em `reports` e `panic_events`, nova Edge Function autenticada `trigger-panic` e botão persistente no workspace de criadora.
 
 **Consequência:** denúncias e pânico continuam numa única cadeia de auditoria e moderação. O provider SMS externo não é tratado como configurado sem evidência operacional.
+
+## ADR-018: Fase 14 reutiliza o motor financeiro existente e expõe read models server-side para ganhos e storage
+
+**Contexto:** o runtime de payouts já tinha evoluído além do SQL base da Fase 14, incluindo KYC, termos de criadora, MFA financeiro recente, idempotência, `FOR UPDATE`, hold em escrow e auditoria financeira.
+
+**Decisão:** não duplicar `payouts` nem substituir `request_payout()`. A Fase 14 adiciona apenas `get_creator_earnings_summary()` e `get_admin_storage_status()`, além da superfície `/admin/storage`. O estado B2 é apresentado a partir de `media_assets.file_size_bytes` e é explicitamente distinguido de uma medição externa do bucket.
+
+**Consequência:** o caminho financeiro certificado mantém a mesma semântica de segurança e o admin ganha uma leitura real de storage sem inventar dados quando backups externos ainda não estão confirmados.
