@@ -89,7 +89,7 @@ begin
   perform set_config('app.phase8_creator',creator::text,false);
   perform set_config('app.phase8_viewer',viewer::text,false);
   perform set_config('app.phase8_post_public',post_public::text,false);
-end $;
+end $$;
 
 set local role service_role;
 update public.posts
@@ -99,7 +99,7 @@ reset role;
 
 reset role;
 
-do $
+do $$
 declare
   creator uuid := current_setting('app.phase8_creator')::uuid;
   viewer uuid := current_setting('app.phase8_viewer')::uuid;
@@ -161,7 +161,7 @@ begin
 
   perform set_config('app.phase8_followers_post',followers_post::text,false);
   perform set_config('app.phase8_ppv_post',ppv_post::text,false);
-end $;
+end $$;
 
 reset role;
 
