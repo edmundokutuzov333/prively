@@ -22,6 +22,15 @@ async function sql(text, params = []) {
   try { return await client.query(text, params); }
   finally { client.release(); }
 }
+async function internalSql(text, params = []) {
+  const client = await pool.connect();
+  try {
+    await client.query("select set_config('app.internal_write','on',true)");
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+}
 async function withRole(role, fn) {
   const client = await pool.connect();
   try {
@@ -34,15 +43,14 @@ function record(id, expected, observed, evidence, pass) {
 }
 
 try {
-  await sql("select set_config('app.internal_write','on',true)");
-  await sql(
+  await internalSql(
     "insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data,email_confirmed_at,created_at,updated_at) values " +
     "($1,'authenticated','authenticated','resilience-buyer@example.test','test',$4,now(),now(),now())," +
     "($2,'authenticated','authenticated','resilience-creator@example.test','test',$5,now(),now(),now())," +
     "($3,'authenticated','authenticated','resilience-live@example.test','test',$4,now(),now(),now()) on conflict(id) do nothing",
     [ids.buyer, ids.creator, ids.livePayer, '{"handle":"resilience_buyer"}', '{"handle":"resilience_creator","signup_role":"creator"}'],
   );
-  await sql("update public.profiles set age_verified_at=now(),status='active' where id = any($1::uuid[])", [[ids.buyer, ids.creator, ids.livePayer]]);
+  await internalSql("update public.profiles set age_verified_at=now(),status='active' where id = any($1::uuid[])", [[ids.buyer, ids.creator, ids.livePayer]]);
   await sql("insert into public.user_roles(user_id,role) values ($1,'creator') on conflict do nothing", [ids.creator]);
   await sql(
     "insert into public.channels(id,owner_id,handle,display_name,dm_mode) values ($1,$2,'resilience_creator','Resilience Creator','paid') on conflict(id) do nothing",
@@ -218,19 +226,18 @@ try {
   if (!allPassed) process.exitCode = 1;
 } finally {
   try {
-    await sql("select set_config('app.internal_write','on',true)");
-    await sql("delete from public.ledger_entries where ref_id=$1 and ref_type='channel' and kind='resilience_concurrency'", [ids.spendRef]);
-    await sql("delete from public.live_billing_ticks where session_id=$1", [ids.liveSession]);
-    await sql("delete from public.live_participants where session_id=$1", [ids.liveSession]);
-    await sql("delete from public.live_enforcement_actions where session_id=$1", [ids.liveSession]);
-    await sql("delete from public.live_sessions where id=$1", [ids.liveSession]);
-    await sql("delete from public.topups where provider_ref = any($1::text[])", [[refs.duplicate, refs.ordered]]);
-    await sql("delete from public.idempotency_keys where owner_id in ($1,$2,$3)", [ids.buyer, ids.creator, ids.livePayer]);
-    await sql("update public.balances set balance=0 where owner_id in ($1,$2) and account='wallet'", [ids.buyer, ids.livePayer]);
-    await sql("delete from public.channels where id=$1", [ids.channel]);
-    await sql("delete from auth.users where id = any($1::uuid[])", [[ids.buyer, ids.creator, ids.livePayer]]);
-    await sql("update public.platform_settings set value='false'::jsonb where key='wallet.production_enabled'");
-    await sql("select set_config('app.internal_write','off',true)");
+    await internalSql("delete from public.ledger_entries where ref_id=$1 and ref_type='channel' and kind='resilience_concurrency'", [ids.spendRef]);
+    await internalSql("delete from public.live_billing_ticks where session_id=$1", [ids.liveSession]);
+    await internalSql("delete from public.live_participants where session_id=$1", [ids.liveSession]);
+    await internalSql("delete from public.live_enforcement_actions where session_id=$1", [ids.liveSession]);
+    await internalSql("delete from public.live_sessions where id=$1", [ids.liveSession]);
+    await internalSql("delete from public.topups where provider_ref = any($1::text[])", [[refs.duplicate, refs.ordered]]);
+    await internalSql("delete from public.idempotency_keys where owner_id in ($1,$2,$3)", [ids.buyer, ids.creator, ids.livePayer]);
+    await internalSql("update public.balances set balance=0 where owner_id in ($1,$2) and account='wallet'", [ids.buyer, ids.livePayer]);
+    await internalSql("delete from public.channels where id=$1", [ids.channel]);
+    await internalSql("delete from auth.users where id = any($1::uuid[])", [[ids.buyer, ids.creator, ids.livePayer]]);
+    await internalSql("update public.platform_settings set value='false'::jsonb where key='wallet.production_enabled'");
+    await internalSql("select set_config('app.internal_write','off',true)");
   } catch (error) {
     console.error("cleanup_failed", error);
     process.exitCode = 1;
