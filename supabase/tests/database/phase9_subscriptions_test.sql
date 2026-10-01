@@ -109,7 +109,7 @@ begin
   on conflict do nothing;
 
   insert into public.channels(id,owner_id,handle,display_name,is_seed)
-  values(channel,creator,'phase9_subscription_creator','Phase 9 Subscription Creator',true)
+  values(channel,creator,'phase9_sub_creator','Phase 9 Subscription Creator',true)
   on conflict(id) do nothing;
 
   insert into public.balances(owner_id,account,balance)
