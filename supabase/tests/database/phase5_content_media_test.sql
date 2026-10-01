@@ -39,7 +39,9 @@ begin
   where id in (creator,client);
 
   insert into public.user_roles(user_id,role)
-  values(creator,'creator')
+  values
+    (creator,'creator'),
+    (creator,'compliance')
   on conflict do nothing;
 
   insert into public.kyc_verifications(user_id,provider,status,provider_ref)
