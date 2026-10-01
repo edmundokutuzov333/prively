@@ -11,7 +11,17 @@ Acceptance proof is tracked in:
 - docs/reports/fase-1-identity-roles.md
 - supabase/tests/database/phase1_identity_roles_kyc_test.sql
 
-CI run `36839605507`: quality and Edge Functions are green; database/E2E are currently blocked inside `Start local Supabase`. The phase is not marked fully closed until that runner completes.
-
 ## Fase 2
 Status: IMPLEMENTED / VERIFICATION PENDING
+
+The manual KYC flow, reviewer guard, protected weekly-volume metric and protected status detail are implemented on main and the required Supabase migrations are applied to production.
+
+Acceptance proof is tracked in:
+- docs/reports/fase-2-kyc.md
+- supabase/tests/database/phase2_kyc_test.sql
+
+Open gates:
+- CI for the current main commit is not yet verified green.
+- Storage HTTP unsigned-URL integration proof remains UNVERIFIED.
+- Production Vercel project remains NOT VERIFIED.
+- Supabase staging project is still missing for restore drill.
