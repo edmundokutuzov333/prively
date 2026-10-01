@@ -108,6 +108,8 @@ try {
     );
   }
 
+  await internalSql("update public.balances set balance=15000 where owner_id=$1 and account='wallet'", [ids.buyer]);
+
   {
     const calls = await Promise.all([1,2].map(function(i) {
       return withRole("service_role", async function(client) {
@@ -226,7 +228,6 @@ try {
   if (!allPassed) process.exitCode = 1;
 } finally {
   try {
-    await internalSql("delete from public.ledger_entries where ref_id=$1 and ref_type='channel' and kind='resilience_concurrency'", [ids.spendRef]);
     await internalSql("delete from public.live_billing_ticks where session_id=$1", [ids.liveSession]);
     await internalSql("delete from public.live_participants where session_id=$1", [ids.liveSession]);
     await internalSql("delete from public.live_enforcement_actions where session_id=$1", [ids.liveSession]);
@@ -237,7 +238,6 @@ try {
     await internalSql("delete from public.channels where id=$1", [ids.channel]);
     await internalSql("delete from auth.users where id = any($1::uuid[])", [[ids.buyer, ids.creator, ids.livePayer]]);
     await internalSql("update public.platform_settings set value='false'::jsonb where key='wallet.production_enabled'");
-    await internalSql("select set_config('app.internal_write','off',false)");
   } catch (error) {
     console.error("cleanup_failed", error);
     process.exitCode = 1;
