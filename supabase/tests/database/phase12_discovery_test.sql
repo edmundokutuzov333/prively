@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(22);
 
 select ok(to_regclass('public.follows') is not null, 'follows exists');
 select ok((select relrowsecurity from pg_class where oid='public.follows'::regclass), 'follows RLS enabled');
