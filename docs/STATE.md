@@ -298,3 +298,37 @@ Open gates:
 - Vercel: a equipa ligada não contém um projecto `prively`. Não foi criado deployment alternativo.
 - Fase 8: as três Edge Functions de media estão activas nas versões 39, 13 e 11 e o readiness fail-closed está aplicado. Secret B2, CORS externo e vídeo novo em staging continuam sem evidência operacional.
 - Fase 10: implementação fechada na main; certificação final permanece dependente dos gates 0.6, 0.7, Vercel e Fase 8.
+
+## Fase 13
+Status: IMPLEMENTED / RUNTIME VERIFIED / CI CERTIFICATION PENDING
+
+Denúncias, moderação e botão de pânico:
+- migration forward-only `20261001150231_phase13_safety_runtime_contract` aplicada em produção;
+- `reports`, `panic_events`, `trusted_contacts` e `audit_log` foram reutilizados do modelo já existente da Fase 8, sem duplicação;
+- `create_panic_event(boolean,uuid)` endurecido com autenticação e validação server-side da localização;
+- DML directo por `authenticated` em `reports` e `panic_events` revogado;
+- `trigger-panic` ACTIVE v1 com JWT obrigatório, encadeando criação do incidente e `safety-alert-dispatch`;
+- `CreatorPanicButton` persistente montado no `WorkspaceLayout` de criadora;
+- estados idle/busy/success/error e i18n pt-MZ/en/fr;
+- suite `supabase/tests/database/phase13_safety_test.sql` com 16 assertions;
+- workflow dedicado `.github/workflows/phase13-safety.yml`;
+- ADR-017 e relatório `docs/reports/fase-13-safety.md` registados.
+
+Production verification:
+- RPCs de denúncia e pânico executados numa transacção real;
+- `report_created` e `panic_event_created` confirmados no `audit_log`;
+- grants de RPC e bloqueio de DML directo confirmados;
+- rollback deixou 0 fixtures persistentes;
+- `trigger-panic` confirmado ACTIVE v1 em produção.
+
+Acceptance:
+- denúncia auditada: ✓;
+- pânico persistido e dispatcher encadeado: ✓ por contrato e prova do RPC; invocação live da Edge Function não executada para evitar efeitos laterais;
+- botão persistente em `/estudio`: ✓.
+
+Open gates:
+- CI GitHub da Fase 13 não observável através do conector disponível nesta sessão; não marcado como verde;
+- pgTAP não executado directamente em produção porque a extensão não está instalada;
+- provider externo SMS/safety continua não configurado ou UNVERIFIED;
+- 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
+
