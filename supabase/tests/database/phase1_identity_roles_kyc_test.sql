@@ -23,7 +23,8 @@ on conflict(id) do nothing;
 insert into public.user_roles(user_id,role)
 values
   ('71000000-0000-0000-0000-000000000001','client'),
-  ('71000000-0000-0000-0000-000000000002','compliance')
+  ('71000000-0000-0000-0000-000000000002','compliance'),
+  ('71000000-0000-0000-0000-000000000002','admin')
 on conflict do nothing;
 
 set local role authenticated;
