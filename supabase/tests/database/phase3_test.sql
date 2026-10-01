@@ -43,6 +43,7 @@ begin
   perform set_config('request.jwt.claim.role','authenticated',true);
   perform set_config('request.jwt.claims',json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2')::text,true);
   set local role service_role;
+  perform set_config('request.jwt.claim.sub',creator::text,true);
   perform set_config('request.jwt.claim.role','service_role',true);
   perform set_config('request.jwt.claims',json_build_object('role','service_role')::text,true);
   perform public.approve_kyc(
