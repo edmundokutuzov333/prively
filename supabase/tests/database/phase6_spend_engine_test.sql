@@ -109,6 +109,12 @@ begin
   set status='active', age_verified_at=now()
   where id in (buyer,creator);
 
+  insert into public.kyc_verifications(user_id,provider,status,reviewed_at)
+  values
+    (buyer,'manual','approved',now()),
+    (creator,'manual','approved',now())
+  on conflict do nothing;
+
   insert into public.user_roles(user_id,role)
   values(creator,'creator')
   on conflict do nothing;
