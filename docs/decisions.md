@@ -73,3 +73,14 @@
 **Contexto:** a verificação da Fase 8 encontrou uma divergência: vídeos B2 podiam ficar com `processing_status='ready'` antes de existirem thumbnail desfocada, watermark, HLS e estado `streamtape_status='ready'`, porque o caminho de vídeo de `refresh_media_processing_status()` retornava `ready` antecipadamente.
 **Decisão:** remover esse fast-path e exigir, para vídeos B2, derivados server-side e Streamtape pronto antes de marcar o asset como `ready`. `get_media_access()` também passa a exigir o mesmo contrato para não-owner/admin.
 **Consequência:** media incompleta fica em `processing`/`failed` e não pode ser entregue como se estivesse pronta. O worker/processor externo continua a ser um pré-requisito operacional e não é substituído por dados fabricados.
+
+
+## ADR-013: Assinaturas usam contrato server-side e tiers geridos pelo owner
+**Contexto:** o schema de subscrições já existia em produção, mas o RPC de compra tinha perdido o grant a `authenticated`, a UI estava limitada ao rank 1 e a renovação não expirava de forma determinística `past_due` fora da janela de 3 dias.
+**Decisão:** reutilizar `subscription_tiers`/`subscriptions`, revogar DML directo do cliente, expor criação/actualização de tiers por RPC protegido ao owner do canal, manter `subscribe_to_tier` idempotente e calcular cobranças exclusivamente no servidor. A renovação diária aplica explicitamente a grace window de 3 dias e expira estados fora dela.
+**Consequência:** a ausência de tiers reais deixa a UI vazia em vez de inventar dados; preços, descontos, permissões e acesso a conteúdo continuam sob controlo server-side.
+
+## ADR-014: Migration Phase 9 inicialmente registada sem DDL deve ser preservada
+**Contexto:** a primeira execução operacional da migration Phase 9 registou a versão remota sem aplicar o SQL porque o comando enviado continha apenas um comentário.
+**Decisão:** não editar nem apagar essa migration aplicada. Foi criada e aplicada uma nova migration forward-only com o DDL completo.
+**Consequência:** o histórico remoto mantém integridade; a migration efectiva é `phase9_subscription_levels_runtime_contract_apply`.
