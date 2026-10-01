@@ -181,30 +181,34 @@ Open gates:
 - Fase 8 não inicia antes de estes gates serem resolvidos.
 
 
+
 ## Fase 8
-Status: IMPLEMENTED / PARTIAL VERIFICATION — CERTIFICATION PENDING
+Status: IMPLEMENTED / HARDENED / FINAL CERTIFICATION PENDING
 
 Entrega segura de media:
-- não foi recriado nem alterado o trio certificado get-media-url / create-media-upload / get-video-playback-url;
-- produção confirmou ACTIVE v39 / v13 / v11, todos com verify_jwt=true;
-- get_media_access() exige autorização via can_view_post(), integridade, moderação, scan e processing ready;
-- can_view_post() testado em transacção real para owner, public, followers e PPV;
-- vídeos B2 são bloqueados no get-media-url() com video_delivery_required e só passam por get-video-playback-url() quando Streamtape está ready;
-- media_access_logs tem RLS activo e leitura restrita ao próprio utilizador/admin.audit;
-- suite phase8_media_delivery_verification_test.sql criada com 23 assertions e adicionada ao CI;
-- nenhuma migração de produção foi necessária nesta fase.
+- trio certificado `get-media-url` / `create-media-upload` / `get-video-playback-url` não foi alterado;
+- produção confirmou ACTIVE v39 / v13 / v11, com JWT obrigatório;
+- `get_media_access()` usa `can_view_post()` e agora exige derivados seguros para acesso não-owner/admin;
+- `refresh_media_processing_status()` corrigido para remover o fast-path de vídeo que permitia `ready` sem thumbnail, watermark, HLS e Streamtape pronto;
+- RLS de `media_assets` e `media_access_logs` activa;
+- `refresh_media_processing_status()` executável apenas por service_role;
+- suite existente `phase8_media_delivery_verification_test.sql` mantida;
+- suite nova `phase8_media_security_test.sql` com 21 assertions adicionada ao CI;
+- ADR-012 registado em `docs/decisions.md`.
 
 Production verification:
-- assets efectivos observados usam storage_provider=backblaze_b2;
-- asset metadata efectiva observada: media_backend=b2 e bucket prively-media-originals-2026;
-- prively-publish-posts e streamtape-status-poll permanecem activos; streamtape-status-poll corre a cada 2 minutos;
-- reconcile_ledger() = 0.
+- migration `20261001170000_phase8_media_derivative_readiness_fix` aplicada;
+- o único asset de vídeo activo tinha `streamtape_status='ready'`, mas não tinha thumbnail/watermark/HLS; a correcção mudou o estado de `ready` para `failed` por falta de derivados/processor;
+- media activos: 1; vídeos activos: 1; vídeos activos `ready`: 0;
+- thumbnails derivadas activas: 0; watermarks derivadas activas: 0;
+- `reconcile_ledger()=0`;
+- nenhuma alteração foi feita às três Edge Functions certificadas.
 
-Open gates:
-- MEDIA_BACKEND no Secret não foi confirmado directamente porque a sessão disponível não expõe supabase secrets list;
-- CORS aplicado no bucket B2 não foi confirmado directamente;
-- não existe staging disponível para executar uma nova transição end-to-end not_started -> processing -> completed;
-- o único media asset não apagado actualmente é seed/draft e não tem thumb_blur_path/hls_path/watermark_path preenchidos;
-- CI completo ainda não certificado nesta execução;
-- blockers 0.6/0.7 e verificação Vercel continuam abertos.
-- Fase 9 não inicia antes destes gates.
+Acceptance / open gates:
+- Secret `MEDIA_BACKEND=b2`: UNVERIFIED directamente; runtime efectivo observado é B2.
+- CORS B2 no painel/API: UNVERIFIED.
+- staging Supabase: inexistente; transição de vídeo novo end-to-end UNVERIFIED.
+- processor externo de media: não configurado no asset activo; thumbnail/watermark jobs bloqueados com `processor_not_configured`.
+- CI completo ainda não certificado.
+- Vercel e blockers 0.6/0.7 continuam abertos.
+- Fase 9 não inicia.
