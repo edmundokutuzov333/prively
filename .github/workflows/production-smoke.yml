@@ -13,8 +13,8 @@ jobs:
     timeout-minutes: 15
     env:
       VITE_APP_ENV: production
-      PLAYWRIGHT_BASE_URL: https://prively.vercel.app
-      PRIVELY_PRODUCTION_URL: https://prively.vercel.app
+      PLAYWRIGHT_BASE_URL: https://privately.vercel.app
+      PRIVELY_PRODUCTION_URL: https://privately.vercel.app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
