@@ -1,10 +1,7 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
-import {
-  requiredEnv,
-  updateTopup,
-} from "../_shared/payments.ts";
-import { amountUnit } from "../_shared/money.ts";
+import { requiredEnv, updateTopup } from "../_shared/payments.ts";
+import { amountUnit, providerAmountToCentavos } from "../_shared/money.ts";
 import { getPaymentProvider } from "../_shared/payment-provider.ts";
 
 Deno.serve(async (request) => {
@@ -31,8 +28,9 @@ Deno.serve(async (request) => {
       return jsonResponse({ code: "invalid_topup_request" }, 400);
     }
 
-    const amount = providerAmountToCentavos(body.amount, 'major');
-    const unit = amountUnit();
+    const amount = providerAmountToCentavos(body.amount, "major");
+    if (amount === null) return jsonResponse({ code: "invalid_amount" }, 400);
+
     const method = body.method.toLowerCase();
 
     const { data: intent, error: intentError } = await client.rpc("create_topup_intent", {
@@ -66,150 +64,51 @@ Deno.serve(async (request) => {
     }
 
     const provider = getPaymentProvider();
-    const unit = amountUnit();
+    const providerUnit = amountUnit();
 
-    let charge;
     try {
-      charge = await provider.createCharge({
+      const charge = await provider.createCharge({
         reference: topup.internal_reference,
         amount: topup.amount / 100,
         currency: "MZN",
-        method: topup.method,
+        method: topup.method as "mpesa" | "emola" | "mkesh" | "ponto24" | "card",
         customerContact: user.phone ?? user.email ?? undefined,
         callbackUrl: `${requiredEnv("SUPABASE_URL")}/functions/v1/payments-webhook`,
+      });
+
+      await updateTopup(topup.id, {
+        provider_ref: charge.providerReference,
+        provider_status: charge.providerStatus,
+        provider_checkout_url: charge.checkoutUrl,
+        status: charge.providerStatus,
+        metadata: { provider_response: charge.raw, provider_unit: providerUnit },
+        updated_at: new Date().toISOString(),
+      });
+
+      return jsonResponse({
+        ok: true,
+        topupId: topup.id,
+        reference: topup.internal_reference,
+        providerReference: charge.providerReference,
+        status: charge.providerStatus,
+        checkoutUrl: charge.checkoutUrl,
       });
     } catch (error) {
       const code = error instanceof Error ? error.message : "provider_unverified";
       await updateTopup(topup.id, {
         status: "failed",
         failed_at: new Date().toISOString(),
-        metadata: { provider_error: code, provider_unit: unit },
+        metadata: { provider_error: code, provider_unit: providerUnit },
       });
+
       return jsonResponse(
         { code },
         code === "provider_unverified" ? 503 : 502,
       );
     }
-
-    await updateTopup(topup.id, {
-      provider_ref: charge.providerReference,
-      provider_status: charge.providerStatus,
-      provider_checkout_url: charge.checkoutUrl,
-      status: charge.providerStatus,
-      metadata: { provider_response: charge.raw },
-      updated_at: new Date().toISOString(),
-    });
-
-    return jsonResponse({ code: "payment_contact_required" }, 400);
-    }
-
-    const providerController = new AbortController();
-    const providerTimeout = setTimeout(() => providerController.abort(), 15_000);
-
-    let providerResponse: Response;
-    try {
-      providerResponse = await fetch(createChargeUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "Idempotency-Key": topup.internal_reference,
-        },
-        body: JSON.stringify({
-          reference: topup.internal_reference,
-          amount: centavosToProviderAmount(topup.amount, unit),
-          currency: "MZN",
-          method: topup.method,
-          customer_contact: contact,
-          callback_url: webhookUrl,
-        }),
-        signal: providerController.signal,
-      });
-    } catch (error) {
-      const timedOut = error instanceof DOMException && error.name === "AbortError";
-      return jsonResponse({ code: timedOut ? "provider_timeout" : "provider_unavailable" }, timedOut ? 504 : 502);
-    } finally {
-      clearTimeout(providerTimeout);
-    }
-
-    const raw = await providerResponse.text();
-    let provider: Record<string, unknown>;
-    try {
-      provider = parseProviderJson(JSON.parse(raw));
-    } catch {
-      await updateTopup(topup.id, {
-        status: "failed",
-        failed_at: new Date().toISOString(),
-        metadata: { provider_http_status: providerResponse.status },
-      });
-      return jsonResponse({ code: "provider_invalid_response" }, 502);
-    }
-
-    if (!providerResponse.ok) {
-      await updateTopup(topup.id, {
-        status: "failed",
-        failed_at: new Date().toISOString(),
-        provider_status: nestedString(provider, ["status", "state", "data.status", "data.state"]),
-        metadata: { provider_http_status: providerResponse.status, provider: provider },
-      });
-      return jsonResponse({ code: "provider_charge_failed" }, 502);
-    }
-
-    const providerRef =
-      nestedString(provider, [
-        "reference",
-        "transaction_reference",
-        "data.reference",
-        "data.transaction_reference",
-        "id",
-        "data.id",
-      ]) ?? topup.internal_reference;
-
-    const providerStatus =
-      nestedString(provider, ["status", "state", "data.status", "data.state"]) ?? "pending";
-
-    const checkoutUrl = nestedString(provider, [
-      "checkout_url",
-      "checkoutUrl",
-      "data.checkout_url",
-      "data.checkoutUrl",
-    ]);
-
-    const reportedAmount = providerAmountToCentavos(
-      provider.data && typeof provider.data === "object"
-        ? (provider.data as Record<string, unknown>).amount
-        : provider.amount,
-      unit,
-    );
-
-    if (reportedAmount !== null && reportedAmount !== topup.amount) {
-      await updateTopup(topup.id, {
-        status: "failed",
-        failed_at: new Date().toISOString(),
-        metadata: { provider_amount: reportedAmount, expected_amount: topup.amount },
-      });
-      return jsonResponse({ code: "provider_amount_mismatch" }, 502);
-    }
-
-    await updateTopup(topup.id, {
-      provider_ref: providerRef,
-      provider_status: providerStatus,
-      provider_checkout_url: checkoutUrl,
-      status: providerStatus === "paid" || providerStatus === "successful" ? "processing" : "pending",
-      metadata: { provider_response: provider },
-      updated_at: new Date().toISOString(),
-    });
-
-    return jsonResponse({
-      ok: true,
-      topupId: topup.id,
-      reference: topup.internal_reference,
-      providerReference: providerRef,
-      status: providerStatus,
-      checkoutUrl,
-    });
   } catch (error) {
     const code = error instanceof Error ? error.message : "topup_create_error";
-    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400);
+    const status = code === "unauthorized" ? 401 : code === "provider_unverified" ? 503 : 400;
+    return jsonResponse({ code }, status);
   }
 });
