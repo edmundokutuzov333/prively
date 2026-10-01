@@ -326,7 +326,7 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
   };
 
   useEffect(() => {
-    void load().catch((value: unknown) => setError(value instanceof Error ? value.message : 'Falha ao carregar perfil.'));
+    void load().catch((value: unknown) => setError(platformErrorKey(value)));
   }, [handle]);
 
   const subscribe = async () => {
@@ -379,7 +379,7 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
           <div key={tier.id} className="rounded-md border border-bone-50/8 p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-bone-500">Tier {tier.rank}</p>
             <p className="mt-2 text-2xl text-bone-50">{tier.name}</p>
-            <p className="mt-2 font-display text-2xl text-bone-50">{formatMznFromCents(tier.price_month)} / mês</p>
+            <p className="mt-2 font-display text-2xl text-bone-50">{formatMznFromCents(tier.price_month)} {i18n.t('phase3Advanced.tierManager.perMonth')}</p>
             <p className="mt-2 text-xs text-bone-500">
               3m · {Math.round((tier.discounts?.['3'] ?? 0) * 100)}% · 6m · {Math.round((tier.discounts?.['6'] ?? 0) * 100)}% · 12m · {Math.round((tier.discounts?.['12'] ?? 0) * 100)}%
             </p>
@@ -407,10 +407,10 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
         <p className="mt-2 text-sm text-bone-300">{selectedTier.name} · {i18n.t('phase3Advanced.tierManager.price')}</p>
         <label className="mt-5 block text-sm text-bone-300">{i18n.t('phase3Advanced.tierManager.period')}
           <select value={period} onChange={(event) => setPeriod(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-md bg-ink-800 px-3 text-bone-50">
-            <option value="1">1 {i18n.t('phase3Advanced.support.months', { count: 1 })}</option>
-            <option value="3">3 {i18n.t('phase3Advanced.support.months', { count: 3 })}</option>
-            <option value="6">6 {i18n.t('phase3Advanced.support.months', { count: 6 })}</option>
-            <option value="12">12 {i18n.t('phase3Advanced.support.months', { count: 12 })}</option>
+            <option value="1">1 mês</option>
+            <option value="3">3 meses</option>
+            <option value="6">6 meses</option>
+            <option value="12">12 meses</option>
           </select>
         </label>
         <p className="mt-4 font-display text-3xl text-bone-50">{formatMznFromCents(subscriptionPrice)}</p>
