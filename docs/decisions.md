@@ -67,3 +67,9 @@
 **Staging/Streamtape:** não existe actualmente um projecto Supabase de staging disponível para executar a transição de um vídeo novo. A validação histórica do pipeline não é usada como substituto de um teste novo em staging.
 
 **Regra:** não alterar os componentes certificados de media apenas para preencher evidências externas em falta.
+
+
+## ADR-012: Media readiness deve ser fail-closed para derivados e Streamtape
+**Contexto:** a verificação da Fase 8 encontrou uma divergência: vídeos B2 podiam ficar com `processing_status='ready'` antes de existirem thumbnail desfocada, watermark, HLS e estado `streamtape_status='ready'`, porque o caminho de vídeo de `refresh_media_processing_status()` retornava `ready` antecipadamente.
+**Decisão:** remover esse fast-path e exigir, para vídeos B2, derivados server-side e Streamtape pronto antes de marcar o asset como `ready`. `get_media_access()` também passa a exigir o mesmo contrato para não-owner/admin.
+**Consequência:** media incompleta fica em `processing`/`failed` e não pode ser entregue como se estivesse pronta. O worker/processor externo continua a ser um pré-requisito operacional e não é substituído por dados fabricados.
