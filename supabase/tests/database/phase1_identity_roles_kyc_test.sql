@@ -70,6 +70,7 @@ select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001') = false
 
 reset role;
 set local role service_role;
+select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
 select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claims',json_build_object('role','service_role')::text,true);
 select public.approve_kyc(
