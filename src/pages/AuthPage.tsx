@@ -118,39 +118,9 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
           return;
         }
 
-        const [adminRoleResult, creatorRoleResult] = await Promise.all([
-          sb.rpc('has_role', { _uid: data.user.id, _role: 'admin' }),
-          sb.rpc('has_role', { _uid: data.user.id, _role: 'creator' }),
-        ]);
-
-        if (adminRoleResult.error || creatorRoleResult.error) {
-          await sb.auth.signOut({ scope: 'local' });
-          setError(t('auth.roleCheckError'));
-          return;
-        }
-
-        const isAdmin = Boolean(adminRoleResult.data);
-        const isCreator = Boolean(creatorRoleResult.data);
-
-        if (effectivePortal === 'admin' && !isAdmin) {
-          await sb.auth.signOut({ scope: 'local' });
-          setError(t('auth.adminRequired'));
-          return;
-        }
-
-        if (effectivePortal === 'client' && isAdmin) {
-          await sb.auth.signOut({ scope: 'local' });
-          setError(t('auth.adminUsePortal'));
-          return;
-        }
-
-        if (effectivePortal === 'creator' && !isCreator) {
-          await sb.auth.signOut({ scope: 'local' });
-          setError(t('auth.creatorRequired'));
-          return;
-        }
-
-        await syncServerAuthSession(data.session);
+        // The Supabase session is the authentication result. Portal authorization is enforced
+        // by AdminGuard / ExperienceGuard after navigation, so secondary RPCs cannot block login.
+        void syncServerAuthSession(data.session);
         navigate(effectivePortal === 'admin' ? '/admin' : effectivePortal === 'creator' ? '/estudio' : '/descobrir', { replace: true });
         return;
       }
@@ -208,7 +178,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
         return;
       }
 
-      await syncServerAuthSession(data.session);
+      void syncServerAuthSession(data.session);
       setMessage(t(signupRole === 'creator' ? 'auth.creatorRegistered' : 'auth.clientRegistered'));
       navigate(signupRole === 'creator' ? '/verificacao' : '/descobrir', { replace: true });
     } catch (submissionError) {
