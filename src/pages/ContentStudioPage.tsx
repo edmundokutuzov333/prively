@@ -68,6 +68,7 @@ function contentErrorMessage(t: (key: string, options?: Record<string, unknown>)
     'tier_required',
     'price_visibility_mismatch',
     'participant_consent_required',
+    'invalid_schedule',
     'streamtape_auth_error',
     'streamtape_unavailable',
     'streamtape_rejected',
@@ -105,6 +106,7 @@ export function ContentStudioPage() {
   const [participantsConsent, setParticipantsConsent] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploads, setUploads] = useState<PendingUpload[]>([]);
+  const [scheduleAtByPost, setScheduleAtByPost] = useState<Record<string, string>>({});
 
   const load = async () => {
     if (!user) return;
@@ -231,6 +233,12 @@ export function ContentStudioPage() {
       });
       if (postError || !postId) throw new Error(postError?.message ?? 'post_create_failed');
 
+      const consentResult = await requireSupabase().rpc('attest_post_content_consent', {
+        _post: String(postId),
+        _participants_adult_confirmed: participantsConsent,
+      });
+      if (consentResult.error) throw consentResult.error;
+
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
         setUploads((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, state: 'preparing' } : item));
@@ -308,17 +316,35 @@ export function ContentStudioPage() {
     }
   };
 
-  const publish = async (postId: string) => {
+  const publish = async (postId: string, scheduleAt: string | null = null) => {
+    let scheduledIso: string | null = null;
+    if (scheduleAt) {
+      const parsed = new Date(scheduleAt);
+      if (!Number.isFinite(parsed.getTime()) || parsed.getTime() <= Date.now()) {
+        setError(t('content.errors.invalid_schedule'));
+        return;
+      }
+      scheduledIso = parsed.toISOString();
+    }
+
     setPublishing(postId);
     setError(null);
     setNotice(null);
-    const { error: publishError } = await requireSupabase().rpc('publish_post', { _post: postId, _scheduled_at: null });
+    const { error: publishError } = await requireSupabase().rpc('publish_post', {
+      _post: postId,
+      _scheduled_at: scheduledIso,
+    });
     setPublishing(null);
     if (publishError) {
       setError(contentErrorMessage(t, publishError));
       return;
     }
-    setNotice(t('content.published'));
+    setScheduleAtByPost((current) => {
+      const next = { ...current };
+      delete next[postId];
+      return next;
+    });
+    setNotice(scheduleAt ? t('content.scheduled') : t('content.published'));
     await load();
   };
 
@@ -400,7 +426,35 @@ export function ContentStudioPage() {
           {contents.map((item)=><article key={item.id} className="rounded-md border border-bone-50/8 bg-ink-850 p-4">
             <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-bone-50">{item.caption || t('content.untitled')}</p><p className="mt-1 text-xs text-bone-500">{t('content.visibilityValues.'+item.visibility)} · {item.media_count} {t('content.mediaLabel')} · {item.ready_media_count}/{item.media_count} {t('content.readyLabel')}</p></div><span className="rounded-full border border-bone-50/10 px-2 py-1 text-[11px] text-bone-400">{t('content.statusValues.'+item.status)}</span></div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">{item.moderation_status==='pending'?<span className="text-bone-500">{t('content.moderationValues.pending')}</span>:item.moderation_status==='clean'?<span className="text-ok">{t('content.moderationValues.clean')}</span>:<span className="text-danger">{t('content.moderationValues.'+item.moderation_status)}</span>}</div>
-            {item.status==='draft' && item.media_count>0 ? <Botao variant="outline" className="mt-4 w-full" onClick={()=>void publish(item.id)} loading={publishing===item.id} disabled={item.ready_media_count!==item.media_count}>{item.ready_media_count===item.media_count?t('content.publish'):t('content.processing')}</Botao> : null}
+            {item.status==='draft' && item.media_count>0 ? <div className="mt-4 space-y-3">
+              {item.ready_media_count===item.media_count ? <>
+                <label className="block text-xs text-bone-400">
+                  <span className="mb-2 block">{t('content.scheduleAt')}</span>
+                  <input
+                    type="datetime-local"
+                    value={scheduleAtByPost[item.id] ?? ''}
+                    onChange={(event)=>setScheduleAtByPost((current)=>({ ...current, [item.id]: event.target.value }))}
+                    className="min-h-11 w-full rounded-md border border-input bg-ink-900 px-3 text-bone-50 outline-none"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <Botao
+                    variant="outline"
+                    className="flex-1"
+                    onClick={()=>void publish(item.id)}
+                    loading={publishing===item.id}
+                    disabled={publishing===item.id}
+                  >{t('content.publish')}</Botao>
+                  <Botao
+                    variant="outline"
+                    className="flex-1"
+                    onClick={()=>void publish(item.id, scheduleAtByPost[item.id] ?? null)}
+                    loading={publishing===item.id}
+                    disabled={publishing===item.id || !scheduleAtByPost[item.id]}
+                  >{t('content.schedule')}</Botao>
+                </div>
+              </> : <Botao variant="outline" className="mt-1 w-full" onClick={()=>void publish(item.id)} loading={publishing===item.id} disabled>{t('content.processing')}</Botao>}
+            </div> : null}
           </article>)}
           {!contents.length ? <div className="rounded-md border border-dashed border-bone-50/10 p-5 text-sm text-bone-500">{t('content.empty')}</div> : null}
         </div>
