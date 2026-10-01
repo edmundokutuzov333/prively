@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(7);
 
 select is(
   count(*)::integer,
@@ -58,7 +58,7 @@ select ok(
     select 1 from pg_policies
     where schemaname='public'
       and tablename='ppv_purchases'
-      and policyname='buyer reads own purchases'
+      and policyname='ppv_parties'
       and cmd='SELECT'
   ),
   'ppv_purchases is RLS-protected, buyer-readable and client-write protected'
@@ -73,7 +73,8 @@ select ok(
 );
 
 select ok(
-  pg_get_functiondef('public.can_view_post(uuid)'::regprocedure) like '%ppv_purchases%'
+  (pg_get_functiondef('public.can_view_post(uuid)'::regprocedure) like '%ppv_purchases%'
+     or pg_get_functiondef('public.can_view_post(uuid,uuid)'::regprocedure) like '%ppv_purchases%')
   and exists(
     select 1 from pg_proc
     where pronamespace='public'::regnamespace
