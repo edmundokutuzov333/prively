@@ -18,6 +18,9 @@ async function hashUserAgent() {
 }
 
 export async function syncServerAuthSession(session: Session | null) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 5000);
+
   try {
     if (session) {
       await fetch('/api/auth-session', {
@@ -25,12 +28,19 @@ export async function syncServerAuthSession(session: Session | null) {
         headers: { 'content-type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ accessToken: session.access_token }),
+        signal: controller.signal,
       });
     } else {
-      await fetch('/api/auth-session', { method: 'DELETE', credentials: 'include' });
+      await fetch('/api/auth-session', {
+        method: 'DELETE',
+        credentials: 'include',
+        signal: controller.signal,
+      });
     }
   } catch {
-    // Server-side routing protection is defence in depth and must not break the SPA session.
+    // Server-side routing protection is defence in depth and must never block SPA authentication.
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 
