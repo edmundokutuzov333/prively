@@ -48,3 +48,26 @@ Open gates:
 - suites CLI/CI da Fase 3 ainda não foram executadas nesta sessão.
 - typecheck/lint/unit/build não foram executados nesta sessão.
 - publicação Vercel correcta continua sem verificação no ambiente ligado.
+
+## Fase 4
+Status: IMPLEMENTED / FINAL CI VERIFICATION PENDING
+
+Carteira e livro-razão:
+- schema financeiro existente reutilizado, sem recriação;
+- get_my_balances() implementado e protegido;
+- balances publicado no supabase_realtime;
+- escrita directa em ledger_entries e balances sem privilégios para authenticated;
+- admin_manage_all removida de balances;
+- /carteira ligado a dados reais e Realtime;
+- estados de carregamento, erro e recuperação implementados;
+- i18n pt-MZ/en/fr actualizado;
+- suite phase4_ledger_test.sql reforçada e adicionada ao CI;
+- reconcile_ledger() em produção = 0.
+
+Acceptance proof:
+- docs/reports/fase-4-ledger.md
+- supabase/tests/database/phase4_ledger_test.sql
+
+Open gates:
+- suite local/CI completa ainda não executada nesta sessão por falha de resolução DNS de github.com no runner disponível;
+- build Vercel de produção não certificada neste ciclo.
