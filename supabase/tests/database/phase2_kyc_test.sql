@@ -45,7 +45,7 @@ select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object('sub','72000000-0000-0000-0000-000000000001','role','authenticated','aud','authenticated','aal','aal2')::text,true);
 
 select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),8::bigint,'guarded weekly volume returns exactly the latest eight weeks');
-select is((select min(week_start) from public.kyc_manual_queue_weekly_volume_guarded()),((select max(week_start) from public.kyc_manual_queue_weekly_volume_guarded()) - interval '7 days')::date,'guarded weekly volume spans eight consecutive weeks');
+select is((select min(week_start) from public.kyc_manual_queue_weekly_volume_guarded()),((select max(week_start) from public.kyc_manual_queue_weekly_volume_guarded()) - interval '49 days')::date,'guarded weekly volume spans eight consecutive weeks');
 
 select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
 select set_config('request.jwt.claim.role','authenticated',true);

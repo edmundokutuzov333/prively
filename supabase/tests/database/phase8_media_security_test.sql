@@ -218,7 +218,7 @@ select throws_ok(
 );
 
 select ok(
-  not public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_viewer')::uuid),
+  not public.can_view_post(current_setting('app.phase8_post_public')::uuid),
   'viewer cannot view public post while video is not processing-ready'
 );
 
@@ -231,7 +231,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_creator')::uuid),
+  public.can_view_post(current_setting('app.phase8_post_public')::uuid),
   'owner access remains available through the owner path'
 );
 

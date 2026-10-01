@@ -86,7 +86,7 @@ declare
   creator_pending_before bigint;
   platform_before bigint;
   wallet_before bigint;
-  seed_txn uuid := gen_random_uuid();
+  topup_id uuid;
 begin
   perform set_config('app.internal_write','on',true);
 
@@ -129,17 +129,23 @@ begin
   )
   on conflict(id) do nothing;
 
-  insert into public.ledger_entries(
-    txn_id,account,owner_id,amount,kind,ref_type,ref_id
+  set local role service_role;
+  insert into public.topups(
+    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
+  ) values(
+    buyer,'paysuite','mpesa',100000,'MZN',
+    'PRV-PHASE6-SEED',
+    'phase6-seed-provider-ref',
+    'phase6-seed-idempotency'
   )
-  values
-    (
-      seed_txn,'wallet',buyer,100000,'test_seed','test',gen_random_uuid()
-    ),
-    (
-      seed_txn,'external','00000000-0000-0000-0000-000000000000'::uuid,
-      -100000,'test_seed','test',gen_random_uuid()
-    );
+  returning id into topup_id;
+
+  perform public.credit_topup(
+    'phase6-seed-provider-ref',
+    'paid',
+    100000,
+    'phase6-seed-provider-tx'
+  );
 
   insert into public.balances(owner_id,account,balance)
   values

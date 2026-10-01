@@ -24,7 +24,7 @@ declare
   channel uuid:=gen_random_uuid();
   txn uuid;
   escrow uuid;
-  seed_txn uuid := gen_random_uuid();
+  topup_id uuid;
   buyer_wallet bigint;
   creator_pending bigint;
 begin
@@ -66,19 +66,23 @@ begin
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
   values(channel,creator,'creator_test','Creator Test',1000,1500);
 
-  set local role postgres;
-  insert into public.ledger_entries(
-    txn_id,account,owner_id,amount,kind,ref_type,ref_id
+  set local role service_role;
+  insert into public.topups(
+    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
+  ) values(
+    buyer,'paysuite','mpesa',300000,'MZN',
+    'PRV-PHASE3-SEED',
+    'phase3-seed-provider-ref',
+    'phase3-seed-idempotency'
   )
-  values
-    (
-      seed_txn,'wallet',buyer,1000000,'test_seed','test',gen_random_uuid()
-    ),
-    (
-      seed_txn,
-      'external','00000000-0000-0000-0000-000000000000'::uuid,
-      -1000000,'test_seed','test',gen_random_uuid()
-    );
+  returning id into topup_id;
+
+  perform public.credit_topup(
+    'phase3-seed-provider-ref',
+    'paid',
+    300000,
+    'phase3-seed-provider-tx'
+  );
 
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
