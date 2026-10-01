@@ -3,9 +3,18 @@ import { z } from 'zod';
 const schema = z.object({
   VITE_SUPABASE_URL: z.url(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
-  VITE_APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  VITE_APP_ENV: z.enum(['development', 'staging', 'production']).default(import.meta.env.PROD ? 'production' : 'development'),
   VITE_VAPID_PUBLIC_KEY: z.string().optional(),
 });
+
+// Supabase publishable keys are intentionally public. Keep a production-safe fallback so a
+// missing Vercel build variable cannot prevent the entire React bundle from booting.
+const productionFallback = import.meta.env.PROD
+  ? {
+      VITE_SUPABASE_URL: 'https://gaonupelgtpfthouyobh.supabase.co',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK',
+    }
+  : {};
 
 const testDefaults = import.meta.env.MODE === 'test'
   ? {
@@ -14,7 +23,12 @@ const testDefaults = import.meta.env.MODE === 'test'
     }
   : {};
 
-const parsed = schema.safeParse({ ...import.meta.env, ...testDefaults });
+const parsed = schema.safeParse({
+  ...productionFallback,
+  ...import.meta.env,
+  ...testDefaults,
+});
+
 if (!parsed.success) {
   const fields = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');
   throw new Error(`Configuração do frontend inválida. Campos: ${fields}`);
