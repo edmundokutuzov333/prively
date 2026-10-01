@@ -98,6 +98,24 @@ select public.accept_communication_privacy(
 set local role authenticated;
 select set_config('app.internal_write','off',true);
 
+select lives_ok($$
+  select public.create_conversation(
+    (select id from public.channels where handle='p11free')
+  )
+$$,'participant can create free conversation');
+
+set local role service_role;
+insert into public.messages(conversation_id,sender_id,kind,body)
+values(
+  (select id from public.conversations
+   where channel_id=(select id from public.channels where handle='p11free')
+     and client_id='71100000-0000-0000-0000-000000000001'),
+  '71100000-0000-0000-0000-000000000001',
+  'text',
+  'phase11 participant read probe'
+);
+set local role authenticated;
+
 select is((
   select count(*)
   from public.messages
@@ -107,12 +125,6 @@ select is((
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),1::bigint,'participant reads conversation messages');
-
-select lives_ok($$
-  select public.create_conversation(
-    (select id from public.channels where handle='p11free')
-  )
-$$,'participant can create free conversation');
 
 select throws_ok($$
   select public.create_conversation(
