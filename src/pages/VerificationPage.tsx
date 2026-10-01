@@ -34,15 +34,15 @@ export function VerificationPage() {
 
   const upload=async()=>{
     if(!user || !document || !selfie)return;
-    if(document.size>maxSize || selfie.size>maxSize){setError(t('verification.fileTooLarge'));return;}
+    if(document.size>maxSize || selfie.size>maxSize){setError('verification.fileTooLarge');return;}
     setError(null);setSuccess(false);setLoading(true);
     const sb=requireSupabase();
     const docPath=user.id+'/'+crypto.randomUUID()+'-document.'+(document.name.split('.').pop()?.toLowerCase()||'bin');
     const selfiePath=user.id+'/'+crypto.randomUUID()+'-selfie.'+(selfie.name.split('.').pop()?.toLowerCase()||'jpg');
     const docUpload=await sb.storage.from('prively-kyc').upload(docPath,document,{upsert:false,contentType:document.type});
-    if(docUpload.error){setLoading(false);setError(docUpload.error.message);return;}
+    if(docUpload.error){setLoading(false);setError(platformErrorKey(docUpload.error));return;}
     const selfieUpload=await sb.storage.from('prively-kyc').upload(selfiePath,selfie,{upsert:false,contentType:selfie.type});
-    if(selfieUpload.error){setLoading(false);setError(selfieUpload.error.message);return;}
+    if(selfieUpload.error){setLoading(false);setError(platformErrorKey(selfieUpload.error));return;}
     const submitted=await sb.functions.invoke('kyc-submit',{
       body:{docPath,selfiePath,docType:'identity_document'}
     });
