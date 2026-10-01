@@ -80,6 +80,7 @@ errors: { unauthorized: 'A tua sessão expirou. Entra novamente.', forbidden: 'N
     stateBackend: 'Este estado deve ser ligado ao fluxo real que o produziu antes de ser exposto como experiência de produção.'
   },
   phase6Spend: { topUpAction: 'Carregar carteira' },
+  phase10Ppv: { title: 'Compras', intro: 'Histórico real de PPV e subscrições, ordenado pela data da transacção.', ppv: 'PPV', subscription: 'Subscrição', emptyTitle: 'Sem compras', emptyBody: 'As tuas compras e subscrições reais aparecem aqui.', receipt: 'Recibo', downloadReceipt: 'Descarregar recibo', downloadingReceipt: 'A gerar recibo…', downloadError: 'Não foi possível gerar o recibo. Tenta novamente.', unknownPurchase: 'Compra Prively' },
   phase5Topup: {
     intro: 'Saldo, recargas e histórico financeiro reais.',
     balance: 'Saldo para gastar',
