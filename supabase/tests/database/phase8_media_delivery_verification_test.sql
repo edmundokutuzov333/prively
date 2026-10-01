@@ -7,7 +7,7 @@ select ok(to_regclass('public.media_access_logs') is not null,'media_access_logs
 select ok((select relrowsecurity from pg_class where oid='public.media_access_logs'::regclass),'media_access_logs RLS enabled');
 select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='media_access_logs' and policyname='media_access_own_read'),'media access own-read policy exists');
 select ok(to_regprocedure('public.get_media_access(uuid)') is not null,'get_media_access exists');
-select ok(prosecdef from pg_proc where oid='public.get_media_access(uuid)'::regprocedure,'get_media_access is SECURITY DEFINER');
+select ok((select prosecdef from pg_proc where oid='public.get_media_access(uuid)'::regprocedure),'get_media_access is SECURITY DEFINER');
 select ok(position('search_path TO ''public'', ''pg_temp''' in pg_get_functiondef('public.get_media_access(uuid)'::regprocedure))>0,'get_media_access uses safe search_path');
 select ok(position('public.can_view_post' in pg_get_functiondef('public.get_media_access(uuid)'::regprocedure))>0,'get_media_access delegates authorization to can_view_post');
 select ok(position('processing_status' in pg_get_functiondef('public.get_media_access(uuid)'::regprocedure))>0,'get_media_access exposes processing state');
