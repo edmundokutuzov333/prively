@@ -48,6 +48,17 @@ select ok(
 );
 
 select ok(
+  exists(
+    select 1 from pg_proc
+    where pronamespace='public'::regnamespace
+      and proname='has_active_subscription'
+      and pg_get_functiondef(oid) like '%status = ''past_due''%'
+      and pg_get_functiondef(oid) like '%interval ''3 days''%'
+  ),
+  'past_due subscriptions retain access for three days'
+);
+
+select ok(
   exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname='can_view_post' and pg_get_functiondef(oid) like '%when ''subscribers''%')
   and exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname='can_view_post' and pg_get_functiondef(oid) like '%when ''tier''%'),
   'can_view_post contains subscriber and tier visibility contracts'
