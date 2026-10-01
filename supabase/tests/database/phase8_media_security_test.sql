@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(21);
 
 select ok(to_regprocedure('public.refresh_media_processing_status(uuid)') is not null,'refresh media processing RPC exists');
 select ok(not has_function_privilege('authenticated','public.refresh_media_processing_status(uuid)','EXECUTE'),'authenticated cannot force media readiness');
@@ -249,6 +249,26 @@ select is(
   'ready',
   'complete derivative set is accepted'
 );
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('app.phase8_viewer'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase8_viewer'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
+
+select ok(
+  public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_viewer')::uuid),
+  'public visibility is granted after complete readiness'
+);
+
+select set_config('request.jwt.claim.sub',current_setting('app.phase8_creator'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase8_creator'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
 
 select ok(
   public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_creator')::uuid),
