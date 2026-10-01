@@ -177,8 +177,8 @@ begin
   end;
 
   select count(*) into participant_visible
-  from public.messages
-  where conversation_id=conversation_id;
+  from public.messages m
+  where m.conversation_id=conversation_id;
 
   perform set_config('request.jwt.claim.sub',u3::text,true);
 
