@@ -47,6 +47,13 @@ begin
   values(buyer,'wallet',1000000)
   on conflict(owner_id,account) do update set balance=excluded.balance;
 
+  perform set_config('request.jwt.claim.sub',buyer::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  perform set_config('request.jwt.claims',json_build_object(
+    'sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2',
+    'session_id',gen_random_uuid()::text
+  )::text,true);
+
   txn:=public._spend_on_channel(buyer,channel,100000,'tip','tip',gen_random_uuid(),'test-tip');
   if not exists(select 1 from public.ledger_entries where txn_id=txn group by txn_id having sum(amount)=0) then
     raise exception 'spend transaction not balanced';
