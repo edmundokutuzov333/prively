@@ -113,11 +113,18 @@ async function signedB2Request({ method, path, query = {}, headers = {}, body = 
   return { response, text };
 }
 
-async function uploadObject(filePath, objectKey) {
+function bucketObjectPath(bucket, objectKey = '') {
+  const normalizedBucket = bucket.replace(/^\/+|\/+$/g, '');
+  const normalizedKey = objectKey.replace(/^\/+/, '');
+  if (!normalizedBucket) throw new Error('missing_env:B2_BACKUP_BUCKET');
+  return normalizedKey ? `/${normalizedBucket}/${normalizedKey}` : `/${normalizedBucket}`;
+}
+
+async function uploadObject(filePath, objectKey, bucket) {
   const bytes = await readFile(filePath);
   await signedB2Request({
     method: 'PUT',
-    path: objectKey,
+    path: bucketObjectPath(bucket, objectKey),
     headers: {
       'content-length': String(bytes.byteLength),
     },
@@ -126,7 +133,7 @@ async function uploadObject(filePath, objectKey) {
   return bytes.byteLength;
 }
 
-async function listObjects(prefix) {
+async function listObjects(prefix, bucket) {
   const objects = [];
   let continuationToken;
   do {
@@ -136,7 +143,7 @@ async function listObjects(prefix) {
       prefix,
       ...(continuationToken ? { 'continuation-token': continuationToken } : {}),
     };
-    const result = await signedB2Request({ method: 'GET', path: '/', query });
+    const result = await signedB2Request({ method: 'GET', path: bucketObjectPath(bucket), query });
     const contents = [...result.text.matchAll(/<Contents>.*?<Key>(.*?)<\/Key>.*?<LastModified>(.*?)<\/LastModified>.*?<Size>(\d+)<\/Size>.*?<\/Contents>/gs)]
       .map((match) => ({ key: match[1], lastModified: new Date(match[2]), size: Number(match[3]) }));
     objects.push(...contents);
@@ -146,8 +153,8 @@ async function listObjects(prefix) {
   return objects;
 }
 
-async function deleteObject(key) {
-  await signedB2Request({ method: 'DELETE', path: key });
+async function deleteObject(key, bucket) {
+  await signedB2Request({ method: 'DELETE', path: bucketObjectPath(bucket, key) });
 }
 
 async function main() {
@@ -158,6 +165,7 @@ async function main() {
 
   const projectRef = required('SUPABASE_PROJECT_REF');
   const dbPassword = required('SUPABASE_DB_PASSWORD');
+  const backupBucket = required('B2_BACKUP_BUCKET');
   const dbHost = process.env.SUPABASE_DB_HOST || `db.${projectRef}.supabase.co`;
   const dbName = process.env.SUPABASE_DB_NAME || 'postgres';
   const dbUser = process.env.SUPABASE_DB_USER || 'postgres';
@@ -198,11 +206,11 @@ async function main() {
     await import('node:fs/promises').then(({ writeFile }) => writeFile(backupPath, compressed));
 
     const sizeBytes = (await stat(backupPath)).size;
-    await uploadObject(backupPath, objectKey);
+    await uploadObject(backupPath, objectKey, backupBucket);
 
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const oldObjects = (await listObjects('postgres/')).filter((object) => object.lastModified.getTime() < cutoff);
-    for (const object of oldObjects) await deleteObject(object.key);
+    const oldObjects = (await listObjects('postgres/', backupBucket)).filter((object) => object.lastModified.getTime() < cutoff);
+    for (const object of oldObjects) await deleteObject(object.key, backupBucket);
 
     await db.query(
       'update public.backup_runs set completed_at=now(),size_bytes=$2,status=$3,storage_path=$4,error_message=null where id=$1',
