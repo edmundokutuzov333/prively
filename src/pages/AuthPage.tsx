@@ -165,6 +165,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
             display_name: values.handle,
             signup_role: signupRole,
             role: signupRole,
+            age_confirmed: Boolean(values.ageConfirmed),
             legal_acceptances: {
               terms: { version: '1.0' },
               privacy: { version: '1.0' },
