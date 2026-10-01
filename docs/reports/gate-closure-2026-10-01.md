@@ -86,3 +86,13 @@ A Fase 10 continua bloqueada. Os gates ainda sem evidência operacional final s�
 4. evidência externa B2 e vídeo novo end-to-end para a certificação final da Fase 8.
 
 Nenhum destes pontos foi mascarado como verde.
+
+## Actualização: Fase 10 bloqueada pelo gate
+
+A especificação da Fase 10 foi recebida, mas a regra transversal continua a impedir avanço funcional enquanto 0.6, 0.7, Vercel e a certificação final da Fase 8 não estiverem verdes.
+
+Durante esta sessão foi aplicado em produção o hardening do RPC `purchase_ppv(uuid,text)` para fechar uma condição de corrida de duplo débito e revogar DML directo de `authenticated` em `ppv_purchases`. A migration foi registada remotamente como versão `20261001123623_phase10_ppv_runtime_hardening` e foi restaurada na `main` com o mesmo timestamp.
+
+O CI não inclui a suite PPV enquanto a Fase 10 estiver bloqueada. A UI de compras continua no estado anterior e não é considerada certificada para os critérios novos da Fase 10.
+
+Estado: **FASE 10 NÃO CERTIFICADA / NÃO AVANÇADA**.
