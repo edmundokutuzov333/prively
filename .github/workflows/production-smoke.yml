@@ -15,9 +15,6 @@ jobs:
       VITE_APP_ENV: production
       PLAYWRIGHT_BASE_URL: https://prively.vercel.app
       PRIVELY_PRODUCTION_URL: https://prively.vercel.app
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
