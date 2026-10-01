@@ -113,6 +113,14 @@ errors: { unauthorized: 'A tua sessão expirou. Entra novamente.', forbidden: 'N
     loadError: 'Não foi possível carregar a descoberta.',
   },
 
+  phase13Safety: {
+    panic: 'Activar pânico',
+    panicAria: 'Activar alerta de pânico',
+    panicTriggered: 'Alerta criado',
+    panicError: 'Não foi possível activar o alerta',
+    safetyPage: 'Segurança',
+  },
+
   phase6Spend: { topUpAction: 'Carregar carteira' },
 
   phase5Topup: {
