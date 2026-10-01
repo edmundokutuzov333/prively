@@ -187,6 +187,7 @@ export function Phase6ClientWalletPage() {
     ]);
 
     if (wallet.error) throw wallet.error;
+    if (earningsSummary.error) throw earningsSummary.error;
     if (config.error) throw config.error;
     if (topupRows.error) throw topupRows.error;
     if (receiptRows.error) throw receiptRows.error;
@@ -503,7 +504,9 @@ function topupStatusLabel(
 }
 
 export function Phase6CreatorEarningsPage() {
+  const { t } = useTranslation();
   const [summary, setSummary] = useState<WalletSummary | null>(null);
+  const [earnings, setEarnings] = useState<{ gross_earned: number; requested_payouts: number } | null>(null);
   const [settings, setSettings] = useState<FinanceSettings | null>(null);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [amount, setAmount] = useState('');
@@ -539,8 +542,9 @@ export function Phase6CreatorEarningsPage() {
 
   const load = async () => {
     const sb = requireSupabase();
-    const [wallet, config, list] = await Promise.all([
+    const [wallet, earningsSummary, config, list] = await Promise.all([
       sb.rpc('get_wallet_summary'),
+      sb.rpc('get_creator_earnings_summary'),
       sb.rpc('get_financial_settings'),
       sb.from('payouts')
         .select('id,amount,method,status,destination_masked,requested_at,failure_reason,provider_ref')
@@ -551,6 +555,7 @@ export function Phase6CreatorEarningsPage() {
     if (config.error) throw config.error;
     if (list.error) throw list.error;
     setSummary(wallet.data as WalletSummary);
+    setEarnings(earningsSummary.data as { gross_earned: number; requested_payouts: number });
     setSettings(config.data as FinanceSettings);
     setPayouts((list.data ?? []) as Payout[]);
   };
@@ -660,21 +665,29 @@ export function Phase6CreatorEarningsPage() {
     }
   };
 
-  return <PageFrame icon={Money} title="Ganhos" intro="Ganhos pendentes, disponíveis e levantamentos reais.">
+  return <PageFrame icon={Money} title={t('phase14.earnings.title')} intro={t('phase14.earnings.intro')}>
     <div className="mx-auto max-w-6xl space-y-5">
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       {success ? <p role="status" className="text-sm text-emerald-400">{success}</p> : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Ficha variant="focus" className="p-6">
-          <p className="text-sm text-bone-500">Disponível para levantamento</p>
+          <p className="text-sm text-bone-500">{t('phase14.earnings.available')}</p>
           <p className="mt-3 font-display text-5xl text-bone-50">{summary ? formatMznFromCents(summary.available) : '...'}</p>
-          <p className="mt-2 text-sm text-bone-500">{settings ? `Mínimo: ${formatMznFromCents(settings.payout_min_centavos)}` : ''}</p>
+          <p className="mt-2 text-sm text-bone-500">{settings ? `${t('phase14.earnings.minimum')}: ${formatMznFromCents(settings.payout_min_centavos)}` : ''}</p>
         </Ficha>
         <Ficha className="p-6">
-          <p className="text-sm text-bone-500">Pendente</p>
+          <p className="text-sm text-bone-500">{t('phase14.earnings.pending')}</p>
           <p className="mt-3 font-display text-5xl text-bone-50">{summary ? formatMznFromCents(summary.pending) : '...'}</p>
-          <p className="mt-2 text-sm text-bone-500">{settings ? `Libertação padrão: ${settings.hold_hours} horas.` : ''}</p>
+          <p className="mt-2 text-sm text-bone-500">{settings ? `${t('phase14.earnings.release')}: ${settings.hold_hours} horas.` : ''}</p>
+        </Ficha>
+        <Ficha className="p-6">
+          <p className="text-sm text-bone-500">{t('phase14.earnings.grossEarned')}</p>
+          <p className="mt-3 font-display text-5xl text-bone-50">{earnings ? formatMznFromCents(earnings.gross_earned) : '...'}</p>
+        </Ficha>
+        <Ficha className="p-6">
+          <p className="text-sm text-bone-500">{t('phase14.earnings.requestedPayouts')}</p>
+          <p className="mt-3 font-display text-5xl text-bone-50">{earnings ? formatMznFromCents(earnings.requested_payouts) : '...'}</p>
         </Ficha>
       </div>
 
