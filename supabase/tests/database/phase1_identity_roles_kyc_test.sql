@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(18);
 
 select ok(to_regclass('public.user_roles') is not null, 'user_roles exists');
 select ok(to_regclass('public.kyc_verifications') is not null, 'kyc_verifications exists');
@@ -95,7 +95,14 @@ select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object('sub','71000000-0000-0000-0000-000000000001','role','authenticated','aal','aal1')::text,true);
 select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001') = false,'rejected KYC disables age verification');
 
-select ok(not exists(\n  select 1\n  from information_schema.routine_privileges\n  where routine_schema='public'\n    and routine_name='approve_kyc'\n    and grantee='authenticated'\n    and privilege_type='EXECUTE'\n),'authenticated cannot execute approve_kyc');
+select ok(not exists(
+  select 1
+  from information_schema.routine_privileges
+  where routine_schema='public'
+    and routine_name='approve_kyc'
+    and grantee='authenticated'
+    and privilege_type='EXECUTE'
+),'authenticated cannot execute approve_kyc');
 
 reset role;
 
