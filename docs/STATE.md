@@ -261,6 +261,35 @@ Open gates:
 - execução integral do CI final do commit da Fase 11 ainda não é observável através do wrapper GitHub ligado nesta sessão;
 - E2E real de duas sessões WebSocket ainda não executado;
 - bloqueadores transversais 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
+## Fase 12
+Status: IMPLEMENTED / RUNTIME VERIFIED / CI CERTIFICATION PENDING
+
+Descoberta real e seguir:
+- migration `20261001145322_phase12_discovery_runtime_contract` aplicada em produção;
+- `discover_channels()` implementa descoberta server-side por handle, display_name, city, bairro e province;
+- `channels.is_seed=true` e owners com status diferente de `active` são excluídos no servidor;
+- canais escondidos e pares bilateralmente bloqueados também são excluídos;
+- `follower_count` e `is_following` são calculados no backend;
+- `/descobrir` actualizado com filtro de bairro, loading, erro, vazio com acção e refresh;
+- seguir/deixar seguir usa os RPCs protegidos existentes e actualiza o estado local sem reload;
+- `authenticated` já não tem INSERT/UPDATE/DELETE directo em `follows`;
+- traduções Phase 12 adicionadas a pt-MZ/en/fr;
+- ADR-016 registado.
+
+Acceptance proof:
+- docs/reports/fase-12-discovery.md
+- supabase/tests/database/phase12_discovery_test.sql
+
+Production verification:
+- smoke transaccional real passou no Supabase;
+- pesquisa por handle, filtro de localização, seed exclusion, owner inactive exclusion e ciclo follow/unfollow passaram;
+- rollback deixou `p12_channels=0`, `p12_profiles=0`, `p12_follows=0`.
+
+Open gates:
+- execução pgTAP/local CI da suite Phase 12 ainda não observada;
+- typecheck/lint/build da árvore completa não executados nesta sessão por falha de DNS para github.com no runner local;
+- tentativa de alterar o workflow CI existente foi bloqueada pelo mecanismo de escrita de workflow ligado nesta sessão; não é marcada como concluída;
+- 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
 ## Gate transversal 2026-10-01
 
 - CI Phase 9: a lista de suites SQL foi corrigida no commit `8c1544dca2232ef32922a35463fe971c7f03ec09`. O run push correspondente não é observável através do conector GitHub ligado nesta sessão, portanto não é marcado como verde.
