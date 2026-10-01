@@ -80,7 +80,7 @@ errors: { unauthorized: 'Votre session a expiré. Reconnectez-vous.', forbidden:
     stateBackend: 'Cet état doit être connecté au flux réel qui l’a produit avant d’être exposé en production.'
   },
   phase6Spend: { topUpAction: 'Recharger le portefeuille' },
-  phase10Ppv: { title: 'Achats', intro: 'Historique réel des PPV et abonnements, trié par date de transaction.', ppv: 'PPV', subscription: 'Abonnement', emptyTitle: 'Aucun achat', emptyBody: 'Vos achats et abonnements réels apparaîtront ici.', receipt: 'Reçu', downloadReceipt: 'Télécharger le reçu', downloadingReceipt: 'Génération du reçu…', downloadError: 'Impossible de générer le reçu. Réessayez.', unknownPurchase: 'Achat Prively' },
+
   phase5Topup: {
     intro: 'Solde réel, recharges et historique financier.',
     balance: 'Solde à dépenser',
