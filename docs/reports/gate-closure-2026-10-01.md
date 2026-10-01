@@ -87,7 +87,7 @@ A Fase 10 continua bloqueada. Os gates ainda sem evidência operacional final s�
 
 Nenhum destes pontos foi mascarado como verde.
 
-## Fase 10 - implementação concluída, certificação transversal pendente
+## Fase 10 - implementação concluída e contrato de produção verificado
 
 A implementação técnica da Fase 10 foi fechada na main no commit `0ca81f07c637874d8cd9d9ac04c9543166e5589d`.
 
@@ -110,4 +110,9 @@ Limitação de certificação:
 - O teste comportamental completo não foi executado contra produção porque uma tentativa de escrita SQL foi bloqueada pelo controlo de segurança da execução de ferramentas. Não foram criados fixtures de teste persistentes em produção.
 - Os gates transversais 0.6, 0.7, Vercel e certificação final da Fase 8 continuam materialmente abertos.
 
-Estado: **FASE 10 IMPLEMENTADA / CERTIFICAÇÃO FINAL AINDA DEPENDENTE DOS GATES TRANSVERSAIS**.
+Estado: **FASE 10 IMPLEMENTADA / CONTRATO PPV DE PRODUÇÃO VERIFICADO / CI E GATES TRANSVERSAIS AINDA PENDENTES**.
+
+
+## Evidência Fase 10
+
+Verificação SQL read-only em produção confirmou 15 condições do contrato PPV: RPC, grants, RLS, policy, serialização, spend server-side, guarda pública, visibilidade PPV, receipts e reconciliação. Não foram criados dados artificiais.
