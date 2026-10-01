@@ -80,6 +80,41 @@ for (const required of [
   if (!securityHeaderNames.has(required)) violations.push(`vercel.json: missing ${required}`);
 }
 
+const phase10BrowserContract = await Promise.all([
+  readFile(path.join(root, 'src', 'pages', 'ExperiencePages.tsx'), 'utf8'),
+  readFile(path.join(root, 'src', 'pages', 'ClientCorePages.tsx'), 'utf8'),
+  readFile(path.join(root, 'supabase', 'functions', 'financial-export', 'index.ts'), 'utf8'),
+  readFile(path.join(root, 'supabase', 'migrations', '20261001123623_phase10_ppv_runtime_hardening.sql'), 'utf8'),
+  readFile(path.join(root, 'src', 'locales', 'pt-MZ', 'common.ts'), 'utf8'),
+  readFile(path.join(root, 'src', 'locales', 'en', 'common.ts'), 'utf8'),
+  readFile(path.join(root, 'src', 'locales', 'fr', 'common.ts'), 'utf8'),
+]);
+
+const phase10ContractTokens = [
+  [0, "rpc('purchase_ppv'"],
+  [0, "_idem: 'ppv-ui:'"],
+  [1, "from('ppv_purchases')"],
+  [1, "from('subscriptions')"],
+  [1, "from('receipts')"],
+  [1, 'receipt_pdf'],
+  [1, 'phase10Ppv'],
+  [2, 'receipt_pdf'],
+  [2, 'receipt.user_id !== user.id'],
+  [3, 'pg_advisory_xact_lock'],
+  [3, '_spend_on_channel'],
+  [3, 'existing_purchase'],
+  [3, 'revoke insert, update, delete on table public.ppv_purchases from authenticated;'],
+  [4, 'phase10Ppv:'],
+  [5, 'phase10Ppv:'],
+  [6, 'phase10Ppv:'],
+];
+
+for (const [index, token] of phase10ContractTokens) {
+  if (!phase10BrowserContract[index].includes(token)) {
+    violations.push(`phase10 contract missing: ${token}`);
+  }
+}
+
 const supabaseConfig = await readFile(path.join(root, 'supabase', 'config.toml'), 'utf8');
 for (const expected of ['[functions.health]', '[functions.client-error]']) {
   if (!supabaseConfig.includes(expected)) violations.push(`supabase/config.toml: missing ${expected}`);
