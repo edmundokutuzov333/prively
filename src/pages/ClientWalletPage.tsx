@@ -71,11 +71,8 @@ function Phase4ClientWalletPage() {
           table: 'balances',
           filter: `owner_id=eq.${user.id}`,
         },
-        (payload: any) => {
-          if (active) {
-            console.log('Balance updated via Realtime:', payload);
-            void loadBalances();
-          }
+        () => {
+          if (active) void loadBalances();
         }
       )
       .subscribe();
