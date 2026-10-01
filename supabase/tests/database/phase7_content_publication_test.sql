@@ -142,7 +142,7 @@ begin
         raise;
       end if;
   end;
-end $;
+end $$;
 
 perform public.attest_post_content_consent(
   current_setting('app.phase7_scheduled_id')::uuid,

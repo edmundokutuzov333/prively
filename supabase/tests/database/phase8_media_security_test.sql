@@ -260,7 +260,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_viewer')::uuid),
+  public.can_view_post(current_setting('app.phase8_post_public')::uuid),
   'public visibility is granted after complete readiness'
 );
 
@@ -272,7 +272,7 @@ select set_config('request.jwt.claims',json_build_object(
 )::text,true);
 
 select ok(
-  public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_creator')::uuid),
+  public.can_view_post(current_setting('app.phase8_post_public')::uuid),
   'owner can still view after complete derivative readiness'
 );
 

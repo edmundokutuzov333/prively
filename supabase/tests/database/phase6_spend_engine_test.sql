@@ -130,6 +130,8 @@ begin
   on conflict(id) do nothing;
 
   set local role service_role;
+  update public.platform_settings set value='true'::jsonb where key='wallet.production_enabled';
+
   insert into public.topups(
     user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
   ) values(

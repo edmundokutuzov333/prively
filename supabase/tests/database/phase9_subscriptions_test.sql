@@ -101,6 +101,10 @@ begin
   values(creator,'creator')
   on conflict do nothing;
 
+  insert into public.creator_terms_acceptances(user_id,version,source,declarations)
+  values(creator,'1.0.0','phase9-test','{"identity":true,"consent":true,"rights":true}'::jsonb)
+  on conflict do nothing;
+
   insert into public.kyc_verifications(user_id,provider,status,reviewed_at)
   values
     (creator,'manual','approved',now()),

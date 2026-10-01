@@ -67,21 +67,40 @@ begin
   values(channel,creator,'creator_test','Creator Test',1000,1500);
 
   set local role service_role;
+  update public.platform_settings set value='true'::jsonb where key='wallet.production_enabled';
+
   insert into public.topups(
     user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
   ) values(
-    buyer,'paysuite','mpesa',300000,'MZN',
-    'PRV-PHASE3-SEED',
-    'phase3-seed-provider-ref',
-    'phase3-seed-idempotency'
+    buyer,'paysuite','mpesa',500000,'MZN',
+    'PRV-PHASE3-SEED-A',
+    'phase3-seed-provider-ref-a',
+    'phase3-seed-idempotency-a'
   )
   returning id into topup_id;
 
   perform public.credit_topup(
-    'phase3-seed-provider-ref',
+    'phase3-seed-provider-ref-a',
     'paid',
-    300000,
-    'phase3-seed-provider-tx'
+    500000,
+    'phase3-seed-provider-tx-a'
+  );
+
+  insert into public.topups(
+    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
+  ) values(
+    buyer,'paysuite','mpesa',500000,'MZN',
+    'PRV-PHASE3-SEED-B',
+    'phase3-seed-provider-ref-b',
+    'phase3-seed-idempotency-b'
+  )
+  returning id into topup_id;
+
+  perform public.credit_topup(
+    'phase3-seed-provider-ref-b',
+    'paid',
+    500000,
+    'phase3-seed-provider-tx-b'
   );
 
   perform set_config('request.jwt.claim.sub',buyer::text,true);
