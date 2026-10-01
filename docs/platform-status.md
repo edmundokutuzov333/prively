@@ -9,8 +9,8 @@
 | Age/KYC | PARCIAL | KYC RPCs, RLS, AAL2 indirecto via `has_permission`; sandbox não validado | N/D |
 | Perfis | PARCIAL | Profiles + RLS + admin users RPC | N/D |
 | Conteúdo/Media | PARCIAL | upload, processing, access, worker contracts; E2E não repetido | N/D |
-| B2 Media Originals | REAL·FLAG | Backblaze B2 real para originals; PUT/GET/CORS smoke real; Edge Functions activas | N/D |
-| Cortina/Acesso | REAL·FLAG | `can_view_post`, age gate e media processing gates presentes | N/D |
+| B2 Media Originals | PARCIAL | B2 observado no runtime e funções activas; Secret e CORS externos ainda não confirmados directamente | N/D |
+| Cortina/Acesso | PARCIAL | `can_view_post` e `get_media_access` activos; readiness de derivados foi endurecido fail-closed, mas processor/staging continuam por validar | N/D |
 | Carteira/Top-up | PARCIAL | reconcile=0, zero saldos negativos, webhook/idempotência no código | N/D |
 | Assinaturas/PPV | PARCIAL | contratos financeiros e testes Phase 6 presentes | N/D |
 | Escrow/Pedidos/Leilões | PARCIAL | suite Phase 9 baseline passou | 100% dos 18 checks Phase 9 nativos observados |
