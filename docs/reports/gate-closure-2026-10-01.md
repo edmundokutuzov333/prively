@@ -87,12 +87,27 @@ A Fase 10 continua bloqueada. Os gates ainda sem evidência operacional final s�
 
 Nenhum destes pontos foi mascarado como verde.
 
-## Actualização: Fase 10 bloqueada pelo gate
+## Fase 10 - implementação concluída, certificação transversal pendente
 
-A especificação da Fase 10 foi recebida, mas a regra transversal continua a impedir avanço funcional enquanto 0.6, 0.7, Vercel e a certificação final da Fase 8 não estiverem verdes.
+A implementação técnica da Fase 10 foi fechada na main no commit `0ca81f07c637874d8cd9d9ac04c9543166e5589d`.
 
-Durante esta sessão foi aplicado em produção o hardening do RPC `purchase_ppv(uuid,text)` para fechar uma condição de corrida de duplo débito e revogar DML directo de `authenticated` em `ppv_purchases`. A migration foi registada remotamente como versão `20261001123623_phase10_ppv_runtime_hardening` e foi restaurada na `main` com o mesmo timestamp.
+Entregas efectivas:
+- `purchase_ppv(uuid,text)` em produção já está endurecido com lock transaccional por comprador/publicação, deduplicação por `ppv_purchases`, validação server-side e spend no ledger.
+- `ppv_purchases` permanece protegido por RLS e sem INSERT/UPDATE/DELETE directo para `authenticated`.
+- Foi adicionada a suite `supabase/tests/database/phase10_ppv_test.sql` cobrindo estrutura de segurança, concorrência lógica, débito único, recibo, `can_view_post` e bloqueio de post público.
+- O CI da main inclui a suite PPV tanto na lista canónica `supabase test db` como na suite native SQL.
+- `/compras` foi reconstruído como histórico único de PPV + subscrições, ordenado por data, com ligação para conteúdo PPV e descarregamento de recibo PDF através da Edge Function financeira.
+- i18n da superfície PPV foi fechado para pt-MZ, en e fr, incluindo erros operacionais relevantes.
+- O hardening de produção já aplicado na migration `20261001123623_phase10_ppv_runtime_hardening` foi preservado forward-only no repositório.
 
-O CI não inclui a suite PPV enquanto a Fase 10 estiver bloqueada. A UI de compras continua no estado anterior e não é considerada certificada para os critérios novos da Fase 10.
+Verificação read-only de produção:
+- `purchase_ppv`: EXECUTE para `authenticated`, não para `anon`.
+- `ppv_purchases`: RLS activa; SELECT para `authenticated`; INSERT/UPDATE/DELETE revogados.
+- O controlo de escrita directo não foi contornado.
 
-Estado: **FASE 10 NÃO CERTIFICADA / NÃO AVANÇADA**.
+Limitação de certificação:
+- O conector GitHub não expôs um run/status verde do CI correspondente, portanto o CI não é declarado verde.
+- O teste comportamental completo não foi executado contra produção porque uma tentativa de escrita SQL foi bloqueada pelo controlo de segurança da execução de ferramentas. Não foram criados fixtures de teste persistentes em produção.
+- Os gates transversais 0.6, 0.7, Vercel e certificação final da Fase 8 continuam materialmente abertos.
+
+Estado: **FASE 10 IMPLEMENTADA / CERTIFICAÇÃO FINAL AINDA DEPENDENTE DOS GATES TRANSVERSAIS**.

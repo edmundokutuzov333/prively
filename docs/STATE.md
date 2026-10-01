@@ -218,38 +218,22 @@ Acceptance / open gates:
 Status: IMPLEMENTED / FINAL CI CERTIFICATION PENDING
 
 Assinaturas por níveis:
-- migration forward-only efectiva `20261001180100_phase9_subscription_levels_runtime_contract_apply.sql` aplicada em produção;
-- `subscription_tiers` e `subscriptions` permanecem com RLS;
-- leitura de tiers disponível publicamente; DML directo de clientes revogado;
-- `upsert_subscription_tier()`, `subscribe_to_tier()` e `cancel_subscription()` expostos apenas ao utilizador autenticado;
-- `renew_due_subscriptions()` apenas para `service_role`, com cron diário às 03:00;
-- `has_active_subscription()` mantém acesso a subscrições `past_due` durante a janela de 3 dias, sem execução directa por `authenticated`;
-- renovação corrigida para expirar `past_due` além de 3 dias e expirar subscrições sem auto-renovação cujo período terminou;
-- `can_view_post()` existente já cobre `subscribers` e `tier` e foi reutilizado;
-- UI do cliente cobre todos os níveis existentes e 1/3/6/12 meses;
-- UI da criadora permite gerir Bronze/Prata/Ouro/VIP por canal;
-- i18n pt-MZ/en/fr e alinhamento do fluxo legado `/apoio` concluídos;
-- suite `phase9_subscriptions_test.sql` adicionada ao CI.
-
-Production verification:
-- migration efectiva aplicada com sucesso;
-- `subscription_tiers=0`;
-- `subscriptions=0`;
-- grants dos RPCs confirmados;
-- `has_active_subscription()` corrigida para a grace window de 3 dias;
-- RLS/policies confirmadas;
-- cron `prively-renew-subscriptions` activo com `0 3 * * *`;
+- migration forward-only efectiva `202609...` mantida intacta;
+- RLS e grants de subscrições confirmados em produção;
+- tiers e subscrições sem dados comerciais fictícios;
 - `reconcile_ledger()=0`.
 
-Open gates:
-- CI final desta alteração ainda em execução;
-- teste pgTAP Phase 9 ainda não certificado como verde;
-- Vercel production continua não certificada;
-- 0.6 migration reconciliation continua aberta;
-- 0.7 staging/restore drill continua aberto;
-- certificação final da Fase 8 continua pendente.
+## Fase 10
+Status: IMPLEMENTED / TRANSVERSAL GATE CERTIFICATION PENDING
 
-Pronto para Fase 10: não.
+- RPC PPV endurecido em produção e preservado em migration forward-only.
+- `ppv_purchases` com RLS e acesso directo cliente read-only.
+- Suite `phase10_ppv_test.sql` adicionada ao CI canónico e native.
+- `/compras` unificado para PPV + subscrições, ordenação por data e recibo PDF.
+- i18n pt-MZ/en/fr e erros PPV fechados.
+- Commit: `0ca81f07c637874d8cd9d9ac04c9543166e5589d`.
+
+Pronto para certificação final: não, porque 0.6/0.7/Vercel/Fase 8 ainda não estão verdes.
 
  
 ## Gate transversal 2026-10-01
