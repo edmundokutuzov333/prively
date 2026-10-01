@@ -56,11 +56,8 @@ select ok(
 );
 
 select ok(
-  (public.get_financial_settings()->>'wallet_topup_enabled') is not null
-  and (public.get_financial_settings()->>'wallet_min_topup_centavos') is not null
-  and (public.get_financial_settings()->>'wallet_max_topup_centavos') is not null
-  and (public.get_financial_settings()->>'wallet_daily_topup_limit_centavos') is not null,
-  'financial settings expose server-side topup limits'
+  to_regprocedure('public.get_financial_settings()') is not null,
+  'financial settings RPC exists'
 );
 
 create temporary table _phase5_meta(
@@ -116,6 +113,13 @@ begin
 
   first_intent := public.create_topup_intent(10000,'mpesa','phase5-topup-idem');
   duplicate_intent := public.create_topup_intent(10000,'mpesa','phase5-topup-idem');
+
+  if (public.get_financial_settings()->>'wallet_topup_enabled') is null
+     or (public.get_financial_settings()->>'wallet_min_topup_centavos') is null
+     or (public.get_financial_settings()->>'wallet_max_topup_centavos') is null
+     or (public.get_financial_settings()->>'wallet_daily_topup_limit_centavos') is null then
+    raise exception 'financial_settings_topup_contract_missing';
+  end if;
 
   insert into _phase5_meta(key,value)
   values
@@ -185,11 +189,12 @@ begin
   set local role postgres;
 
   insert into public.topups(
-    user_id,provider,method,amount,currency,internal_reference,idempotency_key,expires_at
+    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key,expires_at
   ) values(
     '95050000-0000-0000-0000-000000000001'::uuid,
     'paysuite','mpesa',10000,'MZN',
     'PRV-TU-PHASE5-EXPIRED',
+    'phase5-provider-ref-expired',
     'phase5-expired-idem',
     now()-interval '1 minute'
   )
@@ -201,7 +206,7 @@ begin
 
   begin
     perform public.credit_topup(
-      (select provider_ref from public.topups where id=expired_id),
+      'phase5-provider-ref-expired',
       'paid',
       10000,
       'phase5-expired-paid'
