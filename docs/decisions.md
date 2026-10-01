@@ -88,3 +88,7 @@
 **Context:** A Fase 11 requires a private chat-media bucket separate from the platform media backend. The existing chat-attachment-upload-url Edge Function already uses the private Supabase Storage bucket prively-chat, while the certified platform media path uses Backblaze B2.
 **Decision:** Keep two storage backends for now. Chat attachments remain in the private Supabase Storage bucket prively-chat. The Phase 11 privacy boundary is enforced by conversation membership, bilateral block state and locked-content/unlock rules. No migration to B2 is introduced in this phase.
 **Consequence:** There are two operational storage paths to maintain, but no rewrite of a certified media path is required and private chat attachments remain isolated from the public media pipeline.
+## ADR-016: Descoberta deve ser filtrada no servidor
+**Contexto:** `/descobrir` precisava excluir canais de seed e owners que já não estão activos, além de permitir filtros por handle, cidade e bairro sem depender de lógica de segurança no browser.
+**Decisão:** introduzir `discover_channels(...)` como RPC `SECURITY DEFINER`, com filtros server-side, exclusão explícita de `is_seed`, owner activo, canais escondidos e pares bloqueados. O cliente recebe também `follower_count` e `is_following` já calculados.
+**Consequência:** a descoberta não depende de dados artificiais nem expõe canais indisponíveis para depois os esconder no cliente. A tabela `follows` deixa de aceitar DML directo por `authenticated`; seguir/deixar seguir passa pelos RPCs existentes.
