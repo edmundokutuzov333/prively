@@ -203,8 +203,8 @@ begin
   perform set_config('request.jwt.claim.role','authenticated',true);
   perform set_config('request.jwt.claim.aal','aal2',true);
 
-  set local role authenticated;
-  if not public.can_view_post(post_tier,buyer) then raise exception 'tier_visibility_failed_after_upgrade'; end if;
+  set local role service_role;
+  if not public.can_view_post(post_tier) then raise exception 'tier_visibility_failed_after_upgrade'; end if;
 
   set local role postgres;
   update public.subscriptions
