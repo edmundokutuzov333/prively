@@ -44,8 +44,8 @@ begin
 
   insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
   values
-    (creator,'native-test','approved','native:'||creator::text,now()),
-    (client,'native-test','approved','native:'||client::text,now());
+    (creator,'manual','approved','native:'||creator::text,now()),
+    (client,'manual','approved','native:'||client::text,now());
 
   insert into public.creator_terms_acceptances(user_id,version,source,declarations)
   values(
@@ -172,6 +172,17 @@ begin
   end;
 
   perform set_config('app.internal_write','on',true);
+  perform set_config('request.jwt.claim.sub',creator::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  perform set_config('request.jwt.claims',json_build_object(
+    'sub',creator::text,'role','authenticated','aud','authenticated','aal','aal2',
+    'session_id',gen_random_uuid()::text
+  )::text,true);
+
+  if not public.is_age_verified(creator) then
+    raise exception 'phase5_creator_fixture_not_age_verified';
+  end if;
+
   update public.posts
   set status='published',publish_at=now(),moderation_status='clean'
   where id=v_post_id;
