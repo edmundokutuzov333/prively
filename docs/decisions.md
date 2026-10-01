@@ -54,3 +54,16 @@
 **Contexto:** a criação de canal exige um creator válido e a UI precisa de não expor dados artificiais em `/descobrir` nem em listagens públicas. O seed pode ser útil em desenvolvimento, mas não deve aparecer como conteúdo real.  
 **Decisão:** usar `is_seed = true` para qualquer registo estritamente de desenvolvimento, e excluir esses registos de queries públicas/descoberta por `WHERE is_seed = false` ou equivalente. Evitamos criar filas de seed em produção e evitamos remover dados sem necessidade.  
 **Consequência:** o desenvolvimento continua com fixtures úteis, mas utilizadores reais não veem canais de seed no feed público e não há risco de contaminar a produção com dados fictícios.
+
+
+## Fase 8 — registo de verificação de media
+
+**Estado:** PARCIALMENTE VERIFICADO.
+
+**Backend efectivo observado:** os assets de produção não apagados usam `storage_provider='backblaze_b2'`, com `metadata.media_backend='b2'` e bucket `prively-media-originals-2026`. Isto confirma o backend efectivo observado no pipeline, mas não substitui a leitura directa de `supabase secrets list`.
+
+**CORS B2:** a configuração normativa está documentada em `docs/b2-cors.md`. A aplicação efectiva no bucket não foi declarada como confirmada porque não existe acesso verificável ao painel/API administrativo do Backblaze nesta sessão.
+
+**Staging/Streamtape:** não existe actualmente um projecto Supabase de staging disponível para executar a transição de um vídeo novo. A validação histórica do pipeline não é usada como substituto de um teste novo em staging.
+
+**Regra:** não alterar os componentes certificados de media apenas para preencher evidências externas em falta.
