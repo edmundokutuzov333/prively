@@ -79,6 +79,34 @@ errors: { unauthorized: 'Your session expired. Sign in again.', forbidden: 'You 
     state: 'State',
     stateBackend: 'This state must be connected to the real flow that produced it before it is exposed as a production experience.'
   },
+  phase5Topup: {
+    intro: 'Real balance, top-ups and financial history.',
+    balance: 'Available to spend',
+    pending: 'Pending earnings',
+    available: 'Available earnings',
+    formTitle: 'Top up wallet',
+    formIntro: 'Funds enter the balance only after provider confirmation.',
+    amount: 'Amount in MZN',
+    method: 'Method',
+    submit: 'Top up wallet',
+    limits: 'Minimum {{min}} · Maximum {{max}}',
+    dailyLimit: 'Daily limit {{limit}}',
+    history: 'Top-up activity',
+    historyEmptyTitle: 'No top-ups',
+    historyEmptyBody: 'Your real top-ups will appear here.',
+    unavailable: 'Top-ups are unavailable until the payment provider is validated.',
+    retry: 'Try again',
+    continue: 'Continue payment',
+    created: 'Top-up {{reference}} created. Status: {{status}}.',
+    pendingStatus: 'Awaiting confirmation',
+    processingStatus: 'Processing',
+    paidStatus: 'Confirmed',
+    failedStatus: 'Failed',
+    expiredStatus: 'Expired',
+    cancelledStatus: 'Cancelled',
+    reversalPendingStatus: 'Reversal under review',
+    reversedStatus: 'Reversed'
+  },
   phase3Advanced: {support:{eyebrow:"Support",title:"Support this creator",intro:"Subscriptions, tips and gifts charged through server-authorized flows.",missingChannel:"Missing channel",missingChannelBody:"Open this area from a real channel.",tipTitle:"Tip",amount:"Amount in MZN",message:"Optional message",sendTip:"Send tip",giftsTitle:"Gifts",sendGift:"Send",noGifts:"No gifts configured",noGiftsBody:"The gift catalogue has not been configured yet.",subscriptionsTitle:"Subscriptions",months:"{{count}} month(s)",noTiers:"No tiers",noTiersBody:"This channel has no configured subscription tiers."},bundles:{eyebrow:"Bundles",clientTitle:"Content bundles",clientIntro:"Persisted bundles purchased through the ledger.",buy:"Buy bundle",emptyTitle:"No bundles",emptyBody:"There are no real bundles yet.",creatorTitle:"Creator bundles",creatorIntro:"Group real posts into a single-price bundle.",name:"Bundle name",price:"Price in MZN",description:"Description",create:"Create bundle"},engagement:{eyebrow:"Engagement",creatorTitle:"Giveaways and polls",creatorIntro:"Create real community interactions.",clientTitle:"Participation",clientIntro:"Vote and participate in open interactions.",pollTitle:"New poll",question:"Question",optionsHint:"One option per line",createPoll:"Create poll",giveawayTitle:"New giveaway",title:"Title",winnerCountLabel:"Winner count",createGiveaway:"Create giveaway",winnerCount:"{{count}} winner(s)",enter:"Enter",emptyTitle:"No activities",emptyBody:"There are no active polls or giveaways yet."},schedule:{eyebrow:"Schedule",title:"Availability",intro:"Define real availability windows.",area:"Optional public area",create:"Create slot"},rankings:{eyebrow:"Rankings",title:"Weekly rankings",intro:"Rankings calculated by the backend.",creators:"Creators",fans:"Fans"}}
 } as const;
 
