@@ -67,9 +67,13 @@ where id='71000000-0000-0000-0000-000000000001';
 select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001') = false,'pending KYC is not age verified');
 
 reset role;
-update public.kyc_verifications
-set status='approved',reviewed_by='71000000-0000-0000-0000-000000000002',reviewed_at=now()
-where user_id='71000000-0000-0000-0000-000000000001';
+set local role service_role;
+select public.approve_kyc(
+  (select id from public.kyc_verifications where user_id='71000000-0000-0000-0000-000000000001' limit 1),
+  true,
+  'phase1-test-approved',
+  '71000000-0000-0000-0000-000000000002'
+);
 set local role authenticated;
 select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
 select set_config('request.jwt.claim.role','authenticated',true);
@@ -78,7 +82,13 @@ select set_config('request.jwt.claims',json_build_object('sub','71000000-0000-00
 select ok(public.is_age_verified('71000000-0000-0000-0000-000000000001') = true,'approved KYC enables age verification');
 
 reset role;
-update public.kyc_verifications set status='rejected' where user_id='71000000-0000-0000-0000-000000000001';
+set local role service_role;
+select public.approve_kyc(
+  (select id from public.kyc_verifications where user_id='71000000-0000-0000-0000-000000000001' limit 1),
+  false,
+  'phase1-test-rejected',
+  '71000000-0000-0000-0000-000000000002'
+);
 set local role authenticated;
 select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
 select set_config('request.jwt.claim.role','authenticated',true);
