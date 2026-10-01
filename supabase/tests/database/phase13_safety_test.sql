@@ -47,11 +47,13 @@ select lives_ok($$
   )
 $$,'submit_report creates a real report');
 
+set local role service_role;
 select is(
   (select count(*) from public.audit_log where event_type='report_created' and target_type='profile' and target_id='71300000-0000-0000-0000-000000000002'::uuid),
   1::bigint,
   'report creation is audited'
 );
+set local role authenticated;
 
 select lives_ok($$
   select public.create_panic_event(false, null)
@@ -65,6 +67,7 @@ select is(
   'panic incident is persisted for the authenticated user'
 );
 
+set local role service_role;
 select is(
   (select count(*) from public.audit_log
     where event_type='panic_event_created'
@@ -72,6 +75,7 @@ select is(
   1::bigint,
   'panic creation is audited'
 );
+set local role authenticated;
 
 select * from finish();
 rollback;
