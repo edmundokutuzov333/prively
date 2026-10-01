@@ -1,7 +1,11 @@
--- Phase 4 ledger trigger ownership hardening.
--- Forward-only. Keeps the trigger internal and executes it under the
--- privileged service role so RLS cannot block cache maintenance.
+-- Phase 4 ledger trigger RLS execution hardening.
+-- Forward-only. No client write grant is added.
+-- The cache remains protected by RLS while this internal trigger bypasses
+-- row-security checks only within its own SECURITY DEFINER execution.
 
-alter function public.ledger_apply() owner to service_role;
+alter table public.balances no force row level security;
+
+alter function public.ledger_apply()
+  set row_security = off;
 
 revoke all on function public.ledger_apply() from public, anon, authenticated;
