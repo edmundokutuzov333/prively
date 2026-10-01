@@ -1,71 +1,39 @@
 # Prively Vercel deployment
 
-## Project contract
+## Estado verificado em 2026-10-01
 
-Prively is a Vite SPA. The repository now declares:
+A conta ligada ao conector Vercel é a equipa KUTUZOV (team_7od7FPsJHlZTwqQ0U2qscNH4). A listagem real dessa equipa contém apenas portfoliokutuzov, barber-os e txunabet2026. Não existe actualmente um projecto Vercel chamado prively.
 
-- framework: Vite
-- build command: `npm run build`
-- output directory: `dist`
-- SPA catch-all rewrite to `/index.html`
-- Node.js: 24.x
+Os aliases prively.vercel.app e privately.vercel.app não foram confirmados pela API Vercel da equipa ligada. Portanto, o site que respondeu durante o smoke test não prova que exista um projecto Prively controlado por esta conta.
 
-Vercel should build the browser application only. PostgreSQL, Auth, Storage and Edge Functions remain in Supabase.
+O repository está preparado para Vercel, mas o deployment de produção de Prively permanece NOT VERIFIED até existir/importar o projecto oficial e ligar os secrets de produção.
 
-## Required Vercel environment variables
+## deploy.yml
 
-Production and Preview:
+.github/workflows/deploy.yml publica com:
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
+npx vercel@61.0.0 deploy --prod --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
 
-The browser must never receive:
+e usa VERCEL_PROJECT_ID, VERCEL_ORG_ID e VERCEL_TOKEN no GitHub Environment production.
 
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
+Isto confirma o contrato do workflow. Não confirma que o project exista na conta Vercel conectada.
 
-Those belong to the Supabase Edge Function environment.
+## Configuração do projecto
 
-## Initial project setup
+Framework: Vite
+Build: npm run build
+Output: dist
+Node: 24.x
+SPA rewrite: /index.html
 
-Create/import a Vercel project from:
+## Variáveis públicas necessárias
 
-`edmundokutuzov333/prively`
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_APP_ENV
 
-Use:
+Segredos server-side nunca devem ser enviados para o browser.
 
-- Root Directory: repository root
-- Framework Preset: Vite
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- Install Command: `npm ci`
+## Gate
 
-Connect the production branch according to the repository integration policy. The production code branch is main. No phase-specific branch should be created for normal implementation.
-
-## Production gate
-
-Do not switch `phase3Monetization` to `true` only because the Vercel build passes. Production also requires:
-
-1. dedicated Prively Supabase project;
-2. migrations applied from zero;
-3. RLS/pgTAP green;
-4. Edge Functions deployed;
-5. LiveKit secrets configured in Supabase;
-6. payment/KYC providers configured according to their official documentation;
-7. critical Playwright flows green;
-8. Lighthouse PWA and mobile performance gates green;
-9. external legal/security review required by the master specification.
-
-## Current repository validation
-
-GitHub Actions currently validates:
-
-- TypeScript typecheck
-- ESLint
-- Vitest
-- Vite production build
-- Supabase local migrations
-- pgTAP database tests
-
-A Vercel project is not currently present in the connected KUTUZOV team. Therefore the repository is Vercel-ready, but a live Vercel deployment cannot be truthfully marked as verified until the Vercel project is created/imported and the environment variables are attached.
+Não criar um segundo projecto de produção nem fazer deploy alternativo para contornar a ausência do projecto oficial.
