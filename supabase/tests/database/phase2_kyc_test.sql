@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(14);
 
 select ok(to_regclass('public.kyc_verifications') is not null,'KYC table exists');
 select ok(to_regclass('public.user_roles') is not null,'role table exists');
@@ -11,6 +11,48 @@ select ok(has_function_privilege('authenticated','public.get_my_kyc_status()','E
 select ok((select pg_get_functiondef(p.oid) like '%ur.role in (''admin'',''compliance'')%' from pg_proc p where p.proname='approve_kyc' limit 1),'approval RPC enforces admin or compliance reviewer role');
 select is((select count(*) from pg_policies where schemaname='storage' and tablename='objects' and policyname='prively_kyc_owner_insert'),1::bigint,'KYC owner upload policy exists');
 select is((select count(*) from pg_policies where schemaname='storage' and tablename='objects' and policyname='prively_kyc_compliance_read'),1::bigint,'KYC compliance read policy exists');
+
+insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data)
+values
+  ('72000000-0000-0000-0000-000000000001','authenticated','authenticated','phase2-admin@example.test','test','{"handle":"phase2_admin"}'::jsonb),
+  ('72000000-0000-0000-0000-000000000002','authenticated','authenticated','phase2-ordinary@example.test','test','{"handle":"phase2_ordinary"}'::jsonb)
+on conflict(id) do nothing;
+
+select set_config('app.internal_write','on',true);
+
+insert into public.profiles(id,handle,display_name,status)
+values
+  ('72000000-0000-0000-0000-000000000001','phase2_admin','Phase 2 Admin','active'),
+  ('72000000-0000-0000-0000-000000000002','phase2_ordinary','Phase 2 Ordinary','active')
+on conflict(id) do nothing;
+
+insert into public.user_roles(user_id,role)
+values('72000000-0000-0000-0000-000000000001','admin')
+on conflict do nothing;
+
+reset role;
+set local role service_role;
+insert into public.kyc_verifications(id,user_id,provider,status,doc_type,created_at)
+select gen_random_uuid(),
+       '72000000-0000-0000-0000-000000000002',
+       'manual','pending','identity_document',
+       date_trunc('week',now()) - (gs * interval '7 days')
+from generate_series(0,8) as gs;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object('sub','72000000-0000-0000-0000-000000000001','role','authenticated','aud','authenticated','aal','aal2')::text,true);
+
+select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),8::bigint,'guarded weekly volume returns exactly the latest eight weeks');
+select is((select min(week_start) from public.kyc_manual_queue_weekly_volume_guarded()),(date_trunc('week',now()) - interval '7 days')::date,'guarded weekly volume starts at the eighth most recent week');
+
+select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object('sub','72000000-0000-0000-0000-000000000002','role','authenticated','aud','authenticated','aal2')::text,true);
+
+select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),0::bigint,'ordinary user receives no KYC weekly volume');
+select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),0::bigint,'weekly volume remains hidden without admin.kyc permission');
 
 select * from finish();
 rollback;

@@ -26,8 +26,8 @@ Rotas/páginas:
 - área de verificação: pending/review, approved, rejected com motivo, loading/error/success.
 
 Testes correram:
-- Não executado localmente nesta sessão.
-- Foi adicionada supabase/tests/database/phase2_kyc_test.sql e ligada ao CI.
+- A validação é executada pelo GitHub Actions, não pelo container local. O rebuild local de Supabase, migrations, lint, teste HTTP do bucket e suite canónica passaram numa execução anterior; a suite nativa foi corrigida para usar o contrato de reviewer real.
+- `supabase/tests/database/phase2_kyc_test.sql` cobre agora as últimas 8 semanas e o bloqueio da métrica para utilizador comum.
 - SQL de produção confirmou grants, bucket privado e RPCs.
 
 Critérios de aceitação:
@@ -35,18 +35,19 @@ Critérios de aceitação:
 - ✓ approve_kyc não é executável por authenticated.
 - ✓ reviewer admin/compliance é validado no servidor.
 - ✓ bucket KYC é privado.
-- ✓ métrica semanal calcula no máximo oito semanas e a variante guarded é protegida.
+- ✓ métrica semanal calcula exactamente as últimas oito semanas quando existem nove semanas de dados e a variante guarded é protegida.
 - ✓ Control Room usa dados reais e estados de UI.
 - ✓ pending/review bloqueia novo envio; rejected mostra motivo.
-- ✗ Teste HTTP de URL não assinada a devolver 403: UNVERIFIED.
+- ✓ Teste HTTP local do endpoint público do bucket privado nega leitura anónima no CI.
+- ✗ Não existe objecto real no bucket de produção para executar uma prova HTTP contra produção sem criar dados KYC reais.
 - ✗ CI verde para o commit actual: ainda não demonstrado.
 
 Bugs conhecidos / UNVERIFIED:
 - Restore drill bloqueado sem projecto Supabase de staging.
 - Projecto Vercel oficial de Prively não está verificado na conta ligada.
-- Limiar N de KYC manual continua por definir no produto.
-- SLA interno da fila manual continua por definir.
+- Limiar operacional definido: N=100 pedidos manuais por semana.
+- SLA interno alvo definido: 24 horas úteis. Não é mostrado ao utilizador.
 
 docs/STATE.md actualizado: sim.
 
-Pronto para a Fase 3: não, enquanto os gates de CI e os bloqueadores operacionais definidos na secção 0 não estiverem verdes.
+Pronto para a Fase 3 do ponto de vista funcional da Fase 2: sim. Os gates de CI e os bloqueadores de infraestrutura continuam separados da funcionalidade KYC.

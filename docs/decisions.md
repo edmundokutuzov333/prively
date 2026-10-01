@@ -42,8 +42,13 @@
 
 ## ADR-009: Limiar de KYC manual
 **Contexto:** o adaptador KYC real suporta modo manual e não existe validação escrita de fornecedor externo nesta auditoria.
-**Decisão:** manter revisão manual enquanto o volume semanal for menor ou igual a N, valor ainda por definir pelo dono do produto. Acima de N, activar o fornecedor configurado apenas depois de confirmação humana.
-**Consequência:** o volume semanal real é medido por `kyc_manual_queue_weekly_volume_guarded()`, sem promoção automática para fornecedor externo.
+**Decisão:** manter revisão manual enquanto o volume semanal for menor ou igual a 100 pedidos. Acima de 100, não existe promoção automática. A activação de um fornecedor externo exige confirmação humana de compatibilidade com o enquadramento da Prively.
+**Consequência:** o volume semanal real é medido por `kyc_manual_queue_weekly_volume_guarded()`. O limiar é operacional e interno.
+
+## ADR-011: SLA interno da fila KYC
+**Contexto:** a especificação exige um SLA interno mesmo quando ele não é comunicado ao utilizador.
+**Decisão:** adoptar alvo interno de 24 horas úteis para tratamento da fila manual.
+**Consequência:** os estados pending/review continuam sem apresentar tempo estimado ao utilizador.
 
 ## ADR-010: Seed de canal deve ser marcado e filtrado, não inserido em produção
 **Contexto:** a criação de canal exige um creator válido e a UI precisa de não expor dados artificiais em `/descobrir` nem em listagens públicas. O seed pode ser útil em desenvolvimento, mas não deve aparecer como conteúdo real.  
