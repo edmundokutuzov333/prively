@@ -231,17 +231,17 @@ begin
     raise exception 'past_due_grace_not_expired';
   end if;
 
-  insert into public.subscriptions(
-    id,subscriber_id,channel_id,tier_id,period_months,price_paid,current_period_end,auto_renew,status
-  )
-  values(
-    '99060000-0000-0000-0000-000000000031',buyer_two,channel,bronze,1,10000,now()-interval '1 hour',false,'active'
-  );
+  update public.subscriptions
+  set current_period_end=now()-interval '1 hour',
+      auto_renew=false,
+      status='active',
+      past_due_at=null
+  where id='99060000-0000-0000-0000-000000000030'::uuid;
 
   perform public.renew_due_subscriptions();
 
-  if exists(select 1 from public.subscriptions where id='99060000-0000-0000-0000-000000000031'::uuid and status<>'expired') then
-    raise exception 'cancelled_subscription_did_not_expire';
+  if exists(select 1 from public.subscriptions where id='99060000-0000-0000-0000-000000000030'::uuid and status<>'expired') then
+    raise exception 'non_renewing_subscription_did_not_expire';
   end if;
 
   set local role postgres;
