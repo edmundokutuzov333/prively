@@ -37,11 +37,17 @@ function contentErrorMessage(t: (key: string, options?: Record<string, unknown>)
   const known = new Set([
     'content_rights_required',
     'content_terms_required',
+    'not_creator',
+    'age_not_verified',
+    'creator_terms_required',
+    'creator_kyc_required',
     'creator_verification_required',
     'channel_forbidden',
     'channel_handle_taken',
     'invalid_channel_handle',
     'display_name_required',
+    'display_name_invalid',
+    'bio_too_long',
     'post_create_failed',
     'media_upload_prepare_failed',
     'signed_upload_url_failed',
@@ -88,6 +94,7 @@ export function ContentStudioPage() {
   const [channelHandle, setChannelHandle] = useState('');
   const [channelName, setChannelName] = useState('');
   const [channelBio, setChannelBio] = useState('');
+  const [handleState, setHandleState] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'>('idle');
 
   const [caption, setCaption] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'followers' | 'subscribers' | 'tier' | 'ppv'>('subscribers');
@@ -130,7 +137,45 @@ export function ContentStudioPage() {
     void load();
   }, [user]);
 
+  useEffect(() => {
+    let active = true;
+    const normalizedHandle = channelHandle.trim().toLowerCase();
+
+    if (!user || !normalizedHandle) {
+      setHandleState('idle');
+      return () => {
+        active = false;
+      };
+    }
+
+    if (!/^[a-z0-9_]{3,24}$/.test(normalizedHandle)) {
+      setHandleState('invalid');
+      return () => {
+        active = false;
+      };
+    }
+
+    setHandleState('checking');
+    const timer = window.setTimeout(() => {
+      void requireSupabase().rpc('check_channel_handle', { _handle: normalizedHandle })
+        .then(({ data, error: rpcError }) => {
+          if (!active) return;
+          if (rpcError) {
+            setHandleState('error');
+            return;
+          }
+          setHandleState(data === true ? 'available' : 'taken');
+        });
+    }, 400);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [channelHandle, user]);
+
   const createChannel = async () => {
+    if (handleState !== 'available') return;
     setSavingChannel(true);
     setError(null);
     const { data, error: rpcError } = await requireSupabase().rpc('create_creator_channel', {
@@ -294,11 +339,28 @@ export function ContentStudioPage() {
     {!channel ? <Ficha variant="focus" className="p-6 md:p-8">
       <div className="flex items-start gap-4"><ShieldCheck size={24} className="text-crimson-400" /><div><h2 className="text-xl font-semibold text-bone-50">{t('content.channelTitle')}</h2><p className="mt-2 text-sm leading-6 text-bone-300">{t('content.channelBody')}</p></div></div>
       <div className="mt-7 grid gap-5 md:grid-cols-2">
-        <label><span className="mb-2 block text-sm text-bone-300">{t('content.channelHandle')}</span><input value={channelHandle} onChange={(event)=>setChannelHandle(event.target.value.toLowerCase())} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" /></label>
+        <label>
+          <span className="mb-2 block text-sm text-bone-300">{t('content.channelHandle')}</span>
+          <input
+            value={channelHandle}
+            onChange={(event)=>setChannelHandle(event.target.value.toLowerCase())}
+            maxLength={24}
+            autoComplete="off"
+            aria-invalid={handleState === 'invalid' || handleState === 'taken'}
+            className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none"
+          />
+          <p role="status" className="mt-2 text-xs text-bone-500">
+            {handleState === 'checking' ? t('content.handleChecking') :
+             handleState === 'available' ? t('content.handleAvailable') :
+             handleState === 'taken' ? t('content.handleTaken') :
+             handleState === 'invalid' ? t('content.handleInvalid') :
+             handleState === 'error' ? t('content.handleValidationError') : ''}
+          </p>
+        </label>
         <label><span className="mb-2 block text-sm text-bone-300">{t('content.channelName')}</span><input value={channelName} onChange={(event)=>setChannelName(event.target.value)} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" /></label>
         <label className="md:col-span-2"><span className="mb-2 block text-sm text-bone-300">{t('content.channelBio')}</span><textarea value={channelBio} onChange={(event)=>setChannelBio(event.target.value)} rows={4} className="w-full rounded-md border border-input bg-ink-850 p-3 text-bone-50 outline-none" /></label>
       </div>
-      <Botao className="mt-6" onClick={()=>void createChannel()} loading={savingChannel} disabled={!/^[a-z0-9_]{3,24}$/.test(channelHandle)||!channelName.trim()}><Plus size={18}/>{t('content.createChannel')}</Botao>
+      <Botao className="mt-6" onClick={()=>void createChannel()} loading={savingChannel} disabled={handleState !== 'available'||!channelName.trim()}><Plus size={18}/>{t('content.createChannel')}</Botao>
     </Ficha> : <div className="grid gap-8 lg:grid-cols-[1.2fr_.8fr]">
       <Ficha variant="focus" className="p-6 md:p-8">
         <div className="flex items-start justify-between gap-4"><div><p className="text-sm text-bone-500">{t('content.channelEyebrow')}</p><h2 className="mt-2 text-2xl font-semibold text-bone-50">@{channel.handle}</h2><p className="mt-1 text-sm text-bone-500">{channel.display_name}</p></div><Sparkle size={22} className="text-crimson-400"/></div>
