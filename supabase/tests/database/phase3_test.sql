@@ -34,6 +34,10 @@ begin
 
   perform set_config('app.internal_write','on',true);
   update public.profiles set status='active',age_verified_at=now() where id in (buyer,creator);
+  insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
+  values
+    (buyer,'manual','approved','phase3:'||buyer::text,now()),
+    (creator,'manual','approved','phase3:'||creator::text,now());
   insert into public.user_roles(user_id,role) values(creator,'creator') on conflict do nothing;
 
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
