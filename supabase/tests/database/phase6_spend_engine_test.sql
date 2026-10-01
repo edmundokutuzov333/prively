@@ -75,7 +75,7 @@ create temporary table _phase6_meta(
 
 grant select, insert, update, delete on table _phase6_meta to public;
 
-do $
+do $$
 declare
   buyer uuid := '96060000-0000-0000-0000-000000000001';
   creator uuid := '96060000-0000-0000-0000-000000000002';
