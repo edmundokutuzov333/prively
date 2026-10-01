@@ -243,11 +243,17 @@ begin
 
   set local role service_role;
 
-  release_count := public.release_due_earnings();
+  perform public.release_due_earnings();
 
   insert into _phase6_meta(key,value)
-  values('release_count',release_count::text)
-  on conflict(key) do update set value=excluded.value;
+  select
+    'release_count',
+    count(*)::text
+  from public.ledger_entries
+  where release_source_id in (
+    select id from public.ledger_entries
+    where txn_id=txn_one and account='creator_pending'
+  );
 
   perform public.release_due_earnings();
 
