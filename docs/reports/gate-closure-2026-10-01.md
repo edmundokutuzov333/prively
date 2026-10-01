@@ -96,3 +96,7 @@ Durante esta sessão foi aplicado em produção o hardening do RPC `purchase_ppv
 O CI não inclui a suite PPV enquanto a Fase 10 estiver bloqueada. A UI de compras continua no estado anterior e não é considerada certificada para os critérios novos da Fase 10.
 
 Estado: **FASE 10 NÃO CERTIFICADA / NÃO AVANÇADA**.
+
+## CI equivalence verification
+
+This branch exists only to execute GitHub Actions against the current main tree plus this documentation marker.
