@@ -93,7 +93,7 @@ export function AdminStoragePage() {
                     <span className="text-bone-300">{status}</span>
                     <span className="font-semibold text-bone-50">{count}</span>
                   </div>
-                )) : <EstadoVazio title="{t('phase14.storage.noStatuses')}" body="{t('phase14.storage.noStatusesBody')}" />}
+                )) : <EstadoVazio title={t('phase14.storage.noStatuses')} body={t('phase14.storage.noStatusesBody')} />}
               </div>
               <p className="mt-4 text-xs text-bone-500">{data.streamtape.failed_over_one_hour} {t('phase14.storage.oldFailures')}</p>
             </Ficha>
