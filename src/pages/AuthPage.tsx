@@ -26,6 +26,8 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const role = searchParams.get('role') === 'creator' ? 'creator' : effectivePortal;
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const isCreatorSignup = mode === 'signUp' && role === 'creator';
 
   const schema = z.object({
@@ -74,51 +76,76 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
     resolver: zodResolver(schema)
   });
 
+  const describeAuthError = (authError: { code?: string; message?: string } | null | undefined) => {
+    const code = authError?.code ?? '';
+    const raw = (authError?.message ?? '').toLowerCase();
+
+    if (code === 'email_not_confirmed' || raw.includes('email not confirmed') || raw.includes('email não confirmado')) {
+      return t('auth.confirmEmailRequired');
+    }
+    if (code === 'invalid_credentials' || raw.includes('invalid login credentials')) {
+      return t('auth.invalidCredentials');
+    }
+    if (code === 'user_already_exists' || raw.includes('already registered') || raw.includes('already been registered')) {
+      return t('auth.accountAlreadyExists');
+    }
+    if (code === 'weak_password' || raw.includes('password') && raw.includes('weak')) {
+      return t('auth.passwordTooWeak');
+    }
+    return authError?.message ?? t('auth.genericError');
+  };
+
   const onSubmit = async (values: Values) => {
     setError(null);
     setMessage(null);
+    setConfirmationEmail(null);
 
     try {
       const sb = requireSupabase();
+      const email = values.email.trim().toLowerCase();
 
       if (mode === 'signIn') {
         const { data, error: signInError } = await sb.auth.signInWithPassword({
-          email: values.email.trim().toLowerCase(),
+          email,
           password: values.password
         });
 
-        if (signInError || !data.user) {
-          setError(signInError?.message ?? t('auth.invalidCredentials'));
+        if (signInError || !data.user || !data.session) {
+          setError(describeAuthError(signInError));
+          if (signInError?.code === 'email_not_confirmed') {
+            setConfirmationEmail(email);
+          }
           return;
         }
 
-        const { data: roles, error: rolesError } = await sb
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id);
+        const [adminRoleResult, creatorRoleResult] = await Promise.all([
+          sb.rpc('has_role', { _uid: data.user.id, _role: 'admin' }),
+          sb.rpc('has_role', { _uid: data.user.id, _role: 'creator' }),
+        ]);
 
-        if (rolesError) {
-          await sb.auth.signOut();
-          setError(rolesError.message);
+        if (adminRoleResult.error || creatorRoleResult.error) {
+          await sb.auth.signOut({ scope: 'local' });
+          setError(t('auth.roleCheckError'));
           return;
         }
 
-        const roleSet = new Set((roles ?? []).map((item) => item.role));
+        const isAdmin = Boolean(adminRoleResult.data);
+        const isCreator = Boolean(creatorRoleResult.data);
 
-        if (effectivePortal === 'admin' && !roleSet.has('admin')) {
-          await sb.auth.signOut();
+        if (effectivePortal === 'admin' && !isAdmin) {
+          await sb.auth.signOut({ scope: 'local' });
           setError(t('auth.adminRequired'));
           return;
         }
 
-        if (effectivePortal === 'client' && roleSet.has('admin')) {
-          await sb.auth.signOut();
+        if (effectivePortal === 'client' && isAdmin) {
+          await sb.auth.signOut({ scope: 'local' });
           setError(t('auth.adminUsePortal'));
           return;
         }
 
-        if (effectivePortal === 'creator' && !roleSet.has('creator')) {
-          await sb.auth.signOut();
+        if (effectivePortal === 'creator' && !isCreator) {
+          await sb.auth.signOut({ scope: 'local' });
           setError(t('auth.creatorRequired'));
           return;
         }
@@ -130,7 +157,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
 
       const signupRole = role === 'creator' ? 'creator' : 'client';
       const { data, error: signUpError } = await sb.auth.signUp({
-        email: values.email.trim().toLowerCase(),
+        email,
         password: values.password,
         options: {
           data: {
@@ -148,12 +175,18 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        setError(describeAuthError(signUpError));
+        return;
+      }
+
+      if (!data.user) {
+        setError(t('auth.genericError'));
         return;
       }
 
       if (!data.session) {
-        setMessage('Confirma o teu email para concluir o registo. Depois volta para entrar.');
+        setConfirmationEmail(email);
+        setMessage(t('auth.confirmEmailRequired'));
         return;
       }
 
@@ -182,6 +215,28 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
     }
   };
 
+  const resendConfirmation = async () => {
+    if (!confirmationEmail || resendingConfirmation) return;
+    setError(null);
+    setMessage(null);
+    setResendingConfirmation(true);
+    try {
+      const { error: resendError } = await requireSupabase().auth.resend({
+        type: 'signup',
+        email: confirmationEmail,
+      });
+      if (resendError) {
+        setError(describeAuthError(resendError));
+        return;
+      }
+      setMessage(t('auth.confirmEmailResent'));
+    } catch (resendError) {
+      setError(resendError instanceof Error ? resendError.message : t('auth.genericError'));
+    } finally {
+      setResendingConfirmation(false);
+    }
+  };
+
   const title = mode === 'signIn'
     ? effectivePortal === 'admin'
       ? t('auth.adminTitle')
@@ -198,7 +253,7 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
   const submit = mode === 'signIn' ? t('auth.signIn') : isCreatorSignup ? 'Concordo e quero criar conta' : t('auth.signUp');
 
   return <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg items-center px-5 py-12 md:px-8">
-    <Ficha variant="focus" className="w-full p-7 md:p-10">
+    <Ficha variant="focus" className="w-full p-6 sm:p-7 md:p-10">
       <div className="mb-8">
         <p className="mb-2 flex items-center gap-2 text-sm text-bone-500">
           {effectivePortal === 'admin' ? <ShieldCheck size={17} weight="duotone" /> : null}
@@ -207,12 +262,12 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
         <h1 className="font-display text-5xl leading-[.92] text-bone-50">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate aria-busy={isSubmitting}>
         {mode === 'signUp' ? <label className="block">
           <span className="mb-2 block text-sm text-bone-300">{t('auth.handle')}</span>
           <span className="flex items-center rounded-md border border-input bg-ink-850 px-3">
             <UserCirclePlus size={19} className="text-bone-500" />
-            <input {...register('handle')} autoComplete="username" className="min-h-12 w-full border-0 bg-transparent px-3 text-bone-50 outline-none" />
+            <input {...register('handle')} id="auth-handle" autoComplete="username" aria-invalid={Boolean(errors.handle)} className="min-h-12 w-full border-0 bg-transparent px-3 text-bone-50 outline-none" />
           </span>
           {errors.handle ? <span className="mt-2 block text-xs text-danger">{t('auth.invalidHandle')}</span> : null}
         </label> : null}
@@ -221,9 +276,9 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
           <span className="mb-2 block text-sm text-bone-300">{t('auth.email')}</span>
           <span className="flex items-center rounded-md border border-input bg-ink-850 px-3">
             <EnvelopeSimple size={19} className="text-bone-500" />
-            <input {...register('email')} type="email" autoComplete="email" className="min-h-12 w-full border-0 bg-transparent px-3 text-bone-50 outline-none" />
+            <input {...register('email')} id="auth-email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'auth-email-error' : undefined} className="min-h-12 w-full border-0 bg-transparent px-3 text-bone-50 outline-none" />
           </span>
-          {errors.email ? <span className="mt-2 block text-xs text-danger">{t('auth.invalidCredentials')}</span> : null}
+          {errors.email ? <span id="auth-email-error" className="mt-2 block text-xs text-danger">{t('auth.invalidEmail')}</span> : null}
         </label>
 
         {mode === 'signUp' ? <div className="space-y-3 rounded-md border border-bone-50/8 bg-ink-850 p-4">
@@ -245,19 +300,28 @@ export function AuthPage({ mode, portal = 'client' }: AuthPageProps) {
           <span className="mb-2 block text-sm text-bone-300">{t('auth.password')}</span>
           <span className="flex items-center rounded-md border border-input bg-ink-850 px-3">
             <LockKey size={19} className="text-bone-500" />
-            <input {...register('password')} type="password" autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'} className="min-h-12 w-full border-0 bg-transparent px-3 text-bone-50 outline-none" />
+            <input {...register('password')} id="auth-password" type="password" autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'} aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'auth-password-error' : undefined} className="min-h-12 w-full border-0 bg-transparent px-3 text-bone-50 outline-none" />
           </span>
-          {errors.password ? <span className="mt-2 block text-xs text-danger">{t('auth.genericError')}</span> : null}
+          {errors.password ? <span id="auth-password-error" className="mt-2 block text-xs text-danger">{t('auth.passwordRequirement')}</span> : null}
         </label>
 
-        {error ? <p role="alert" className="border border-danger/35 bg-danger/5 p-3 text-sm leading-6 text-bone-50">{error}</p> : null}
-        {message ? <p role="status" className="border border-ok/30 bg-ok/5 p-3 text-sm leading-6 text-bone-50">{message}</p> : null}
-        <Botao type="submit" loading={isSubmitting} disabled={isCreatorSignup && !creatorSignupReady} className="w-full">{submit}</Botao>
+        {error ? <p role="alert" aria-live="assertive" className="border border-danger/35 bg-danger/5 p-3 text-sm leading-6 text-bone-50">{error}</p> : null}
+        {message ? <div role="status" aria-live="polite" className="border border-ok/30 bg-ok/5 p-4 text-sm leading-6 text-bone-50">
+          <p>{message}</p>
+          {confirmationEmail ? (
+            <button type="button" onClick={() => void resendConfirmation()} disabled={resendingConfirmation} className="mt-3 inline-flex min-h-10 items-center justify-center rounded-[2px] border border-bone-50/15 bg-transparent px-3 text-sm font-semibold text-bone-50 hover:border-crimson-500/40 hover:bg-wine-900/30 disabled:cursor-not-allowed disabled:opacity-60">
+              {resendingConfirmation ? t('common.loading') : t('auth.resendConfirmation')}
+            </button>
+          ) : null}
+        </div> : null}
+        <Botao type="submit" loading={isSubmitting} disabled={isCreatorSignup && !creatorSignupReady} className="w-full min-h-12">
+          {isSubmitting ? (mode === 'signIn' ? t('auth.signingIn') : t('auth.creatingAccount')) : submit}
+        </Botao>
         {mode === 'signIn' && effectivePortal !== 'admin' ? <Link to="/recuperar" className="block text-center text-sm text-bone-500 underline decoration-bone-50/20 underline-offset-4">{t('auth.recoverAccount')}</Link> : null}
       </form>
 
       <div className="mt-7"><Escudo text={t('privacy.notice')} /></div>
-      <p className="mt-7 text-sm text-bone-300">
+      <p className="mt-7 text-center text-sm leading-6 text-bone-300 sm:text-left">
         {mode === 'signIn'
           ? <>{t('auth.noAccount')} <Link to={effectivePortal === 'creator' ? '/idade?role=creator' : effectivePortal === 'admin' ? '/admin' : '/registo'} className="text-bone-50 underline decoration-bone-50/20 underline-offset-4">{t('auth.createNow')}</Link></>
           : <>{t('auth.haveAccount')} <Link to={effectivePortal === 'creator' ? '/se-criadora' : '/entrar'} className="text-bone-50 underline decoration-bone-50/20 underline-offset-4">{t('auth.signInNow')}</Link></>
