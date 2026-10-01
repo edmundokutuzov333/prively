@@ -1,0 +1,38 @@
+name: Prively Resilience Local
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  resilience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+      - run: npm ci --no-audit --no-fund
+      - name: Start local Supabase
+        run: supabase start
+      - name: Reset database
+        run: supabase db reset
+      - name: Export local Postgres URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          echo "POSTGRES_URL=$DB_URL" >> "$GITHUB_ENV"
+      - name: Run resilience harness
+        run: node scripts/payment-resilience.mjs
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
