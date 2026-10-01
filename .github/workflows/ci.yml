@@ -93,7 +93,7 @@ jobs:
             supabase/tests/database/phase5_hardening_test_v2.sql \
             supabase/tests/database/phase5_storage_security_test.sql \
             supabase/tests/database/phase6_financial_core_test.sql \
-            supabase/tests/database/phase1_identity_roles_kyc_test.sql
+            supabase/tests/database/phase1_identity_roles_kyc_test.sql \
             supabase/tests/database/phase10_security_contract_test.sql
       - name: Run native SQL regression suites
         shell: bash
