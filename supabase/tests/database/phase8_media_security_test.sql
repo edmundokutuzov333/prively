@@ -252,7 +252,7 @@ select is(
   'complete derivative set is accepted'
 );
 
-set local role authenticated;
+set local role service_role;
 select set_config('request.jwt.claim.sub',current_setting('app.phase8_viewer'),true);
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object(
@@ -277,7 +277,7 @@ select ok(
   'owner can still view after complete derivative readiness'
 );
 
-set local role authenticated;
+set local role service_role;
 select set_config('request.jwt.claim.sub',current_setting('app.phase8_viewer'),true);
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object(

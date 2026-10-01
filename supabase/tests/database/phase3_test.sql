@@ -23,6 +23,8 @@ declare
   creator uuid:='10000000-0000-0000-0000-000000000002';
   channel uuid:=gen_random_uuid();
   txn uuid;
+  seed_txn_a uuid;
+  seed_txn_b uuid;
   escrow uuid;
   buyer_wallet bigint;
   creator_pending bigint;
@@ -68,9 +70,17 @@ begin
   set local role service_role;
   update public.platform_settings set value='true'::jsonb where key='wallet.production_enabled';
 
-  insert into public.balances(owner_id,account,balance)
-  values(buyer,'wallet',1000000)
-  on conflict(owner_id,account) do update set balance=excluded.balance;
+  seed_txn_a:=gen_random_uuid();
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id)
+  values
+    (seed_txn_a,'wallet',buyer,500000,'phase3_seed','topup',null),
+    (seed_txn_a,'external','00000000-0000-0000-0000-000000000000'::uuid,-500000,'phase3_seed','topup',null);
+
+  seed_txn_b:=gen_random_uuid();
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id)
+  values
+    (seed_txn_b,'wallet',buyer,500000,'phase3_seed','topup',null),
+    (seed_txn_b,'external','00000000-0000-0000-0000-000000000000'::uuid,-500000,'phase3_seed','topup',null);
 
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);

@@ -144,13 +144,13 @@ begin
   end;
 end $$;
 
-do $
+do $$
 begin
   perform public.attest_post_content_consent(
     current_setting('app.phase7_scheduled_id')::uuid,
     true
   );
-end $;
+end $$;
 
 select ok(
   exists(select 1 from public.content_consents where post_id=current_setting('app.phase7_draft_id')::uuid and participants_adult_confirmed),

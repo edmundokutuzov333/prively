@@ -221,6 +221,8 @@ select is(
   'real channel is visible through public authenticated discovery'
 );
 
+set local role service_role;
+
 select ok(
   exists(
     select 1 from public.security_events

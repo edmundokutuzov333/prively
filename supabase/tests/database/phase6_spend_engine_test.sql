@@ -81,6 +81,7 @@ declare
   ref_id uuid := '96060000-0000-0000-0000-000000000020';
   txn_one uuid;
   txn_two uuid;
+  seed_txn uuid;
   release_count integer;
   caught text;
   creator_pending_before bigint;
@@ -131,15 +132,11 @@ begin
   set local role service_role;
   update public.platform_settings set value='true'::jsonb where key='wallet.production_enabled';
 
-  insert into public.balances(owner_id,account,balance)
-  values(buyer,'wallet',100000)
-  on conflict(owner_id,account) do update set balance=excluded.balance;
-
-  insert into public.balances(owner_id,account,balance)
+  seed_txn:=gen_random_uuid();
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id)
   values
-    (creator,'creator_pending',0),
-    (creator,'creator_available',0)
-  on conflict(owner_id,account) do update set balance=excluded.balance;
+    (seed_txn,'wallet',buyer,100000,'phase6_seed','topup',null),
+    (seed_txn,'external','00000000-0000-0000-0000-000000000000'::uuid,-100000,'phase6_seed','topup',null);
 
   update public.platform_settings
   set value='0.30'::jsonb

@@ -75,6 +75,8 @@ declare
   post_subscribers uuid := '99060000-0000-0000-0000-000000000020';
   post_tier uuid := '99060000-0000-0000-0000-000000000021';
   sub_id uuid;
+  seed_txn_buyer uuid;
+  seed_txn_buyer_two uuid;
   b0 bigint;
   b1 bigint;
   b3 bigint;
@@ -116,11 +118,19 @@ begin
   values(channel,creator,'phase9_sub_creator','Phase 9 Subscription Creator',false)
   on conflict(id) do nothing;
 
-  insert into public.balances(owner_id,account,balance)
+  set local role service_role;
+
+  seed_txn_buyer:=gen_random_uuid();
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id)
   values
-    (buyer,'wallet',500000),
-    (buyer_two,'wallet',500000)
-  on conflict(owner_id,account) do update set balance=excluded.balance;
+    (seed_txn_buyer,'wallet',buyer,500000,'phase9_seed','topup',null),
+    (seed_txn_buyer,'external','00000000-0000-0000-0000-000000000000'::uuid,-500000,'phase9_seed','topup',null);
+
+  seed_txn_buyer_two:=gen_random_uuid();
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id)
+  values
+    (seed_txn_buyer_two,'wallet',buyer_two,500000,'phase9_seed','topup',null),
+    (seed_txn_buyer_two,'external','00000000-0000-0000-0000-000000000000'::uuid,-500000,'phase9_seed','topup',null);
 
   perform set_config('request.jwt.claims',
     json_build_object('sub',creator::text,'role','authenticated','aud','authenticated','aal','aal2')::text,true);
