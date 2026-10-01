@@ -13,8 +13,8 @@ Snapshot remoto real do projecto Supabase gaonupelgtpfthouyobh:
 Snapshot do repositório:
 - A auditoria anterior tinha 208 ficheiros de migração.
 - Desde essa auditoria foram adicionadas 16 migrações e 2 ficheiros foram renomeados, mantendo o número total.
-- O checkout actual fica, por derivação do histórico Git, com 224 ficheiros de migração.
-- Quatro migrações locais têm timestamp de 2 de Outubro de 2026 e ainda não estão no remoto. São forward-only e permanecem pendentes por desenho, não por drift acidental.
+- O checkout actual fica, por derivação do histórico Git desde o snapshot de 208 ficheiros, com 224 ficheiros de migração.
+- O checkout actual contém migrações forward-only posteriores ao snapshot remoto, além de ficheiros renomeados historicamente. A diferença não deve ser resolvida com migration repair nem com edição de migrações aplicadas.
 - O histórico remoto mantém timestamps antigos para renumerações históricas. Esses pares estão documentados e não devem ser corrigidos com migration repair.
 
 Correcção aplicada ao CI em 8c1544dca2232ef32922a35463fe971c7f03ec09: removido um literal \\n da lista Bash de suites, que podia corromper a execução da suite Phase 9.
