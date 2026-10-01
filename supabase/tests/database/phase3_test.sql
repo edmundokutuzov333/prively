@@ -33,11 +33,31 @@ begin
     (creator,'authenticated','authenticated','creator@example.test','test','{"handle":"creator_test"}'::jsonb);
 
   perform set_config('app.internal_write','on',true);
-  update public.profiles set status='active',age_verified_at=now() where id in (buyer,creator);
-  insert into public.kyc_verifications(user_id,provider,status,provider_ref,reviewed_at)
+  update public.profiles set status='active' where id in (buyer,creator);
+  insert into public.kyc_verifications(user_id,provider,status,provider_ref)
   values
-    (buyer,'manual','approved','phase3:'||buyer::text,now()),
-    (creator,'manual','approved','phase3:'||creator::text,now());
+    (buyer,'manual','pending','phase3:'||buyer::text),
+    (creator,'manual','pending','phase3:'||creator::text);
+  perform set_config('request.jwt.claim.sub',buyer::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  perform set_config('request.jwt.claims',json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2')::text,true);
+  set local role service_role;
+  perform public.approve_kyc(
+    (select id from public.kyc_verifications where user_id=buyer limit 1),
+    true,
+    'phase3-buyer-approved',
+    creator
+  );
+  perform public.approve_kyc(
+    (select id from public.kyc_verifications where user_id=creator limit 1),
+    true,
+    'phase3-creator-approved',
+    creator
+  );
+  set local role postgres;
+  perform set_config('request.jwt.claim.sub',buyer::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  perform set_config('request.jwt.claims',json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text)::text,true);
   insert into public.user_roles(user_id,role) values(creator,'creator') on conflict do nothing;
 
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
