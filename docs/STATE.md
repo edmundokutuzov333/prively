@@ -155,6 +155,7 @@ Publicação de conteúdo com visibilidade granular:
 - publish_scheduled_posts() ignora posts agendados sem consentimento;
 - DML directo por authenticated em posts removido; a escrita passa pelo RPC de conteúdo;
 - /estudio/conteudo passou a persistir consentimento e suporta publicação imediata ou agendada;
+- visibilidade private exposta no formulário e bloqueada no servidor para qualquer utilizador que não seja a proprietária;
 - i18n pt-MZ/en/fr actualizado;
 - suite phase7_content_publication_test.sql criada com 30 assertions;
 - suite adicionada ao CI.
