@@ -10,6 +10,7 @@ import { SocialPostActions } from '@/features/social/SocialPostActions';
 import { requireSupabase } from '@/lib/supabase';
 import { hasPin, setPin } from '@/lib/pin';
 import { formatMznFromCents } from '@/lib/money';
+import { platformErrorKey } from '@/lib/errors';
 import { useAuth } from '@/app/session';
 import i18n from '@/lib/i18n';
 
