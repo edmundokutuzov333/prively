@@ -23,7 +23,7 @@ insert into public.profiles(id,handle,display_name,status,age_verified_at)
 values
   ('71200000-0000-0000-0000-000000000001','phase12_client','Phase 12 Client','active',now()),
   ('71200000-0000-0000-0000-000000000002','phase12_active','Phase 12 Active','active',now()),
-  ('71200000-0000-0000-0000-000000000003','phase12_inactive','Phase 12 Inactive','inactive',now())
+  ('71200000-0000-0000-0000-000000000003','phase12_inactive','Phase 12 Inactive','suspended',now())
 on conflict(id) do update
 set status=excluded.status, age_verified_at=excluded.age_verified_at;
 
