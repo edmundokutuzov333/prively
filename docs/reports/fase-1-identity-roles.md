@@ -44,7 +44,7 @@ Correcções efectuadas nesta execução:
 
 O CI local da branch cria a extensão pgTAP antes de executar as suites nativas. A base de produção não tem pgTAP instalado, portanto a suite não é executada directamente em produção.
 
-Estado do runner CI para o último commit: pendente no momento deste relatório.
+Estado do runner CI para o último commit: execução `36839605507` em andamento. Os jobs `quality` e `Edge Functions contract tests` terminaram com sucesso; o job `database` e o E2E ainda estão presos em `Start local Supabase` no runner GitHub. Não existe evidência de falha da implementação da Fase 1 nesta execução.
 
 ## Rotas/páginas alteradas
 Nenhuma rota de UI foi alterada nesta fase. A Fase 1 é fundacional e não expõe nova superfície.
@@ -55,7 +55,7 @@ Nenhuma rota de UI foi alterada nesta fase. A Fase 1 é fundacional e não expõ
 - [✓] Trigger protege age_verified_at, status e self_excluded_until.
 - [✓] Escrita administrativa de roles está restrita.
 - [✓] approve_kyc não está exposto a authenticated.
-- [⚠] Prova pgTAP completa: preparada e incluída no CI, execução do runner ainda pendente.
+- [⚠] Prova pgTAP completa: preparada e incluída no CI; aguarda o runner concluir `Start local Supabase` e executar a suite.
 
 ## Bugs / UNVERIFIED
 - Existe divergência de timestamp entre as migrações locais e as versões com o mesmo propósito já registadas remotamente. Não foi criada uma duplicata adicional.
@@ -65,4 +65,4 @@ Nenhuma rota de UI foi alterada nesta fase. A Fase 1 é fundacional e não expõ
 Actualizado.
 
 ## Pronto para Fase 2
-Não confirmado ainda. A implementação está presente e a base remota está consistente com o contrato principal da Fase 1, mas a suite CI ainda precisa concluir com resultado verde.
+Não confirmado. O código da Fase 1, as migrações, RLS, trigger, funções e testes estão concluídos. A única condição pendente é a conclusão do runner CI `36839605507`, que ainda não chegou à execução do pgTAP.
