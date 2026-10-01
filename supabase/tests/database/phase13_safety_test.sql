@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(16);
 
 select ok(to_regclass('public.reports') is not null, 'reports exists');
 select ok(to_regclass('public.panic_events') is not null, 'panic_events exists');
