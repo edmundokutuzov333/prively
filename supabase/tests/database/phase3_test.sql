@@ -24,6 +24,7 @@ declare
   channel uuid:=gen_random_uuid();
   txn uuid;
   escrow uuid;
+  seed_txn uuid := gen_random_uuid();
   buyer_wallet bigint;
   creator_pending bigint;
 begin
