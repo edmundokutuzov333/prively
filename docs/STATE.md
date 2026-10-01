@@ -250,3 +250,13 @@ Open gates:
 - certificação final da Fase 8 continua pendente.
 
 Pronto para Fase 10: não.
+
+ 
+## Gate transversal 2026-10-01
+
+- CI Phase 9: a lista de suites SQL foi corrigida no commit `8c1544dca2232ef32922a35463fe971c7f03ec09`. O run push correspondente não é observável através do conector GitHub ligado nesta sessão, portanto não é marcado como verde.
+- 0.6: snapshot remoto real contém 220 migrations; os 10 nomes lógicos duplicados encontrados são históricos e allowlisted. Nenhuma migration aplicada foi editada ou apagada. A certificação final depende do CI actual.
+- 0.7: `scripts/backup-db.mjs` e `.github/workflows/backup.yml` estão versionados. O script usa o bucket dedicado `B2_BACKUP_BUCKET`. Restore drill continua bloqueado sem staging Supabase.
+- Vercel: a equipa ligada não contém um projecto `prively`. Não foi criado deployment alternativo.
+- Fase 8: as três Edge Functions de media estão activas nas versões 39, 13 e 11 e o readiness fail-closed está aplicado. Secret B2, CORS externo e vídeo novo em staging continuam sem evidência operacional.
+- Fase 10 permanece bloqueada.
