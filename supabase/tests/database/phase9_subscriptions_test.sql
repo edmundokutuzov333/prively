@@ -150,16 +150,16 @@ begin
 
   set local role authenticated;
 
-  sub_id := public.subscribe_to_tier(bronze,1,'phase9-sub-1');
+  sub_id := public.subscribe_to_tier(bronze,1::smallint,'phase9-sub-1');
   select balance into b1 from public.balances where owner_id=buyer and account='wallet';
 
-  sub_id := public.subscribe_to_tier(bronze,3,'phase9-sub-3');
+  sub_id := public.subscribe_to_tier(bronze,3::smallint,'phase9-sub-3');
   select balance into b3 from public.balances where owner_id=buyer and account='wallet';
 
-  perform public.subscribe_to_tier(bronze,6,'phase9-sub-6');
+  perform public.subscribe_to_tier(bronze,6::smallint,'phase9-sub-6');
   select balance into b6 from public.balances where owner_id=buyer and account='wallet';
 
-  perform public.subscribe_to_tier(bronze,12,'phase9-sub-12');
+  perform public.subscribe_to_tier(bronze,12::smallint,'phase9-sub-12');
   select balance into b12 from public.balances where owner_id=buyer and account='wallet';
 
   if b0-b1 <> 10000 then raise exception 'one_month_price_failed'; end if;

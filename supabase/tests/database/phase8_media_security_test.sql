@@ -203,7 +203,7 @@ set thumb_blur_path=null,
     streamtape_status='ready'
 where id=current_setting('app.phase8_asset_id')::uuid;
 
-set local role authenticated;
+set local role service_role;
 select set_config('request.jwt.claim.sub',current_setting('app.phase8_viewer'),true);
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object(
@@ -217,12 +217,13 @@ select throws_ok(
   'viewer is denied media access while derivatives are incomplete'
 );
 
+set local role service_role;
 select ok(
   not public.can_view_post(current_setting('app.phase8_post_public')::uuid),
   'viewer cannot view public post while video is not processing-ready'
 );
 
-set local role authenticated;
+set local role service_role;
 select set_config('request.jwt.claim.sub',current_setting('app.phase8_creator'),true);
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claims',json_build_object(

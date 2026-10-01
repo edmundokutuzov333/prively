@@ -15,12 +15,30 @@ select ok(has_function_privilege('authenticated','public.check_channel_handle(te
 select ok(not has_function_privilege('anon','public.create_creator_channel(text,text,text)','EXECUTE'), 'anonymous users cannot execute creator channel RPC');
 select ok(not has_function_privilege('anon','public.check_channel_handle(text)','EXECUTE'), 'anonymous users cannot execute handle availability RPC');
 
-select ok((select pg_get_functiondef(p.oid) like '%RAISE EXCEPTION ''not_creator''%' from pg_proc p where p.proname='create_creator_channel' and pg_get_function_identity_arguments(p.oid)='text, text, text' limit 1), 'RPC has not_creator error');
-select ok((select pg_get_functiondef(p.oid) like '%RAISE EXCEPTION ''age_not_verified''%' from pg_proc p where p.proname='create_creator_channel' and pg_get_function_identity_arguments(p.oid)='text, text, text' limit 1), 'RPC has age_not_verified error');
-select ok((select pg_get_functiondef(p.oid) like '%RAISE EXCEPTION ''creator_terms_required''%' from pg_proc p where p.proname='create_creator_channel' and pg_get_function_identity_arguments(p.oid)='text, text, text' limit 1), 'RPC has creator_terms_required error');
-select ok((select pg_get_functiondef(p.oid) like '%RAISE EXCEPTION ''invalid_channel_handle''%' from pg_proc p where p.proname='create_creator_channel' and pg_get_function_identity_arguments(p.oid)='text, text, text' limit 1), 'RPC has invalid_channel_handle error');
-select ok((select pg_get_functiondef(p.oid) like '%RAISE EXCEPTION ''channel_handle_taken''%' from pg_proc p where p.proname='create_creator_channel' and pg_get_function_identity_arguments(p.oid)='text, text, text' limit 1), 'RPC has channel_handle_taken error');
-select ok((select pg_get_functiondef(p.oid) like '%is_seed%' from pg_proc p where p.proname='create_creator_channel' and pg_get_function_identity_arguments(p.oid)='text, text, text' limit 1), 'RPC creates non-seed channels');
+select ok(
+  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''not_creator''%',
+  'RPC has not_creator error'
+);
+select ok(
+  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''age_not_verified''%',
+  'RPC has age_not_verified error'
+);
+select ok(
+  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''creator_terms_required''%',
+  'RPC has creator_terms_required error'
+);
+select ok(
+  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''invalid_channel_handle''%',
+  'RPC has invalid_channel_handle error'
+);
+select ok(
+  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''channel_handle_taken''%',
+  'RPC has channel_handle_taken error'
+);
+select ok(
+  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%is_seed%',
+  'RPC creates non-seed channels'
+);
 
 select is((select count(*) from pg_policies where schemaname='public' and tablename='channels' and policyname='channel_select_public'),1::bigint,'public channel select policy exists');
 select is((select count(*) from pg_policies where schemaname='public' and tablename='channels' and policyname='channel_select_owner'),1::bigint,'owner channel select policy exists');

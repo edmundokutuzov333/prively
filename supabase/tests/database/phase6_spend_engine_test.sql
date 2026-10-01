@@ -86,7 +86,6 @@ declare
   creator_pending_before bigint;
   platform_before bigint;
   wallet_before bigint;
-  topup_id uuid;
 begin
   perform set_config('app.internal_write','on',true);
 
@@ -132,22 +131,9 @@ begin
   set local role service_role;
   update public.platform_settings set value='true'::jsonb where key='wallet.production_enabled';
 
-  insert into public.topups(
-    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
-  ) values(
-    buyer,'paysuite','mpesa',100000,'MZN',
-    'PRV-PHASE6-SEED',
-    'phase6-seed-provider-ref',
-    'phase6-seed-idempotency'
-  )
-  returning id into topup_id;
-
-  perform public.credit_topup(
-    'phase6-seed-provider-ref',
-    'paid',
-    100000,
-    'phase6-seed-provider-tx'
-  );
+  insert into public.balances(owner_id,account,balance)
+  values(buyer,'wallet',100000)
+  on conflict(owner_id,account) do update set balance=excluded.balance;
 
   insert into public.balances(owner_id,account,balance)
   values

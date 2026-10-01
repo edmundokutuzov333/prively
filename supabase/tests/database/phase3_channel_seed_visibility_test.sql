@@ -18,6 +18,14 @@ values(
   'phase3-seed-viewer@example.test',
   'test',
   '{}'::jsonb
+),
+(
+  '74000000-0000-0000-0000-000000000005',
+  'authenticated',
+  'authenticated',
+  'phase3-seed-owner@example.test',
+  'test',
+  '{}'::jsonb
 )
 on conflict(id) do nothing;
 
@@ -26,6 +34,12 @@ values(
   '74000000-0000-0000-0000-000000000004',
   'phase3_seed_viewer',
   'Phase 3 Seed Viewer',
+  'active'
+),
+(
+  '74000000-0000-0000-0000-000000000005',
+  'phase3_seed_owner',
+  'Phase 3 Seed Owner',
   'active'
 )
 on conflict(id) do nothing;
@@ -49,7 +63,7 @@ where id='74000000-0000-0000-0000-000000000004';
 insert into public.channels(id,owner_id,handle,display_name,is_seed)
 values(
   '74000000-0000-0000-0000-000000000701',
-  '74000000-0000-0000-0000-000000000004',
+  '74000000-0000-0000-0000-000000000005',
   'phase3_seed_visibility',
   'Phase 3 Seed Visibility',
   true

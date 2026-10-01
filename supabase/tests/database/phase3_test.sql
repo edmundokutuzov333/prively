@@ -24,7 +24,6 @@ declare
   channel uuid:=gen_random_uuid();
   txn uuid;
   escrow uuid;
-  topup_id uuid;
   buyer_wallet bigint;
   creator_pending bigint;
 begin
@@ -69,39 +68,9 @@ begin
   set local role service_role;
   update public.platform_settings set value='true'::jsonb where key='wallet.production_enabled';
 
-  insert into public.topups(
-    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
-  ) values(
-    buyer,'paysuite','mpesa',500000,'MZN',
-    'PRV-PHASE3-SEED-A',
-    'phase3-seed-provider-ref-a',
-    'phase3-seed-idempotency-a'
-  )
-  returning id into topup_id;
-
-  perform public.credit_topup(
-    'phase3-seed-provider-ref-a',
-    'paid',
-    500000,
-    'phase3-seed-provider-tx-a'
-  );
-
-  insert into public.topups(
-    user_id,provider,method,amount,currency,internal_reference,provider_ref,idempotency_key
-  ) values(
-    buyer,'paysuite','mpesa',500000,'MZN',
-    'PRV-PHASE3-SEED-B',
-    'phase3-seed-provider-ref-b',
-    'phase3-seed-idempotency-b'
-  )
-  returning id into topup_id;
-
-  perform public.credit_topup(
-    'phase3-seed-provider-ref-b',
-    'paid',
-    500000,
-    'phase3-seed-provider-tx-b'
-  );
+  insert into public.balances(owner_id,account,balance)
+  values(buyer,'wallet',1000000)
+  on conflict(owner_id,account) do update set balance=excluded.balance;
 
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
