@@ -343,7 +343,7 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
       setSubscribing(false);
       return;
     }
-    setNotice('Subscrição activada.');
+    setNotice(i18n.t('phase3Advanced.tierManager.activated'));
     setShowSubscribe(false);
     setSubscribing(false);
     await load();
@@ -407,10 +407,10 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
         <p className="mt-2 text-sm text-bone-300">{selectedTier.name} · {i18n.t('phase3Advanced.tierManager.price')}</p>
         <label className="mt-5 block text-sm text-bone-300">{i18n.t('phase3Advanced.tierManager.period')}
           <select value={period} onChange={(event) => setPeriod(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-md bg-ink-800 px-3 text-bone-50">
-            <option value="1">1 mês</option>
-            <option value="3">3 meses</option>
-            <option value="6">6 meses</option>
-            <option value="12">12 meses</option>
+            <option value="1">{i18n.t('phase3Advanced.tierManager.period1')}</option>
+            <option value="3">{i18n.t('phase3Advanced.tierManager.period3')}</option>
+            <option value="6">{i18n.t('phase3Advanced.tierManager.period6')}</option>
+            <option value="12">{i18n.t('phase3Advanced.tierManager.period12')}</option>
           </select>
         </label>
         <p className="mt-4 font-display text-3xl text-bone-50">{formatMznFromCents(subscriptionPrice)}</p>
