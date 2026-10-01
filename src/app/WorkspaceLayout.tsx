@@ -7,7 +7,6 @@ import { Avatar } from '@/design/Avatar';
 import { DiscreetGate } from '@/app/DiscreetGate';
 import { requireSupabase } from '@/lib/supabase';
 import { Cordao } from '@/design/Cordao';
-import { CreatorPanicButton } from '@/features/safety/CreatorPanicButton';
 
 type WorkspaceVariant = 'client' | 'creator';
 
