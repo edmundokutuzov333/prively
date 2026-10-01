@@ -105,3 +105,41 @@ Open gates:
 - PaySuite/sandbox permanece UNVERIFIED;
 - Vercel production build continua não certificada;
 - migration reconciliation 0.6 continua aberta.
+
+## Fase 6
+Status: IMPLEMENTED / FINAL CI VERIFICATION IN PROGRESS
+
+Motor de gasto:
+- spend_on_channel() público para authenticated, com _spend_on_channel() interno;
+- idempotência por owner_id + _idem;
+- commission_rate() alimentado por platform_settings;
+- assert_spend_limit() aplicado antes do débito;
+- wallet protegido por SELECT FOR UPDATE;
+- lançamentos wallet + creator_pending + platform_revenue balanceados;
+- hold_hours configurável, actualmente 72h;
+- release_due_earnings() activo a cada 15 minutos;
+- índice único parcial em ledger_entries.release_source_id;
+- escrow release filtering corrigido para source_type + source_id;
+- erros financeiros ligados a i18n;
+- fluxo PPV com insufficient_funds e atalho para /carteira;
+- suite phase6_spend_engine_test.sql adicionada ao CI.
+
+Production verification:
+- migration 20261001123000_phase6_spend_engine_runtime_hardening aplicada;
+- release_source unique index presente;
+- cron prively-release-earnings activo;
+- authenticated só executa spend_on_channel, não o motor interno;
+- commission_rate não é executável por authenticated;
+- reconcile_ledger() = 0;
+- ledger_rows = 0;
+- wallet_negative_rows = 0.
+
+Acceptance proof:
+- docs/reports/fase-6-spend-engine.md
+- supabase/tests/database/phase6_spend_engine_test.sql
+- scripts/concurrency-spend.mjs
+
+Open gates:
+- Prively CI no commit e005bc2aab6b620beefeec1321bc23e5da42c729 ainda em execução;
+- bloqueador transversal 0.6 de reconciliação de migrações continua aberto;
+- Vercel production build não certificada.
