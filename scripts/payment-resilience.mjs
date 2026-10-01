@@ -3,7 +3,7 @@ import pg from "pg";
 import fs from "node:fs/promises";
 
 const url = process.env.POSTGRES_URL;
-if (!url || !/(127\\.0\\.0\\.1|localhost)/i.test(url)) throw new Error("refusing_non_local_database");
+if (!url || !/(127\.0\.0\.1|localhost)/i.test(url)) throw new Error("refusing_non_local_database");
 
 const pool = new pg.Pool({ connectionString: url, max: 30 });
 const ids = {
