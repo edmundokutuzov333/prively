@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(20);
 
 select ok(to_regprocedure('public.refresh_media_processing_status(uuid)') is not null,'refresh media processing RPC exists');
 select ok(not has_function_privilege('authenticated','public.refresh_media_processing_status(uuid)','EXECUTE'),'authenticated cannot force media readiness');
@@ -65,6 +65,7 @@ begin
   )::text,true);
 
   post_public := public.create_post(channel_id,'Phase 8 public','public',null,null,false,null);
+  perform public.attest_post_content_consent(post_public,true);
 
   asset_id := gen_random_uuid();
 
@@ -85,7 +86,79 @@ begin
   perform set_config('app.phase8_creator',creator::text,false);
   perform set_config('app.phase8_viewer',viewer::text,false);
   perform set_config('app.phase8_post_public',post_public::text,false);
-end $$;
+end $;
+
+set local role service_role;
+update public.posts
+set status='published',publish_at=now(),moderation_status='clean'
+where id=current_setting('app.phase8_post_public')::uuid;
+reset role;
+
+reset role;
+
+do $
+declare
+  creator uuid := current_setting('app.phase8_creator')::uuid;
+  viewer uuid := current_setting('app.phase8_viewer')::uuid;
+  channel_id uuid;
+  followers_post uuid;
+  ppv_post uuid;
+  followers_asset uuid;
+  ppv_asset uuid;
+begin
+  select channel_id into channel_id from public.channels where owner_id=creator order by created_at desc limit 1;
+
+  perform set_config('app.internal_write','on',true);
+
+  set local role authenticated;
+  perform set_config('request.jwt.claim.sub',creator::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  perform set_config('request.jwt.claims',json_build_object(
+    'sub',creator::text,'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+  )::text,true);
+
+  followers_post := public.create_post(channel_id,'Phase 8 followers','followers',null,null,false,null);
+  ppv_post := public.create_post(channel_id,'Phase 8 ppv','ppv',null,125000,false,null);
+
+  set local role service_role;
+
+  update public.posts
+  set status='published',publish_at=now(),moderation_status='clean'
+  where id in (followers_post,ppv_post);
+
+  followers_asset := gen_random_uuid();
+  ppv_asset := gen_random_uuid();
+
+  insert into public.media_assets(
+    id,post_id,channel_id,kind,storage_path,storage_provider,
+    scan_status,integrity_status,processing_status,moderation_status,
+    watermark_enabled,thumb_blur_path,watermark_path,hls_path,
+    metadata,streamtape_status,streamtape_attempts
+  )
+  values
+    (
+      followers_asset,followers_post,channel_id,'image','phase8-test/'||followers_asset::text||'.jpg','backblaze_b2',
+      'clean','verified','ready','clean',true,
+      'phase8-test/derivatives/followers-thumb.webp',
+      'phase8-test/derivatives/followers-watermark.webp',
+      null,'{}'::jsonb,'ready',0
+    ),
+    (
+      ppv_asset,ppv_post,channel_id,'image','phase8-test/'||ppv_asset::text||'.jpg','backblaze_b2',
+      'clean','verified','ready','clean',true,
+      'phase8-test/derivatives/ppv-thumb.webp',
+      'phase8-test/derivatives/ppv-watermark.webp',
+      null,'{}'::jsonb,'ready',0
+    );
+
+  insert into public.follows(follower_id,channel_id) values(viewer,channel_id) on conflict do nothing;
+  insert into public.ppv_purchases(buyer_id,post_id,price_paid,txn_id)
+  values(viewer,ppv_post,125000,gen_random_uuid())
+  on conflict do nothing;
+
+  perform set_config('app.phase8_followers_post',followers_post::text,false);
+  perform set_config('app.phase8_ppv_post',ppv_post::text,false);
+end $;
 
 reset role;
 
@@ -177,6 +250,24 @@ select is(
 select ok(
   public.can_view_post(current_setting('app.phase8_post_public')::uuid,current_setting('app.phase8_creator')::uuid),
   'owner can still view after complete derivative readiness'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',current_setting('app.phase8_viewer'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub',current_setting('app.phase8_viewer'),
+  'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
+)::text,true);
+
+select ok(
+  public.can_view_post(current_setting('app.phase8_followers_post')::uuid,current_setting('app.phase8_viewer')::uuid),
+  'followers visibility is granted to a real follower'
+);
+
+select ok(
+  public.can_view_post(current_setting('app.phase8_ppv_post')::uuid,current_setting('app.phase8_viewer')::uuid),
+  'PPV visibility is granted after a real purchase record'
 );
 
 reset role;
