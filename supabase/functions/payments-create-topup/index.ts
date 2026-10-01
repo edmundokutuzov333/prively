@@ -76,22 +76,34 @@ Deno.serve(async (request) => {
       return jsonResponse({ code: "payment_contact_required" }, 400);
     }
 
-    const providerResponse = await fetch(createChargeUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": topup.internal_reference,
-      },
-      body: JSON.stringify({
-        reference: topup.internal_reference,
-        amount: centavosToProviderAmount(topup.amount, unit),
-        currency: "MZN",
-        method: topup.method,
-        customer_contact: contact,
-        callback_url: webhookUrl,
-      }),
-    });
+    const providerController = new AbortController();
+    const providerTimeout = setTimeout(() => providerController.abort(), 15_000);
+
+    let providerResponse: Response;
+    try {
+      providerResponse = await fetch(createChargeUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": topup.internal_reference,
+        },
+        body: JSON.stringify({
+          reference: topup.internal_reference,
+          amount: centavosToProviderAmount(topup.amount, unit),
+          currency: "MZN",
+          method: topup.method,
+          customer_contact: contact,
+          callback_url: webhookUrl,
+        }),
+        signal: providerController.signal,
+      });
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === "AbortError";
+      return jsonResponse({ code: timedOut ? "provider_timeout" : "provider_unavailable" }, timedOut ? 504 : 502);
+    } finally {
+      clearTimeout(providerTimeout);
+    }
 
     const raw = await providerResponse.text();
     let provider: Record<string, unknown>;
