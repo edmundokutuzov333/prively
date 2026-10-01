@@ -113,6 +113,14 @@ errors: { unauthorized: 'Votre session a expiré. Reconnectez-vous.', forbidden:
     loadError: 'Impossible de charger la découverte.',
   },
 
+  phase13Safety: {
+    panic: 'Activer le bouton de panique',
+    panicAria: 'Activer l’alerte de panique',
+    panicTriggered: 'Alerte créée',
+    panicError: 'Impossible d’activer l’alerte',
+    safetyPage: 'Sécurité',
+  },
+
   phase6Spend: { topUpAction: 'Recharger le portefeuille' },
 
   phase5Topup: {
