@@ -187,7 +187,7 @@ export function Phase6ClientWalletPage() {
     ]);
 
     if (wallet.error) throw wallet.error;
-    if (earningsSummary.error) throw earningsSummary.error;
+
     if (config.error) throw config.error;
     if (topupRows.error) throw topupRows.error;
     if (receiptRows.error) throw receiptRows.error;
