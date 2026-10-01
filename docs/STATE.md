@@ -288,7 +288,7 @@ Production verification:
 Open gates:
 - execução pgTAP/local CI da suite Phase 12 ainda não observada;
 - typecheck/lint/build da árvore completa não executados nesta sessão por falha de DNS para github.com no runner local;
-- tentativa de alterar o workflow CI existente foi bloqueada pelo mecanismo de escrita de workflow ligado nesta sessão; não é marcada como concluída;
+- workflow dedicado `.github/workflows/phase12-discovery.yml` criado e versionado; executa rebuild local Supabase + suite pgTAP da Fase 12; run GitHub ainda não é observável nesta sessão;
 - 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
 ## Gate transversal 2026-10-01
 
