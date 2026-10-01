@@ -40,8 +40,12 @@
 **Decisão:** estados ficam NÃO VERIFICADO, REAL·FLAG ou BLOQUEADO·EXTERNO conforme a evidência disponível.  
 **Consequência:** nenhuma credencial fictícia ou fixture externa é usada para declarar sucesso.
 
-
 ## ADR-009: Limiar de KYC manual
 **Contexto:** o adaptador KYC real suporta modo manual e não existe validação escrita de fornecedor externo nesta auditoria.
-**Decisão:** manter revisão manual enquanto o volume semanal for menor ou igual a N, valor ainda por definir pelo dono do produto. Acima de N, activar o fornecedor configurado apenas depois de confirmação escrita de que aceita conteúdo adulto e BI moçambicano.
-**Consequência:** o volume semanal real é medido por kyc_manual_queue_weekly_volume_guarded(), sem promoção automática para fornecedor externo.
+**Decisão:** manter revisão manual enquanto o volume semanal for menor ou igual a N, valor ainda por definir pelo dono do produto. Acima de N, activar o fornecedor configurado apenas depois de confirmação humana.
+**Consequência:** o volume semanal real é medido por `kyc_manual_queue_weekly_volume_guarded()`, sem promoção automática para fornecedor externo.
+
+## ADR-010: Seed de canal deve ser marcado e filtrado, não inserido em produção
+**Contexto:** a criação de canal exige um creator válido e a UI precisa de não expor dados artificiais em `/descobrir` nem em listagens públicas. O seed pode ser útil em desenvolvimento, mas não deve aparecer como conteúdo real.  
+**Decisão:** usar `is_seed = true` para qualquer registo estritamente de desenvolvimento, e excluir esses registos de queries públicas/descoberta por `WHERE is_seed = false` ou equivalente. Evitamos criar filas de seed em produção e evitamos remover dados sem necessidade.  
+**Consequência:** o desenvolvimento continua com fixtures úteis, mas utilizadores reais não veem canais de seed no feed público e não há risco de contaminar a produção com dados fictícios.
