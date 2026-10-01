@@ -224,6 +224,8 @@ begin
     end if;
   end;
 
+  set local role postgres;
+
   insert into _phase5_meta(key,value)
   values('expired_status',(select status from public.topups where id=expired_id))
   on conflict(key) do update set value=excluded.value;
