@@ -23,7 +23,7 @@ export interface PaymentProvider {
  * authentication scheme, amount unit and sandbox are confirmed in writing.
  */
 class ManualPaymentProvider implements PaymentProvider {
-  async createCharge(_input: PaymentChargeRequest): Promise<PaymentChargeResult> {
+  async createCharge(): Promise<PaymentChargeResult> {
     throw new Error("provider_unverified");
   }
 }
