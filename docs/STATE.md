@@ -25,3 +25,26 @@ Open gates:
 - O teste HTTP local do bucket privado está coberto no CI; prova directa em produção permanece pendente porque o bucket não tem objectos reais.
 - Production Vercel project remains NOT VERIFIED.
 - Supabase staging project is still missing for restore drill.
+
+
+## Fase 3
+Status: IMPLEMENTED / FINAL CI VERIFICATION PENDING
+
+A criação e gestão de canal foi corrigida no backend e frontend:
+- `channels.is_seed` aplicado.
+- criação de canal exclusivamente via `create_creator_channel(text,text,text)`.
+- INSERT directo por `authenticated` removido.
+- policy legada `channels_read` removida.
+- validação de handle com RPC e debounce de 400 ms.
+- mensagens específicas de erro e estados adicionados em pt-MZ/en/fr.
+- canal sintético `criadora_test` marcado como `is_seed=true` em produção.
+
+Acceptance proof:
+- docs/reports/fase-3-canal.md
+- supabase/tests/database/phase3_channel_creation_test.sql
+- supabase/tests/database/phase3_channel_seed_visibility_test.sql
+
+Open gates:
+- suites CLI/CI da Fase 3 ainda não foram executadas nesta sessão.
+- typecheck/lint/unit/build não foram executados nesta sessão.
+- publicação Vercel correcta continua sem verificação no ambiente ligado.
