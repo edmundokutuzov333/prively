@@ -2,7 +2,6 @@ import { Wallet } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/app/session';
-import { useFeatureFlags } from '@/app/FeatureFlags';
 import { requireSupabase } from '@/lib/supabase';
 import { Ficha } from '@/design/Ficha';
 import { Escudo } from '@/design/Escudo';
@@ -24,21 +23,6 @@ const accountLabels: Record<string, { label: string; priority: number }> = {
 };
 
 export function ClientWalletPage() {
-  const { t } = useTranslation();
-  const { user, configured } = useAuth();
-  const flags = useFeatureFlags();
-  const [balances, setBalances] = useState<Balance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<any>(null);
-
-  // Use Phase 6 wallet page if available, otherwise fall back to Phase 4
-  if (flags.phase6Financials) {
-    // Phase 6+ should have CreatorWalletPage or Phase6ClientWalletPage
-    // This is a backward-compatible fallback only
-    return <Phase4ClientWalletPage />;
-  }
-
   return <Phase4ClientWalletPage />;
 }
 
@@ -48,7 +32,6 @@ function Phase4ClientWalletPage() {
   const [balances, setBalances] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<any>(null);
 
   useEffect(() => {
     if (!user || !configured) {
@@ -63,14 +46,13 @@ function Phase4ClientWalletPage() {
       try {
         const { data, error: err } = await sb.rpc('get_my_balances');
         if (err) {
-          console.error('Error loading balances:', err);
+          
           if (active) setError(err.message || t('experience.pages.wallet.error'));
           return;
         }
         if (active) setBalances((data ?? []) as Balance[]);
       } catch (e) {
-        console.error('Exception loading balances:', e);
-        if (active) setError(t('experience.pages.wallet.error'));
+                if (active) setError(t('experience.pages.wallet.error'));
       } finally {
         if (active) setLoading(false);
       }
@@ -98,7 +80,6 @@ function Phase4ClientWalletPage() {
       )
       .subscribe();
 
-    setSubscription(sub);
 
     return () => {
       active = false;
