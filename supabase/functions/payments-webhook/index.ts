@@ -181,6 +181,7 @@ Deno.serve(async (request) => {
       data.amount ?? data.value ?? payload.amount ?? payload.value,
       amountUnitValue,
     );
+    if (amount === null) throw new Error("topup_amount_missing");
     if (!status) throw new Error("topup_status_unknown");
 
     const { error: rpcError } = await admin.rpc("credit_topup", {
@@ -201,7 +202,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "webhook_processing_failed";
-    const permanent = ["unknown_topup", "amount_mismatch", "unsupported_topup_status", "topup_reference_missing", "topup_amount_missing", "topup_status_unknown", "invalid_amount_format", "invalid_amount", "payout_not_found", "payout_reference_missing"].some((code) => message.includes(code));
+    const permanent = ["unknown_topup", "amount_mismatch", "topup_not_payable", "topup_balance_limit_exceeded", "unsupported_topup_status", "topup_reference_missing", "topup_amount_missing", "topup_status_unknown", "invalid_amount_format", "invalid_amount", "payout_not_found", "payout_reference_missing"].some((code) => message.includes(code));
     if (permanent) {
       await admin.from("payment_webhook_events").update({ status: "quarantined", error_message: message }).eq("provider", "paysuite").eq("event_id", eventId);
       await admin.from('financial_alerts').insert({ kind: 'payment_webhook_quarantined', severity: 'high', message, metadata: { eventId, providerRef } });
