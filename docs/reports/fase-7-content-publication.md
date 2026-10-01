@@ -80,7 +80,8 @@ O supabase test db completo e o workflow CI final desta versão ainda não foram
 - [✓] Consentimento é imutável.
 - [✓] Publicação agendada continua protegida no cron.
 - [✓] Visibilidade private está disponível na UI e permanece restrita ao proprietário no servidor.
-- [✓] Não existem linhas persistentes de content_consents criadas pelo teste.
+- [✓] RLS da content_consents impede outro utilizador de ler o consentimento da proprietária.
+- [✓] Não existem linhas persistentes de content_consents nem utilizadores fixture criados pelos testes remotos.
 
 ## Verificação adicional
 
