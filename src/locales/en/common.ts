@@ -82,6 +82,7 @@ errors: { unauthorized: 'Your session expired. Sign in again.', forbidden: 'You 
   },
   phase10Ppv: { title: 'Purchases', intro: 'Real PPV and subscription history, ordered by transaction date.', ppv: 'PPV', subscription: 'Subscription', contentPurchased: 'Purchased content', paid: 'Paid', period: '{{count}} month(s)', emptyTitle: 'No purchases', emptyBody: 'Your real PPV purchases and subscriptions will appear here.', downloadReceipt: 'Download receipt', receiptUnavailable: 'Receipt unavailable', loadError: 'Could not load purchase history.' },
   phase12Discovery: {
+    loading: 'Loading discovery...',
     title: 'Discover creators',
     intro: 'Find real creators by profile, location, content and availability.',
     search: 'Search profile or @handle',
