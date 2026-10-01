@@ -223,6 +223,7 @@ Assinaturas por níveis:
 - leitura de tiers disponível publicamente; DML directo de clientes revogado;
 - `upsert_subscription_tier()`, `subscribe_to_tier()` e `cancel_subscription()` expostos apenas ao utilizador autenticado;
 - `renew_due_subscriptions()` apenas para `service_role`, com cron diário às 03:00;
+- `has_active_subscription()` mantém acesso a subscrições `past_due` durante a janela de 3 dias, sem execução directa por `authenticated`;
 - renovação corrigida para expirar `past_due` além de 3 dias e expirar subscrições sem auto-renovação cujo período terminou;
 - `can_view_post()` existente já cobre `subscribers` e `tier` e foi reutilizado;
 - UI do cliente cobre todos os níveis existentes e 1/3/6/12 meses;
@@ -235,6 +236,7 @@ Production verification:
 - `subscription_tiers=0`;
 - `subscriptions=0`;
 - grants dos RPCs confirmados;
+- `has_active_subscription()` corrigida para a grace window de 3 dias;
 - RLS/policies confirmadas;
 - cron `prively-renew-subscriptions` activo com `0 3 * * *`;
 - `reconcile_ledger()=0`.
