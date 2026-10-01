@@ -108,12 +108,12 @@ select set_config('app.internal_write','off',true);
 select ok(has_function_privilege('authenticated','public.create_conversation(uuid)','EXECUTE'),'authenticated can execute create conversation');
 
 set local role service_role;
-select lives_ok($$
-  select public.create_conversation(
+select ok(
+  public.create_conversation(
     (select id from public.channels where handle='p11free_7110000001')
-  )
-$$,'participant can create free conversation');');
-
+  ) is not null,
+  'participant can create free conversation'
+);
 
 set local role service_role;
 insert into public.messages(conversation_id,sender_id,kind,body)
