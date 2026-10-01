@@ -12,3 +12,6 @@ Acceptance proof is tracked in:
 - supabase/tests/database/phase1_identity_roles_kyc_test.sql
 
 CI run `36839605507`: quality and Edge Functions are green; database/E2E are currently blocked inside `Start local Supabase`. The phase is not marked fully closed until that runner completes.
+
+## Fase 2
+Status: IMPLEMENTED / VERIFICATION PENDING
