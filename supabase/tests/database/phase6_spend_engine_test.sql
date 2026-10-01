@@ -212,8 +212,8 @@ begin
 
   insert into _phase6_meta(key,value)
   values
-    ('wallet_after',wallet_before::text),
-    ('creator_pending_after',creator_pending_before::text),
+    ('wallet_after',coalesce(wallet_before,0)::text),
+    ('creator_pending_after',coalesce(creator_pending_before,0)::text),
     ('platform_after',coalesce(platform_before,0)::text)
   on conflict(key) do update set value=excluded.value;
 
