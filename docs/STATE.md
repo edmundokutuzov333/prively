@@ -212,3 +212,39 @@ Acceptance / open gates:
 - CI completo ainda não certificado.
 - Vercel e blockers 0.6/0.7 continuam abertos.
 - Fase 9 não inicia.
+
+
+## Fase 9
+Status: IMPLEMENTED / FINAL CI CERTIFICATION PENDING
+
+Assinaturas por níveis:
+- migration forward-only efectiva `20261001180100_phase9_subscription_levels_runtime_contract_apply.sql` aplicada em produção;
+- `subscription_tiers` e `subscriptions` permanecem com RLS;
+- leitura de tiers disponível publicamente; DML directo de clientes revogado;
+- `upsert_subscription_tier()`, `subscribe_to_tier()` e `cancel_subscription()` expostos apenas ao utilizador autenticado;
+- `renew_due_subscriptions()` apenas para `service_role`, com cron diário às 03:00;
+- renovação corrigida para expirar `past_due` além de 3 dias e expirar subscrições sem auto-renovação cujo período terminou;
+- `can_view_post()` existente já cobre `subscribers` e `tier` e foi reutilizado;
+- UI do cliente cobre todos os níveis existentes e 1/3/6/12 meses;
+- UI da criadora permite gerir Bronze/Prata/Ouro/VIP por canal;
+- i18n pt-MZ/en/fr e alinhamento do fluxo legado `/apoio` concluídos;
+- suite `phase9_subscriptions_test.sql` adicionada ao CI.
+
+Production verification:
+- migration efectiva aplicada com sucesso;
+- `subscription_tiers=0`;
+- `subscriptions=0`;
+- grants dos RPCs confirmados;
+- RLS/policies confirmadas;
+- cron `prively-renew-subscriptions` activo com `0 3 * * *`;
+- `reconcile_ledger()=0`.
+
+Open gates:
+- CI final desta alteração ainda em execução;
+- teste pgTAP Phase 9 ainda não certificado como verde;
+- Vercel production continua não certificada;
+- 0.6 migration reconciliation continua aberta;
+- 0.7 staging/restore drill continua aberto;
+- certificação final da Fase 8 continua pendente.
+
+Pronto para Fase 10: não.
