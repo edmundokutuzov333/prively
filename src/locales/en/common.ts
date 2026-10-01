@@ -79,6 +79,7 @@ errors: { unauthorized: 'Your session expired. Sign in again.', forbidden: 'You 
     state: 'State',
     stateBackend: 'This state must be connected to the real flow that produced it before it is exposed as a production experience.'
   },
+  phase6Spend: { topUpAction: 'Top up wallet' },
   phase5Topup: {
     intro: 'Real balance, top-ups and financial history.',
     balance: 'Available to spend',
