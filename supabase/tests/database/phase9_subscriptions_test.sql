@@ -191,8 +191,8 @@ begin
   perform set_config('request.jwt.claim.aal','aal2',true);
 
   set local role authenticated;
-  if not public.can_view_post(post_subscribers,buyer) then raise exception 'subscriber_visibility_failed'; end if;
-  if public.can_view_post(post_tier,buyer) then raise exception 'tier_visibility_should_fail_for_rank_one'; end if;
+  if not public.can_view_post(post_subscribers) then raise exception 'subscriber_visibility_failed'; end if;
+  if public.can_view_post(post_tier) then raise exception 'tier_visibility_should_fail_for_rank_one'; end if;
 
   set local role postgres;
   update public.subscriptions set tier_id=ouro where id=sub_id;
