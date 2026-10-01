@@ -51,8 +51,8 @@ function Phase4ClientWalletPage() {
           return;
         }
         if (active) setBalances((data ?? []) as Balance[]);
-      } catch (e) {
-                if (active) setError(t('experience.pages.wallet.error'));
+      } catch {
+        if (active) setError(t('experience.pages.wallet.error'));
       } finally {
         if (active) setLoading(false);
       }
