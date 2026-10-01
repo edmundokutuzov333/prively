@@ -1,13 +1,11 @@
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, serviceClient } from "../_shared/auth.ts";
 import {
-  assertHttps,
-  nestedString,
-  parseProviderJson,
   requiredEnv,
   updateTopup,
 } from "../_shared/payments.ts";
-import { amountUnit, centavosToProviderAmount, providerAmountToCentavos } from "../_shared/money.ts";
+import { amountUnit } from "../_shared/money.ts";
+import { getPaymentProvider } from "../_shared/payment-provider.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return optionsResponse();
@@ -67,13 +65,42 @@ Deno.serve(async (request) => {
       });
     }
 
-    const createChargeUrl = assertHttps(requiredEnv("PAYSUITE_CREATE_CHARGE_URL"));
-    const apiKey = requiredEnv("PAYSUITE_API_KEY");
-    const webhookUrl = `${requiredEnv("SUPABASE_URL")}/functions/v1/payments-webhook`;
-    const contact = user.phone ?? user.email ?? undefined;
+    const provider = getPaymentProvider();
+    const unit = amountUnit();
 
-    if (!contact) {
-      return jsonResponse({ code: "payment_contact_required" }, 400);
+    let charge;
+    try {
+      charge = await provider.createCharge({
+        reference: topup.internal_reference,
+        amount: topup.amount / 100,
+        currency: "MZN",
+        method: topup.method,
+        customerContact: user.phone ?? user.email ?? undefined,
+        callbackUrl: `${requiredEnv("SUPABASE_URL")}/functions/v1/payments-webhook`,
+      });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "provider_unverified";
+      await updateTopup(topup.id, {
+        status: "failed",
+        failed_at: new Date().toISOString(),
+        metadata: { provider_error: code, provider_unit: unit },
+      });
+      return jsonResponse(
+        { code },
+        code === "provider_unverified" ? 503 : 502,
+      );
+    }
+
+    await updateTopup(topup.id, {
+      provider_ref: charge.providerReference,
+      provider_status: charge.providerStatus,
+      provider_checkout_url: charge.checkoutUrl,
+      status: charge.providerStatus,
+      metadata: { provider_response: charge.raw },
+      updated_at: new Date().toISOString(),
+    });
+
+    return jsonResponse({ code: "payment_contact_required" }, 400);
     }
 
     const providerController = new AbortController();
