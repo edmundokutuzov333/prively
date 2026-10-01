@@ -133,6 +133,7 @@ jobs:
             "phase5_topup_test.sql"
             "phase6_spend_engine_test.sql"
             "phase7_content_publication_test.sql"
+            "phase8_media_delivery_verification_test.sql"
             "phase6_financial_core_native_test.sql"
             "phase7_social_realtime_test.sql"
             "phase8_safety_moderation_meetings_test.sql"
