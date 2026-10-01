@@ -1,6 +1,5 @@
-/* global process, console */
+/* global process, console, URL, Headers, fetch */
 import { createHash, createHmac, randomUUID } from 'node:crypto';
-import { createReadStream } from 'node:fs';
 import { mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
