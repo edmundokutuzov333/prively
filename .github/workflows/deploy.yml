@@ -175,7 +175,7 @@ jobs:
           VERCEL_RESULT: ${{ needs.deploy-vercel.result }}
           HEALTH_RESULT: ${{ needs.post-deploy-health.result }}
         run: |
-          if [ "$SUPABASE_RESULT" = "failure" ] || [ "$SUPABASE_RESULT" = "cancelled" ]; then exit 1; fi
-          if [ "$VERCEL_RESULT" = "failure" ] || [ "$VERCEL_RESULT" = "cancelled" ]; then exit 1; fi
+          if [ "$SUPABASE_RESULT" != "success" ]; then exit 1; fi
+          if [ "$VERCEL_RESULT" != "success" ]; then exit 1; fi
           if [ "$HEALTH_RESULT" = "failure" ] || [ "$HEALTH_RESULT" = "cancelled" ]; then exit 1; fi
-          echo "Production delivery workflow completed. Provider deployment is skipped when its secrets are not configured."
+          echo "Production delivery workflow completed with both provider deployments verified."
