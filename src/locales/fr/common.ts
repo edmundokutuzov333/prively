@@ -79,6 +79,34 @@ errors: { unauthorized: 'Votre session a expiré. Reconnectez-vous.', forbidden:
     state: 'État',
     stateBackend: 'Cet état doit être connecté au flux réel qui l’a produit avant d’être exposé en production.'
   },
+  phase5Topup: {
+    intro: 'Solde réel, recharges et historique financier.',
+    balance: 'Solde à dépenser',
+    pending: 'Gains en attente',
+    available: 'Gains disponibles',
+    formTitle: 'Recharger le portefeuille',
+    formIntro: 'Les fonds entrent dans le solde uniquement après confirmation du fournisseur.',
+    amount: 'Montant en MZN',
+    method: 'Méthode',
+    submit: 'Recharger le portefeuille',
+    limits: 'Minimum {{min}} · Maximum {{max}}',
+    dailyLimit: 'Limite quotidienne {{limit}}',
+    history: 'Historique des recharges',
+    historyEmptyTitle: 'Aucune recharge',
+    historyEmptyBody: 'Vos recharges réelles apparaîtront ici.',
+    unavailable: 'Les recharges sont indisponibles tant que le fournisseur de paiement n’est pas validé.',
+    retry: 'Réessayer',
+    continue: 'Continuer le paiement',
+    created: 'Recharge {{reference}} créée. État : {{status}}.',
+    pendingStatus: 'En attente de confirmation',
+    processingStatus: 'En traitement',
+    paidStatus: 'Confirmée',
+    failedStatus: 'Échec',
+    expiredStatus: 'Expirée',
+    cancelledStatus: 'Annulée',
+    reversalPendingStatus: 'Annulation en cours',
+    reversedStatus: 'Annulée'
+  },
   phase3Advanced: {support:{eyebrow:"Soutien",title:"Soutenir la créatrice",intro:"Abonnements, pourboires et cadeaux facturés via le serveur.",missingChannel:"Canal manquant",missingChannelBody:"Ouvre cette zone depuis un canal réel.",tipTitle:"Pourboire",amount:"Montant en MZN",message:"Message optionnel",sendTip:"Envoyer",giftsTitle:"Cadeaux",sendGift:"Envoyer",noGifts:"Aucun cadeau configuré",noGiftsBody:"Le catalogue des cadeaux n’est pas encore configuré.",subscriptionsTitle:"Abonnements",months:"{{count}} mois",noTiers:"Aucun niveau",noTiersBody:"Ce canal n’a pas encore de niveaux d’abonnement configurés."},bundles:{eyebrow:"Packs",clientTitle:"Packs de contenu",clientIntro:"Packs persistés achetés via le ledger.",buy:"Acheter le pack",emptyTitle:"Aucun pack",emptyBody:"Aucun pack réel pour le moment.",creatorTitle:"Packs de la créatrice",creatorIntro:"Regroupe des publications réelles dans un pack à prix unique.",name:"Nom du pack",price:"Prix en MZN",description:"Description",create:"Créer le pack"},engagement:{eyebrow:"Interaction",creatorTitle:"Tirages et sondages",creatorIntro:"Crée des interactions réelles pour la communauté.",clientTitle:"Participation",clientIntro:"Vote et participe aux interactions ouvertes.",pollTitle:"Nouveau sondage",question:"Question",optionsHint:"Une option par ligne",createPoll:"Créer le sondage",giveawayTitle:"Nouveau tirage",title:"Titre",winnerCountLabel:"Nombre de gagnants",createGiveaway:"Créer le tirage",winnerCount:"{{count}} gagnant(s)",enter:"Participer",emptyTitle:"Aucune activité",emptyBody:"Aucun sondage ou tirage actif."},schedule:{eyebrow:"Agenda",title:"Disponibilités",intro:"Définis de vraies plages de disponibilité.",area:"Zone publique facultative",create:"Créer le créneau"},rankings:{eyebrow:"Classements",title:"Classements hebdomadaires",intro:"Classements calculés par le backend.",creators:"Créatrices",fans:"Fans"}}
 } as const;
 
