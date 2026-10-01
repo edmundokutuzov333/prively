@@ -179,3 +179,32 @@ Open gates:
 - Vercel production project continua não certificado;
 - smoke E2E de produção continua com o problema de selector de autenticação já existente em /entrar.
 - Fase 8 não inicia antes de estes gates serem resolvidos.
+
+
+## Fase 8
+Status: IMPLEMENTED / PARTIAL VERIFICATION — CERTIFICATION PENDING
+
+Entrega segura de media:
+- não foi recriado nem alterado o trio certificado get-media-url / create-media-upload / get-video-playback-url;
+- produção confirmou ACTIVE v39 / v13 / v11, todos com verify_jwt=true;
+- get_media_access() exige autorização via can_view_post(), integridade, moderação, scan e processing ready;
+- can_view_post() testado em transacção real para owner, public, followers e PPV;
+- vídeos B2 são bloqueados no get-media-url() com video_delivery_required e só passam por get-video-playback-url() quando Streamtape está ready;
+- media_access_logs tem RLS activo e leitura restrita ao próprio utilizador/admin.audit;
+- suite phase8_media_delivery_verification_test.sql criada com 23 assertions e adicionada ao CI;
+- nenhuma migração de produção foi necessária nesta fase.
+
+Production verification:
+- assets efectivos observados usam storage_provider=backblaze_b2;
+- asset metadata efectiva observada: media_backend=b2 e bucket prively-media-originals-2026;
+- prively-publish-posts e streamtape-status-poll permanecem activos; streamtape-status-poll corre a cada 2 minutos;
+- reconcile_ledger() = 0.
+
+Open gates:
+- MEDIA_BACKEND no Secret não foi confirmado directamente porque a sessão disponível não expõe supabase secrets list;
+- CORS aplicado no bucket B2 não foi confirmado directamente;
+- não existe staging disponível para executar uma nova transição end-to-end not_started -> processing -> completed;
+- o único media asset não apagado actualmente é seed/draft e não tem thumb_blur_path/hls_path/watermark_path preenchidos;
+- CI completo ainda não certificado nesta execução;
+- blockers 0.6/0.7 e verificação Vercel continuam abertos.
+- Fase 9 não inicia antes destes gates.
