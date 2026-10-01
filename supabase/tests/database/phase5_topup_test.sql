@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(17);
 
 select ok(
   to_regclass('public.topups') is not null
