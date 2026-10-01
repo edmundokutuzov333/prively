@@ -15,7 +15,7 @@ select ok((select relrowsecurity from pg_class where oid='public.trusted_devices
 select ok(to_regprocedure('public.has_permission(uuid,text)') is not null,'permission function exists');
 select ok(to_regprocedure('public.record_legal_acceptance(text,text,text,jsonb)') is not null,'legal acceptance RPC exists');
 select ok(to_regprocedure('public.start_self_exclusion(timestamptz,text)') is not null,'self exclusion RPC exists');
-select ok(to_regprocedure('public.submit_kyc(text,text,text)') is not null,'KYC submit RPC exists');
+select ok(to_regprocedure('public.submit_kyc(text,text,text,text)') is not null,'KYC submit RPC exists');
 
 do $$
 declare
