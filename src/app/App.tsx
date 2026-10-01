@@ -84,6 +84,7 @@ import {
 import { Phase10ProductionReadinessPage } from '@/pages/Phase10ProductionReadinessPage';
 import { ClientDiscoverCorePage, ClientFeedCorePage, ClientProfileCorePage, ClientPurchasesCorePage, ClientWishlistCorePage, ClientAccountCorePage, ClientLimitsCorePage, ClientDiscreetCorePage, ClientStoriesCorePage } from '@/pages/ClientCorePages';
 import { CreatorSafetyControlsPage } from '@/pages/CreatorSafetyControlsPage';
+import { CreatorSubscriptionSettingsPage } from '@/pages/CreatorSubscriptionSettingsPage';
 import { SupportPage } from '@/pages/SupportPage';
 import {
   Phase9AdminBusinessPage,
@@ -287,6 +288,7 @@ export function App() {
               <Route path="/estudio/integracoes" element={<Phase9BusinessIntegrationsPage />} />
             </> : null}
             <Route path="/estudio/definicoes" element={<CreatorSettingsPage />} />
+            <Route path="/estudio/definicoes/subscricoes" element={<CreatorSubscriptionSettingsPage />} />
             <Route path="/estudio/definicoes/seguranca" element={<SecuritySettingsPage />} />
             <Route path="/estudio/onboarding" element={<ContentStudioPage />} />
             <Route path="/estudio/vip" element={<ContentStudioPage />} />
