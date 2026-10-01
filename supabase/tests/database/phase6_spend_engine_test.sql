@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(28);
 
 select ok(
   to_regprocedure('public.spend_on_channel(uuid,bigint,text,text,uuid,text)') is not null,
