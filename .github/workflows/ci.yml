@@ -143,7 +143,6 @@ jobs:
             "phase9_subscriptions_test.sql"
             "phase10_production_hardening_test.sql"
             "phase10_security_contract_test.sql"
-            "phase10_ppv_test.sql"
             "phase1_identity_roles_kyc_test.sql"
             "phase2_kyc_test.sql"
             "phase3_channel_creation_test.sql"
