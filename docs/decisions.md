@@ -92,3 +92,11 @@
 **Contexto:** `/descobrir` precisava excluir canais de seed e owners que já não estão activos, além de permitir filtros por handle, cidade e bairro sem depender de lógica de segurança no browser.
 **Decisão:** introduzir `discover_channels(...)` como RPC `SECURITY DEFINER`, com filtros server-side, exclusão explícita de `is_seed`, owner activo, canais escondidos e pares bloqueados. O cliente recebe também `follower_count` e `is_following` já calculados.
 **Consequência:** a descoberta não depende de dados artificiais nem expõe canais indisponíveis para depois os esconder no cliente. A tabela `follows` deixa de aceitar DML directo por `authenticated`; seguir/deixar seguir passa pelos RPCs existentes.
+
+## ADR-017: Fase 13 reutiliza o modelo de segurança da Fase 8 e adiciona um contrato de pânico autenticado
+
+**Contexto:** a Fase 8 já tinha introduzido `reports`, `moderation_queue`, `audit_log`, `trusted_contacts`, `panic_events` e `safety-alert-dispatch`. Recriar essas tabelas na Fase 13 criaria divergência e risco de duplicação do modelo operacional.
+
+**Decisão:** a Fase 13 reutiliza os contratos existentes e acrescenta apenas o hardening forward-only necessário: `create_panic_event()` com validação da localização, DML directo do cliente revogado em `reports` e `panic_events`, nova Edge Function autenticada `trigger-panic` e botão persistente no workspace de criadora.
+
+**Consequência:** denúncias e pânico continuam numa única cadeia de auditoria e moderação. O provider SMS externo não é tratado como configurado sem evidência operacional.
