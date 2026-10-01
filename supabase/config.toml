@@ -80,5 +80,9 @@ verify_jwt = false
 verify_jwt = false
 [functions.kyc-start]
 verify_jwt = true
+[functions.kyc-submit]
+verify_jwt = true
+[functions.kyc-review]
+verify_jwt = true
 [functions.kyc-webhook]
 verify_jwt = false
