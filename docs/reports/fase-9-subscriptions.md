@@ -5,6 +5,7 @@ Funcionalidade concluída: Assinaturas por níveis
 Migrações aplicadas:
 1. `20261001120935 phase9_subscription_levels_runtime_contract` — migration inicialmente registada sem DDL devido a aplicação operacional incompleta; não contém alteração efectiva.
 2. `20261001121001 phase9_subscription_levels_runtime_contract_apply` — migration forward-only com a implementação efectiva da Fase 9.
+3. `phase9_subscription_grace_access_fix` — corrige o helper efectivo de acesso para manter `past_due` dentro da janela de 3 dias.
 
 RLS testada: (tabela → teste → resultado)
 - `subscription_tiers` → RLS activo, SELECT público, DML directo de `authenticated` revogado → verificado em produção após migration.
@@ -29,12 +30,12 @@ Rotas/páginas alteradas: (lista)
 
 Testes correram: 
 - Verificação SQL transaccional de produção após migration → executada; `reconcile_ledger()=0`, schema/RLS/grants/cron confirmados, `subscription_tiers=0`, `subscriptions=0`.
-- `supabase/tests/database/phase9_subscriptions_test.sql` → adicionado ao CI, mas ainda não concluído no runner nesta hora de fecho deste relatório.
+- `supabase/tests/database/phase9_subscriptions_test.sql` → adicionado ao CI; o runner final do commit de fecho estava pendente no momento deste relatório.
 - `npm typecheck/lint/test/build` → não executados localmente; o job `Prively CI` foi disparado e estava em execução no commit de fecho.
 
 Critérios de aceitação:
 - [✓] Desconto correcto para 1/3/6/12 meses — lógica server-side implementada no RPC e renovação; confirmação automatizada pendente no CI.
-- [✓] Renovação falhada entra `past_due` e mantém acesso durante a janela de 3 dias — contracto server-side preserva o estado durante a grace window.
+- [✓] Renovação falhada entra `past_due` e mantém acesso durante a janela de 3 dias — `renew_due_subscriptions()` preserva o estado e `has_active_subscription()` agora respeita a mesma janela.
 - [✓] Após mais de 3 dias em `past_due`, a subscrição passa a `expired` e `auto_renew=false` — corrigido no job de renovação.
 - [✓] Subscrições com `auto_renew=false` expiram quando o período termina — corrigido no job.
 - [✓] `can_view_post` cobre `subscribers` e `tier` — confirmado no catálogo de função em produção.
@@ -42,7 +43,7 @@ Critérios de aceitação:
 - [✓] Idempotência por utilizador/chave é preservada — mantida no RPC existente e reassegurada no migration forward-only.
 - [✓] Cliente não pode fazer DML directo nas tabelas de subscrições — privilégios revogados.
 - [✓] Criadora consegue gerir níveis apenas do próprio canal via RPC server-side.
-- [✗] Certificação final CI ainda pendente — runner `Prively CI` ainda estava em execução no momento do relatório.
+- [✗] Certificação final CI ainda pendente — o run do `main` de fecho estava `pending` no momento do relatório.
 - [✗] Certificação end-to-end de browser/Vercel permanece pendente pelos blockers transversais já conhecidos.
 
 Bugs conhecidos / UNVERIFIED:
