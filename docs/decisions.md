@@ -39,3 +39,9 @@
 **Contexto:** não existe evidência sandbox para todos os fornecedores.  
 **Decisão:** estados ficam NÃO VERIFICADO, REAL·FLAG ou BLOQUEADO·EXTERNO conforme a evidência disponível.  
 **Consequência:** nenhuma credencial fictícia ou fixture externa é usada para declarar sucesso.
+
+
+## ADR-009: Limiar de KYC manual
+**Contexto:** o adaptador KYC real suporta modo manual e não existe validação escrita de fornecedor externo nesta auditoria.
+**Decisão:** manter revisão manual enquanto o volume semanal for menor ou igual a N, valor ainda por definir pelo dono do produto. Acima de N, activar o fornecedor configurado apenas depois de confirmação escrita de que aceita conteúdo adulto e BI moçambicano.
+**Consequência:** o volume semanal real é medido por kyc_manual_queue_weekly_volume_guarded(), sem promoção automática para fornecedor externo.
