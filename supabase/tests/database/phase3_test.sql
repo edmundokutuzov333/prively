@@ -58,7 +58,10 @@ begin
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
   perform set_config('request.jwt.claims',json_build_object('sub',buyer::text,'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text)::text,true);
-  insert into public.user_roles(user_id,role) values(creator,'creator') on conflict do nothing;
+  insert into public.user_roles(user_id,role) values
+    (creator,'creator'),
+    (creator,'compliance')
+  on conflict do nothing;
 
   insert into public.channels(id,owner_id,handle,display_name,call_audio_price,call_video_price)
   values(channel,creator,'creator_test','Creator Test',1000,1500);
