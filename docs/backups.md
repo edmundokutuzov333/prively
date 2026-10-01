@@ -18,7 +18,7 @@ Path: postgres/YYYY-MM-DD/<run-id>-<sha>.dump.gz.
 scripts/backup-db.mjs
 supabase/migrations/20261001112000_prephase_backup_runs.sql
 
-O ficheiro .github/workflows/backup.yml foi preparado conceptualmente, mas a API de escrita de workflows bloqueou a criação nesta execução. O agendamento não deve ser considerado activo.
+O workflow `.github/workflows/backup.yml` está agora versionado na `main` e agenda a execução diária às 03:00 Africa/Maputo. A execução só é operacional depois de os secrets de produção estarem configurados e de existir prova de uma execução bem-sucedida.
 
 ## Secrets
 
@@ -36,4 +36,4 @@ A credencial B2 deve ser específica do bucket de backups.
 
 Não executado. Sem staging não existe local seguro para restaurar o dump.
 
-Bloqueador formal: projecto Supabase de staging.
+Bloqueador formal: projecto Supabase de staging. Este bloqueador não é mascarado pelo workflow de backup.
