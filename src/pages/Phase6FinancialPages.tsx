@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowDownLeft, ArrowUpRight, Bank, CheckCircle, Clock, LockKey, Money, Receipt, ShieldCheck, Wallet, XCircle } from '@phosphor-icons/react';
 import { Botao } from '@/design/Botao';
 import { Ficha } from '@/design/Ficha';
@@ -17,6 +18,10 @@ type FinanceSettings = {
   payout_min_centavos: number;
   hold_hours: number;
   payment_methods: Record<string, boolean>;
+  wallet_topup_enabled: boolean;
+  wallet_min_topup_centavos: number;
+  wallet_max_topup_centavos: number;
+  wallet_daily_topup_limit_centavos: number;
 };
 
 type Topup = {
@@ -91,6 +96,16 @@ function phase6Error(error: unknown): string {
     phone_confirmation_required: 'Confirma o teu número de telefone antes de pedir um levantamento.',
     financial_mfa_recent_required: 'Confirma o código de segurança para continuar com o levantamento.',
     phone_mfa_not_verified: 'Activa a confirmação por SMS antes de pedir um levantamento.',
+    wallet_production_disabled: 'As recargas estão indisponíveis até o fornecedor de pagamentos estar validado.',
+    topup_below_minimum: 'O valor está abaixo do mínimo de recarga configurado.',
+    topup_limit_exceeded: 'O valor excede o máximo de recarga permitido.',
+    topup_daily_limit_exceeded: 'Atingiste o limite diário de recargas.',
+    topup_balance_limit_exceeded: 'A recarga excederia o limite máximo da carteira.',
+    topup_not_payable: 'Esta recarga já não pode ser paga. Cria uma nova recarga.',
+    topup_amount_missing: 'O fornecedor não enviou um valor de pagamento válido.',
+    provider_unverified: 'O fornecedor de pagamentos ainda não está validado para processar recargas.',
+    provider_timeout: 'O fornecedor demorou demasiado tempo a responder. Tenta novamente.',
+    provider_unavailable: 'O fornecedor de pagamentos está indisponível. Tenta novamente.',
   };
   return known[code] ?? code;
 }
@@ -143,25 +158,29 @@ async function downloadFinancialExport(format: 'csv' | 'receipt_pdf', receiptId?
 }
 
 export function Phase6ClientWalletPage() {
-    const [summary, setSummary] = useState<WalletSummary | null>(null);
+  const { t } = useTranslation();
+  const [summary, setSummary] = useState<WalletSummary | null>(null);
   const [settings, setSettings] = useState<FinanceSettings | null>(null);
   const [topups, setTopups] = useState<Topup[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('mpesa');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const load = async () => {
-    if (!supabase) return;
+
+  const load = useCallback(async () => {
+    const sb = requireSupabase();
+    setLoading(true);
     const [wallet, config, topupRows, receiptRows] = await Promise.all([
-      supabase.rpc('get_wallet_summary'),
-      supabase.rpc('get_financial_settings'),
-      supabase.from('topups')
+      sb.rpc('get_wallet_summary'),
+      sb.rpc('get_financial_settings'),
+      sb.from('topups')
         .select('id,amount,method,status,internal_reference,provider_checkout_url,requested_at,paid_at,expires_at')
         .order('requested_at', { ascending: false })
         .limit(12),
-      supabase.from('receipts')
+      sb.from('receipts')
         .select('id,receipt_number,txn_id,kind,amount,currency,created_at')
         .order('created_at', { ascending: false })
         .limit(12),
@@ -172,21 +191,69 @@ export function Phase6ClientWalletPage() {
     if (topupRows.error) throw topupRows.error;
     if (receiptRows.error) throw receiptRows.error;
 
+    const nextSettings = config.data as FinanceSettings;
     setSummary(wallet.data as WalletSummary);
-    setSettings(config.data as FinanceSettings);
+    setSettings(nextSettings);
     setTopups((topupRows.data ?? []) as Topup[]);
     setReceipts((receiptRows.data ?? []) as ReceiptRow[]);
-    const availableMethods = Object.entries((config.data as FinanceSettings).payment_methods)
+
+    const availableMethods = Object.entries(nextSettings.payment_methods)
       .filter(([, enabled]) => enabled)
       .map(([key]) => key);
-    if (availableMethods[0] && !availableMethods.includes(method)) {
+
+    if (availableMethods.length > 0 && !availableMethods.includes(method)) {
       setMethod(availableMethods[0]);
     }
-  };
+  }, [method]);
 
   useEffect(() => {
-    void load().catch((e: unknown) => setError(phase6Error(e)));
-  }, []);
+    void load()
+      .catch((e: unknown) => setError(phase6Error(e)))
+      .finally(() => setLoading(false));
+  }, [load]);
+
+  useEffect(() => {
+    const sb = requireSupabase();
+    let active = true;
+    let channel: ReturnType<typeof sb.channel> | null = null;
+
+    void sb.auth.getUser().then(({ data }) => {
+      if (!active || !data.user) return;
+
+      channel = sb
+        .channel(`wallet-topups-${data.user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'balances',
+            filter: `owner_id=eq.${data.user.id}`,
+          },
+          () => {
+            void load();
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'topups',
+            filter: `user_id=eq.${data.user.id}`,
+          },
+          () => {
+            void load();
+          },
+        )
+        .subscribe();
+    });
+
+    return () => {
+      active = false;
+      if (channel) void sb.removeChannel(channel);
+    };
+  }, [load]);
 
   const topup = async (event: FormEvent) => {
     event.preventDefault();
@@ -210,7 +277,10 @@ export function Phase6ClientWalletPage() {
       });
 
       setAmount('');
-      setSuccess(`Recarga ${result.reference} criada. Estado: ${result.status}.`);
+      setSuccess(t('phase5Topup.created', {
+        reference: result.reference,
+        status: topupStatusLabel(result.status, t),
+      }));
       await load();
     } catch (e: unknown) {
       setError(phase6Error(e));
@@ -219,91 +289,217 @@ export function Phase6ClientWalletPage() {
     }
   };
 
-  return <PageFrame icon={Wallet} title="Carteira" intro="Saldo, recargas e histórico financeiro reais.">
-    <div className="mx-auto max-w-6xl space-y-5">
-      {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-      {success ? <p role="status" className="text-sm text-emerald-400">{success}</p> : null}
+  const retryTopup = async (row: Topup) => {
+    if (!settings?.wallet_topup_enabled) return;
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Ficha variant="focus" className="p-6">
-          <p className="text-sm text-bone-500">Saldo disponível para gastar</p>
-          <p className="mt-3 font-display text-4xl text-bone-50">{summary ? formatMznFromCents(summary.wallet) : '...'}</p>
-        </Ficha>
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await invokeEdge<{
+        reference: string;
+        status: string;
+      }>('payments-create-topup', {
+        amount: row.amount / 100,
+        method: row.method,
+        idempotencyKey: crypto.randomUUID(),
+      });
+
+      setSuccess(t('phase5Topup.created', {
+        reference: result.reference,
+        status: topupStatusLabel(result.status, t),
+      }));
+      await load();
+    } catch (e: unknown) {
+      setError(phase6Error(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const paymentMethods = Object.entries(settings?.payment_methods ?? {})
+    .filter(([, enabled]) => enabled);
+
+  const retryable = new Set(['failed', 'expired', 'cancelled']);
+  const topupEnabled = settings?.wallet_topup_enabled === true;
+
+  return (
+    <PageFrame icon={Wallet} title={t('experience.pages.wallet.title')} intro={t('phase5Topup.intro')}>
+      <div className="mx-auto max-w-6xl space-y-5">
+        {error ? (
+          <div className="flex items-center justify-between gap-4 rounded-control border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            <span role="alert">{error}</span>
+            <Botao variant="outline" type="button" onClick={() => void load()}>{t('phase5Topup.retry')}</Botao>
+          </div>
+        ) : null}
+
+        {success ? <p role="status" className="text-sm text-emerald-400">{success}</p> : null}
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Ficha variant="focus" className="p-6">
+            <p className="text-sm text-bone-500">{t('phase5Topup.balance')}</p>
+            <p className="mt-3 font-display text-4xl text-bone-50">
+              {loading || !summary ? '...' : formatMznFromCents(summary.wallet)}
+            </p>
+          </Ficha>
+          <Ficha className="p-6">
+            <p className="text-sm text-bone-500">{t('phase5Topup.pending')}</p>
+            <p className="mt-3 font-display text-4xl text-bone-50">
+              {loading || !summary ? '...' : formatMznFromCents(summary.pending)}
+            </p>
+          </Ficha>
+          <Ficha className="p-6">
+            <p className="text-sm text-bone-500">{t('phase5Topup.available')}</p>
+            <p className="mt-3 font-display text-4xl text-bone-50">
+              {loading || !summary ? '...' : formatMznFromCents(summary.available)}
+            </p>
+          </Ficha>
+        </div>
+
         <Ficha className="p-6">
-          <p className="text-sm text-bone-500">Ganhos pendentes</p>
-          <p className="mt-3 font-display text-4xl text-bone-50">{summary ? formatMznFromCents(summary.pending) : '...'}</p>
-          <p className="mt-2 text-xs text-bone-500">{settings ? `Libertação padrão após ${settings.hold_hours} horas.` : ''}</p>
+          <div className="flex items-start gap-3">
+            <ArrowDownLeft size={22} weight="duotone" className="text-crimson-400" />
+            <div>
+              <h2 className="text-lg text-bone-50">{t('phase5Topup.formTitle')}</h2>
+              <p className="mt-1 text-sm text-bone-500">{t('phase5Topup.formIntro')}</p>
+            </div>
+          </div>
+
+          {!settings && loading ? (
+            <p className="mt-5 text-sm text-bone-500">{t('common.loading')}</p>
+          ) : !topupEnabled ? (
+            <div className="mt-5 rounded-control border border-warn/30 bg-warn/5 p-4">
+              <p className="text-sm text-bone-200">{t('phase5Topup.unavailable')}</p>
+            </div>
+          ) : (
+            <form onSubmit={topup} className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+              <label className="space-y-2 text-sm text-bone-300">
+                <span>{t('phase5Topup.amount')}</span>
+                <input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  inputMode="decimal"
+                  min={settings ? settings.wallet_min_topup_centavos / 100 : undefined}
+                  max={settings ? settings.wallet_max_topup_centavos / 100 : undefined}
+                  step="0.01"
+                  required
+                  className="min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50"
+                />
+              </label>
+              <label className="space-y-2 text-sm text-bone-300">
+                <span>{t('phase5Topup.method')}</span>
+                <select
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  className="min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50"
+                >
+                  {paymentMethods.map(([key]) => (
+                    <option key={key} value={key}>
+                      {key === 'mpesa' ? 'M-Pesa' : key === 'emola' ? 'e-Mola' : key === 'mkesh' ? 'mKesh' : key === 'ponto24' ? 'Ponto24' : 'Cartão'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Botao type="submit" loading={busy}>{t('phase5Topup.submit')}</Botao>
+              {settings ? (
+                <p className="text-xs text-bone-500 md:col-span-3">
+                  {t('phase5Topup.limits', {
+                    min: formatMznFromCents(settings.wallet_min_topup_centavos),
+                    max: formatMznFromCents(settings.wallet_max_topup_centavos),
+                  })}
+                  {' · '}
+                  {t('phase5Topup.dailyLimit', {
+                    limit: formatMznFromCents(settings.wallet_daily_topup_limit_centavos),
+                  })}
+                </p>
+              ) : null}
+            </form>
+          )}
         </Ficha>
+
         <Ficha className="p-6">
-          <p className="text-sm text-bone-500">Ganhos disponíveis</p>
-          <p className="mt-3 font-display text-4xl text-bone-50">{summary ? formatMznFromCents(summary.available) : '...'}</p>
+          <div className="flex items-center gap-3">
+            <Receipt size={22} weight="duotone" />
+            <h2 className="text-lg text-bone-50">{t('phase5Topup.history')}</h2>
+          </div>
+          <div className="mt-4 space-y-2">
+            {loading ? (
+              <p className="text-sm text-bone-500">{t('common.loading')}</p>
+            ) : topups.map((row) => (
+              <div key={row.id} className="flex flex-col gap-3 rounded-control border border-bone-50/8 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-bone-50">{row.internal_reference}</p>
+                  <p className="mt-1 text-xs text-bone-500">
+                    {row.method} · {new Date(row.requested_at).toLocaleString('pt-PT')}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 text-left sm:items-end sm:text-right">
+                  <p className="font-display text-xl text-bone-50">{formatMznFromCents(row.amount)}</p>
+                  <p className="text-xs text-bone-400">{topupStatusLabel(row.status, t)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {row.provider_checkout_url && row.status !== 'paid' ? (
+                      <a href={row.provider_checkout_url} target="_blank" rel="noreferrer" className="text-sm text-crimson-300 no-underline">
+                        {t('phase5Topup.continue')}
+                      </a>
+                    ) : null}
+                    {topupEnabled && retryable.has(row.status) ? (
+                      <Botao variant="outline" type="button" loading={busy} onClick={() => void retryTopup(row)}>
+                        {t('phase5Topup.retry')}
+                      </Botao>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!loading && !topups.length ? (
+              <EstadoVazio title={t('phase5Topup.historyEmptyTitle')} body={t('phase5Topup.historyEmptyBody')} />
+            ) : null}
+          </div>
+        </Ficha>
+
+        <Ficha className="p-6">
+          <div className="flex items-center gap-3">
+            <Receipt size={22} weight="duotone" />
+            <h2 className="text-lg text-bone-50">Recibos</h2>
+          </div>
+          <div className="mt-4 space-y-2">
+            {receipts.map((row) => (
+              <div key={row.id} className="flex items-center justify-between gap-3 rounded-control border border-bone-50/8 p-3">
+                <div>
+                  <p className="text-sm text-bone-50">{row.receipt_number ?? row.txn_id}</p>
+                  <p className="mt-1 text-xs text-bone-500">{row.kind} · {new Date(row.created_at).toLocaleString('pt-PT')}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="font-display text-xl text-bone-50">{formatMznFromCents(row.amount)}</p>
+                  <Botao variant="outline" type="button" onClick={() => void downloadFinancialExport('receipt_pdf', row.id).catch((e: unknown) => setError(phase6Error(e)))}>PDF</Botao>
+                </div>
+              </div>
+            ))}
+            {!receipts.length ? <EstadoVazio title="Sem recibos" body="Os recibos são gerados a partir de transacções financeiras reais." /> : null}
+          </div>
         </Ficha>
       </div>
+    </PageFrame>
+  );
+}
 
-      <Ficha className="p-6">
-        <div className="flex items-start gap-3">
-          <ArrowDownLeft size={22} weight="duotone" className="text-crimson-400" />
-          <div>
-            <h2 className="text-lg text-bone-50">Carregar carteira</h2>
-            <p className="mt-1 text-sm text-bone-500">O valor é confirmado pelo fornecedor antes de entrar no livro-razão.</p>
-          </div>
-        </div>
-        <form onSubmit={topup} className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <label className="space-y-2 text-sm text-bone-300">
-            <span>Valor em MT</span>
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" min="1" step="0.01" required className="min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50" />
-          </label>
-          <label className="space-y-2 text-sm text-bone-300">
-            <span>Método</span>
-            <select value={method} onChange={(e) => setMethod(e.target.value)} className="min-h-11 w-full rounded-control border border-bone-50/10 bg-ink-900 px-3 text-bone-50">
-              {Object.entries(settings?.payment_methods ?? { mpesa: true, emola: true, mkesh: true, ponto24: true, card: false })
-                .filter(([, enabled]) => enabled)
-                .map(([key]) => <option key={key} value={key}>{key === 'mpesa' ? 'M-Pesa' : key === 'emola' ? 'e-Mola' : key === 'mkesh' ? 'mKesh' : key === 'ponto24' ? 'Ponto24' : 'Cartão'}</option>)}
-            </select>
-          </label>
-          <Botao type="submit" loading={busy}>Carregar carteira</Botao>
-        </form>
-      </Ficha>
+function topupStatusLabel(
+  status: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const keys: Record<string, string> = {
+    pending: 'phase5Topup.pendingStatus',
+    processing: 'phase5Topup.processingStatus',
+    paid: 'phase5Topup.paidStatus',
+    failed: 'phase5Topup.failedStatus',
+    expired: 'phase5Topup.expiredStatus',
+    cancelled: 'phase5Topup.cancelledStatus',
+    reversal_pending: 'phase5Topup.reversalPendingStatus',
+    reversed: 'phase5Topup.reversedStatus',
+  };
 
-      <Ficha className="p-6">
-        <div className="flex items-center gap-3"><Receipt size={22} weight="duotone" /><h2 className="text-lg text-bone-50">Movimentos de recarga</h2></div>
-        <div className="mt-4 space-y-2">
-          {topups.map((row) => <div key={row.id} className="flex flex-col gap-2 rounded-control border border-bone-50/8 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-bone-50">{row.internal_reference}</p>
-              <p className="mt-1 text-xs text-bone-500">{row.method} · {new Date(row.requested_at).toLocaleString('pt-PT')}</p>
-            </div>
-            <div className="text-left sm:text-right">
-              <p className="font-display text-xl text-bone-50">{formatMznFromCents(row.amount)}</p>
-              <p className="mt-1 text-xs text-bone-400">{row.status}</p>
-            </div>
-            {row.provider_checkout_url ? <a href={row.provider_checkout_url} target="_blank" rel="noreferrer" className="text-sm text-crimson-300 no-underline">Continuar pagamento</a> : null}
-          </div>)}
-          {!topups.length ? <EstadoVazio title="Sem recargas" body="As tuas recargas reais vão aparecer aqui." /> : null}
-        </div>
-      </Ficha>
-
-      <Ficha className="p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3"><Receipt size={22} weight="duotone" /><h2 className="text-lg text-bone-50">Recibos</h2></div>
-          <Botao variant="outline" type="button" onClick={()=>void downloadFinancialExport('csv').catch((e:unknown)=>setError(phase6Error(e)))}>Exportar CSV</Botao>
-        </div>
-        <div className="mt-4 space-y-2">
-          {receipts.map((row) => <div key={row.id} className="flex items-center justify-between gap-3 rounded-control border border-bone-50/8 p-3">
-            <div>
-              <p className="text-sm text-bone-50">{row.receipt_number ?? row.txn_id}</p>
-              <p className="mt-1 text-xs text-bone-500">{row.kind} · {new Date(row.created_at).toLocaleString('pt-PT')}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <p className="font-display text-xl text-bone-50">{formatMznFromCents(row.amount)}</p>
-              <Botao variant="outline" type="button" onClick={()=>void downloadFinancialExport('receipt_pdf',row.id).catch((e:unknown)=>setError(phase6Error(e)))}>PDF</Botao>
-            </div>
-          </div>)}
-          {!receipts.length ? <EstadoVazio title="Sem recibos" body="Os recibos são gerados a partir de transacções financeiras reais." /> : null}
-        </div>
-      </Ficha>
-    </div>
-  </PageFrame>;
+  return t(keys[status] ?? 'phase5Topup.processingStatus');
 }
 
 export function Phase6CreatorEarningsPage() {
