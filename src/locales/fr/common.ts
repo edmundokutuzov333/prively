@@ -79,6 +79,7 @@ errors: { unauthorized: 'Votre session a expiré. Reconnectez-vous.', forbidden:
     state: 'État',
     stateBackend: 'Cet état doit être connecté au flux réel qui l’a produit avant d’être exposé en production.'
   },
+  phase6Spend: { topUpAction: 'Recharger le portefeuille' },
   phase5Topup: {
     intro: 'Solde réel, recharges et historique financier.',
     balance: 'Solde à dépenser',
