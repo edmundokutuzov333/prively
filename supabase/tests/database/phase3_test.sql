@@ -66,9 +66,18 @@ begin
   values(channel,creator,'creator_test','Creator Test',1000,1500);
 
   set local role postgres;
-  delete from public.balances where owner_id=buyer and account='wallet';
-  insert into public.balances(owner_id,account,balance)
-  values(buyer,'wallet',1000000);
+  insert into public.ledger_entries(
+    txn_id,account,owner_id,amount,kind,ref_type,ref_id
+  )
+  values
+    (
+      seed_txn,'wallet',buyer,1000000,'test_seed','test',gen_random_uuid()
+    ),
+    (
+      seed_txn,
+      'external','00000000-0000-0000-0000-000000000000'::uuid,
+      -1000000,'test_seed','test',gen_random_uuid()
+    );
 
   perform set_config('request.jwt.claim.sub',buyer::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
@@ -99,7 +108,7 @@ select is((select balance from public.balances where owner_id='10000000-0000-000
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 
-select is((select count(*) from public.ledger_entries where owner_id='10000000-0000-0000-0000-000000000001'::uuid),2::bigint,'buyer sees only own ledger rows through RLS');
+select is((select count(*) from public.ledger_entries where owner_id='10000000-0000-0000-0000-000000000001'::uuid),3::bigint,'buyer sees only own ledger rows through RLS');
 select is((select count(*) from public.ledger_entries where owner_id='10000000-0000-0000-0000-000000000002'::uuid),0::bigint,'buyer cannot read creator ledger rows');
 
 reset role;

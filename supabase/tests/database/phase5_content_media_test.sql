@@ -178,6 +178,8 @@ begin
       ready_at=null
   where id=v_asset_id;
 
+  perform public.attest_post_content_consent(v_post_id,true);
+
   begin
     perform public.publish_post(v_post_id);
     raise exception 'publish_post accepted incomplete media';
@@ -187,8 +189,6 @@ begin
         raise;
       end if;
   end;
-
-  perform public.attest_post_content_consent(v_post_id,true);
 
   perform set_config('app.internal_write','on',true);
   perform set_config('request.jwt.claim.sub',creator::text,true);

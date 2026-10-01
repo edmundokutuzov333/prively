@@ -85,6 +85,7 @@ begin
     true,'{}'::jsonb,'ready',0
   );
 
+  perform set_config('app.phase8_channel',channel_id::text,false);
   perform set_config('app.phase8_asset_id',asset_id::text,false);
   perform set_config('app.phase8_creator',creator::text,false);
   perform set_config('app.phase8_viewer',viewer::text,false);
@@ -109,7 +110,7 @@ declare
   followers_asset uuid;
   ppv_asset uuid;
 begin
-  select channel_id into channel_id from public.channels where owner_id=creator order by created_at desc limit 1;
+  channel_id := current_setting('app.phase8_channel')::uuid;
 
   perform set_config('app.internal_write','on',true);
 

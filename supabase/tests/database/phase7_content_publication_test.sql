@@ -92,8 +92,6 @@ begin
     'backblaze_b2','not_started',0
   );
 
-  perform public.attest_post_content_consent(scheduled_id,true);
-
   perform set_config('app.phase7_draft_id',draft_id::text,false);
   perform set_config('app.phase7_scheduled_id',scheduled_id::text,false);
   perform set_config('app.phase7_channel_id',channel_id::text,false);

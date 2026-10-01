@@ -86,6 +86,7 @@ declare
   creator_pending_before bigint;
   platform_before bigint;
   wallet_before bigint;
+  seed_txn uuid := gen_random_uuid();
 begin
   perform set_config('app.internal_write','on',true);
 
@@ -128,9 +129,20 @@ begin
   )
   on conflict(id) do nothing;
 
+  insert into public.ledger_entries(
+    txn_id,account,owner_id,amount,kind,ref_type,ref_id
+  )
+  values
+    (
+      seed_txn,'wallet',buyer,100000,'test_seed','test',gen_random_uuid()
+    ),
+    (
+      seed_txn,'external','00000000-0000-0000-0000-000000000000'::uuid,
+      -100000,'test_seed','test',gen_random_uuid()
+    );
+
   insert into public.balances(owner_id,account,balance)
   values
-    (buyer,'wallet',100000),
     (creator,'creator_pending',0),
     (creator,'creator_available',0)
   on conflict(owner_id,account) do update set balance=excluded.balance;

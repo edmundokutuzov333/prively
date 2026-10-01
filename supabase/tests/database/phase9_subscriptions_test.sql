@@ -127,11 +127,11 @@ begin
   set local role authenticated;
 
   bronze := public.upsert_subscription_tier(
-    channel,'Bronze',1,10000,'{"1":0,"3":0.15,"6":0.25,"12":0.40}'::jsonb
+    channel,'Bronze'::text,1::smallint,10000::bigint,'{"1":0,"3":0.15,"6":0.25,"12":0.40}'::jsonb
   );
 
   ouro := public.upsert_subscription_tier(
-    channel,'Ouro',3,20000,'{"1":0,"3":0.15,"6":0.25,"12":0.40}'::jsonb
+    channel,'Ouro'::text,3::smallint,20000::bigint,'{"1":0,"3":0.15,"6":0.25,"12":0.40}'::jsonb
   );
 
   set local role postgres;

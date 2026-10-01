@@ -65,6 +65,8 @@ create temporary table _phase5_meta(
   value text not null
 ) on commit drop;
 
+grant select, insert, update, delete on table _phase5_meta to public;
+
 do $$
 declare
   buyer uuid := '95050000-0000-0000-0000-000000000001';
