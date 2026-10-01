@@ -95,6 +95,9 @@ begin
   set status='active', age_verified_at=now()
   where id=buyer;
 
+  insert into public.kyc_verifications(user_id,provider,status,reviewed_at)
+  values(buyer,'manual','approved',now());
+
   perform set_config(
     'request.jwt.claims',
     json_build_object(
