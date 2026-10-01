@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(23);
 
 select ok(to_regclass('public.media_assets') is not null,'media_assets exists');
 select ok(to_regclass('public.media_access_logs') is not null,'media_access_logs exists');
