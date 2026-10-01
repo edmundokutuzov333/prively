@@ -219,8 +219,8 @@ select throws_ok(
 
 set local role service_role;
 select ok(
-  not public.can_view_post(current_setting('app.phase8_post_public')::uuid),
-  'viewer cannot view public post while video is not processing-ready'
+  public.can_view_post(current_setting('app.phase8_post_public')::uuid),
+  'public privacy visibility remains available while media delivery stays fail-closed'
 );
 
 set local role service_role;

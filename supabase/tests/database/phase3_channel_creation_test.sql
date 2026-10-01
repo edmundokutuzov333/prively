@@ -16,23 +16,23 @@ select ok(not has_function_privilege('anon','public.create_creator_channel(text,
 select ok(not has_function_privilege('anon','public.check_channel_handle(text)','EXECUTE'), 'anonymous users cannot execute handle availability RPC');
 
 select ok(
-  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''not_creator''%',
+  lower(pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure)) like '%raise exception ''not_creator''%',
   'RPC has not_creator error'
 );
 select ok(
-  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''age_not_verified''%',
+  lower(pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure)) like '%raise exception ''age_not_verified''%',
   'RPC has age_not_verified error'
 );
 select ok(
-  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''creator_terms_required''%',
+  lower(pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure)) like '%raise exception ''creator_terms_required''%',
   'RPC has creator_terms_required error'
 );
 select ok(
-  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''invalid_channel_handle''%',
+  lower(pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure)) like '%raise exception ''invalid_channel_handle''%',
   'RPC has invalid_channel_handle error'
 );
 select ok(
-  pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure) like '%RAISE EXCEPTION ''channel_handle_taken''%',
+  lower(pg_get_functiondef('public.create_creator_channel(text,text,text)'::regprocedure)) like '%raise exception ''channel_handle_taken''%',
   'RPC has channel_handle_taken error'
 );
 select ok(

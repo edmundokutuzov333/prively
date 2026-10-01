@@ -163,10 +163,13 @@ select throws_ok(
   'PPV without price is rejected server-side'
 );
 
-perform public.publish_post(
-  current_setting('app.phase7_scheduled_id')::uuid,
-  now()+interval '2 hours'
-);
+do $
+begin
+  perform public.publish_post(
+    current_setting('app.phase7_scheduled_id')::uuid,
+    now()+interval '2 hours'
+  );
+end $;
 
 select is(
   (select status from public.posts where id=current_setting('app.phase7_scheduled_id')::uuid),
