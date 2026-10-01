@@ -188,6 +188,8 @@ begin
       end if;
   end;
 
+  perform public.attest_post_content_consent(v_post_id,true);
+
   perform set_config('app.internal_write','on',true);
   perform set_config('request.jwt.claim.sub',creator::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);
