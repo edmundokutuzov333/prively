@@ -334,8 +334,8 @@ export function App() {
             <Route path="/admin/integracoes-negocio" element={<Phase9BusinessIntegrationsPage />} />
             {featureFlags.agency ? <Route path="/admin/agencia" element={<Phase9AgencyPage />} /> : null}
             <Route path="/admin/production" element={<Phase10ProductionReadinessPage />} />
-          <Route path="/admin/storage" element={<AdminStoragePage />} />
           </> : null}
+          <Route path="/admin/storage" element={<AdminStoragePage />} />
           <Route path="/admin/auditoria" element={<AdminAuditPage />} />
           <Route path="/admin/arquivo" element={<Phase8CompliancePage />} />
           <Route path="/admin/config" element={<Phase9AdminBusinessPage />} />
