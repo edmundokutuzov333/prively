@@ -322,3 +322,13 @@ O histórico remoto não está actualmente 1:1 por timestamp com o checkout loca
 ## Gate
 
 `supabase test db` ainda não está verde nesta execução. As suites já mostram falhas relacionadas com a nova regra de KYC aprovado, além de falhas históricas noutras fases. Portanto o bloqueador 0.6 não pode ser marcado concluído ainda.
+
+## Refresh operacional 2026-10-01
+
+- O histórico remoto real consultado no projecto Supabase `gaonupelgtpfthouyobh` contém 220 versões.
+- Existem 10 grupos de nomes lógicos duplicados no histórico remoto. São pares históricos já cobertos pelo allowlist de `scripts/check-migrations.mjs`.
+- Nenhuma migração aplicada foi editada ou apagada.
+- Desde o snapshot desta auditoria, o Git registra 16 ficheiros de migração adicionados e 2 renomeados.
+- O estado local e remoto não deve ser alinhado por migration repair. A regra continua forward-only.
+- O CI de produção teve uma correcção de sintaxe na lista de suites da Fase 9 no commit `8c1544dca2232ef32922a35463fe971c7f03ec09`.
+- A ferramenta GitHub ligada nesta sessão não expõe os runs de push de `main`; portanto o estado verde final do CI ainda não foi certificado por esta ligação.
