@@ -189,11 +189,6 @@ begin
   from public.platform_settings
   where key='wallet.daily_topup_limit_minor';
 
-  select coalesce((value#>>'{}')::bigint,0)
-    into v_daily_total
-  from public.topups
-  where false;
-
   select coalesce(sum(amount),0)
     into v_daily_total
   from public.topups
