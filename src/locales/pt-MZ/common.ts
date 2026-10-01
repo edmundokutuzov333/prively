@@ -79,6 +79,34 @@ errors: { unauthorized: 'A tua sessão expirou. Entra novamente.', forbidden: 'N
     state: 'Estado',
     stateBackend: 'Este estado deve ser ligado ao fluxo real que o produziu antes de ser exposto como experiência de produção.'
   },
+  phase5Topup: {
+    intro: 'Saldo, recargas e histórico financeiro reais.',
+    balance: 'Saldo para gastar',
+    pending: 'Ganhos pendentes',
+    available: 'Ganhos disponíveis',
+    formTitle: 'Carregar carteira',
+    formIntro: 'O valor só entra no saldo depois de confirmação do fornecedor.',
+    amount: 'Valor em MT',
+    method: 'Método',
+    submit: 'Carregar carteira',
+    limits: 'Mínimo {{min}} · Máximo {{max}}',
+    dailyLimit: 'Limite diário {{limit}}',
+    history: 'Movimentos de recarga',
+    historyEmptyTitle: 'Sem recargas',
+    historyEmptyBody: 'As tuas recargas reais aparecem aqui.',
+    unavailable: 'As recargas estão indisponíveis enquanto o fornecedor de pagamentos não estiver validado.',
+    retry: 'Tentar novamente',
+    continue: 'Continuar pagamento',
+    created: 'Recarga {{reference}} criada. Estado: {{status}}.',
+    pendingStatus: 'A aguardar confirmação',
+    processingStatus: 'Em processamento',
+    paidStatus: 'Confirmada',
+    failedStatus: 'Falhou',
+    expiredStatus: 'Expirada',
+    cancelledStatus: 'Cancelada',
+    reversalPendingStatus: 'Reversão em análise',
+    reversedStatus: 'Revertida'
+  },
   phase3Advanced: {support:{eyebrow:"Apoio",title:"Apoiar a criadora",intro:"Subscrições, gorjetas e presentes com cobrança autorizada pelo servidor.",missingChannel:"Canal em falta",missingChannelBody:"Abra esta área a partir de um canal real.",tipTitle:"Gorjeta",amount:"Valor em MT",message:"Mensagem opcional",sendTip:"Enviar gorjeta",giftsTitle:"Presentes",sendGift:"Enviar",noGifts:"Sem presentes configurados",noGiftsBody:"O catálogo de presentes ainda não foi configurado.",subscriptionsTitle:"Subscrições",months:"{{count}} mês(es)",noTiers:"Sem níveis",noTiersBody:"Este canal ainda não tem níveis de subscrição configurados."},bundles:{eyebrow:"Bundles",clientTitle:"Packs de conteúdo",clientIntro:"Packs persistidos e comprados através do ledger.",buy:"Comprar pack",emptyTitle:"Sem packs",emptyBody:"Ainda não existem packs reais.",creatorTitle:"Packs da criadora",creatorIntro:"Agrupe publicações reais num pack com preço único.",name:"Nome do pack",price:"Preço em MT",description:"Descrição",create:"Criar pack"},engagement:{eyebrow:"Interacção",creatorTitle:"Sorteios e enquetes",creatorIntro:"Crie interacções reais para a sua comunidade.",clientTitle:"Participação",clientIntro:"Vote e participe em interacções abertas.",pollTitle:"Nova enquete",question:"Pergunta",optionsHint:"Uma opção por linha",createPoll:"Criar enquete",giveawayTitle:"Novo sorteio",title:"Título",winnerCountLabel:"Número de vencedores",createGiveaway:"Criar sorteio",winnerCount:"{{count}} vencedor(es)",enter:"Participar",emptyTitle:"Sem actividades",emptyBody:"Ainda não há enquetes ou sorteios activos."},schedule:{eyebrow:"Agenda",title:"Disponibilidade",intro:"Defina janelas reais de disponibilidade.",area:"Área pública opcional",create:"Criar janela"},rankings:{eyebrow:"Rankings",title:"Rankings semanais",intro:"Classificações calculadas pelo backend.",creators:"Criadoras",fans:"Fãs"}}
 } as const;
 
