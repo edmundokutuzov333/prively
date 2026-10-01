@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(21);
+SELECT plan(22);
 
 SELECT ok(to_regclass('public.ledger_entries') IS NOT NULL, 'ledger_entries table exists');
 SELECT ok(to_regclass('public.balances') IS NOT NULL, 'balances table exists');
