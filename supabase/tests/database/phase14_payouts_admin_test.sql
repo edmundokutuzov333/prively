@@ -51,7 +51,6 @@ values(
   'manual',
   'approved',
   '71400000-0000-0000-0000-000000000001',
-  now(),
   now()
 )
 on conflict do nothing;
