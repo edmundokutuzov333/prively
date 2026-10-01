@@ -134,7 +134,7 @@ CREATE POLICY ledger_owner_read ON public.ledger_entries
 DROP POLICY IF EXISTS ledger_admin_read ON public.ledger_entries;
 CREATE POLICY ledger_admin_read ON public.ledger_entries
   FOR SELECT TO authenticated
-  USING (SELECT private.is_platform_admin());
+  USING ((SELECT private.is_platform_admin()));
 
 -- Restrict all writes from authenticated users (only internal functions can write via SECURITY DEFINER)
 DROP POLICY IF EXISTS ledger_internal_insert ON public.ledger_entries;
