@@ -281,7 +281,8 @@ export function ClientFeedCorePage() {
 export function ClientProfileCorePage({ handle }: { handle: string }) {
   const [channel, setChannel] = useState<Channel | null>(null);
   const [posts, setPosts] = useState<{ id: string; caption: string | null; visibility: string; price: number | null; is_story: boolean }[]>([]);
-  const [tier, setTier] = useState<{ id: string; name: string; price_month: number; discounts: Record<string, number> } | null>(null);
+  const [tiers, setTiers] = useState<{ id: string; name: string; rank: number; price_month: number; discounts: Record<string, number> }[]>([]);
+  const [selectedTier, setSelectedTier] = useState<{ id: string; name: string; rank: number; price_month: number; discounts: Record<string, number> } | null>(null);
   const [period, setPeriod] = useState(1);
   const [showSubscribe, setShowSubscribe] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
@@ -291,19 +292,36 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
 
   const load = async () => {
     const sb = requireSupabase();
-    const channelResult = await sb.from('channels').select('id,owner_id,handle,display_name,bio,city,bairro,province').eq('handle', handle).maybeSingle();
+    const channelResult = await sb
+      .from('channels')
+      .select('id,owner_id,handle,display_name,bio,city,bairro,province')
+      .eq('handle', handle)
+      .maybeSingle();
     if (channelResult.error) throw channelResult.error;
-    if (!channelResult.data) { setChannel(null); return; }
+    if (!channelResult.data) {
+      setChannel(null);
+      return;
+    }
     setChannel(channelResult.data as Channel);
 
     const [postsResult, tierResult] = await Promise.all([
-      sb.from('posts').select('id,caption,visibility,price,is_story').eq('channel_id', channelResult.data.id).eq('status', 'published').order('created_at', { ascending: false }).limit(50),
-      sb.from('subscription_tiers').select('id,name,price_month,discounts').eq('channel_id', channelResult.data.id).eq('rank', 1).maybeSingle(),
+      sb
+        .from('posts')
+        .select('id,caption,visibility,price,is_story')
+        .eq('channel_id', channelResult.data.id)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      sb
+        .from('subscription_tiers')
+        .select('id,name,rank,price_month,discounts')
+        .eq('channel_id', channelResult.data.id)
+        .order('rank', { ascending: true }),
     ]);
     if (postsResult.error) throw postsResult.error;
     if (tierResult.error) throw tierResult.error;
     setPosts(postsResult.data ?? []);
-    setTier(tierResult.data as typeof tier | null);
+    setTiers((tierResult.data ?? []) as typeof tiers);
   };
 
   useEffect(() => {
@@ -311,25 +329,28 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
   }, [handle]);
 
   const subscribe = async () => {
-    if (!tier || subscribing) return;
+    if (!selectedTier || subscribing) return;
     setSubscribing(true);
     setActionError(null);
     const { error: rpcError } = await requireSupabase().rpc('subscribe_to_tier', {
-      _tier: tier.id,
+      _tier: selectedTier.id,
       _period_months: period,
-      _idem: 'subscription-ui:' + tier.id + ':' + period + ':' + crypto.randomUUID(),
+      _idem: 'subscription-ui:' + selectedTier.id + ':' + period + ':' + crypto.randomUUID(),
     });
     if (rpcError) {
-      setActionError(rpcError.code ?? rpcError.message);
+      setActionError(platformErrorKey(rpcError));
       setSubscribing(false);
       return;
     }
     setNotice('Subscrição activada.');
     setShowSubscribe(false);
     setSubscribing(false);
+    await load();
   };
 
-  const subscriptionPrice = tier ? Math.round(tier.price_month * period * (1 - (tier.discounts?.[String(period)] ?? 0))) : 0;
+  const subscriptionPrice = selectedTier
+    ? Math.round(selectedTier.price_month * period * (1 - (selectedTier.discounts?.[String(period)] ?? 0)))
+    : 0;
 
   if (error) return <PageFrame title="Perfil" intro="Não foi possível carregar o perfil."><p role="alert" className="text-sm text-danger">{error}</p></PageFrame>;
   if (!channel) return <PageFrame title="Perfil indisponível" intro="O perfil não foi encontrado."><EstadoVazio title="Perfil não encontrado" body="Confirma o identificador do perfil." /></PageFrame>;
@@ -338,30 +359,63 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
     <Ficha variant="focus">
       <p className="text-sm text-bone-400">{channel.city ?? 'Cidade não definida'}{channel.bairro ? ' · ' + channel.bairro : ''}{channel.province ? ' · ' + channel.province : ''}</p>
       {notice ? <p role="status" className="mt-3 text-sm text-ok">{notice}</p> : null}
-      {actionError ? <p role="alert" className="mt-3 text-sm text-danger">{actionError}</p> : null}
+      {actionError ? <div role="alert" className="mt-3 flex flex-wrap items-center gap-3"><p className="text-sm text-danger">{i18n.t(actionError)}</p><Link to="/carteira" className="text-sm text-bone-50 underline underline-offset-4">{i18n.t('phase6Spend.topUpAction')}</Link></div> : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <Botao type="button" onClick={() => void requireSupabase().rpc('follow_channel', { _channel: channel.id })}>Seguir grátis</Botao>
         <Link to="/mensagens" className="inline-flex min-h-11 items-center rounded-md border border-bone-50/10 px-4 text-sm text-bone-50 no-underline">Mensagem</Link>
-        {tier ? <Botao type="button" onClick={() => setShowSubscribe(true)}>Assinar · {formatMznFromCents(subscriptionPrice)}</Botao> : null}
       </div>
     </Ficha>
 
-    {showSubscribe && tier ? <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/85 p-5">
+    <Ficha className="mt-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg text-bone-50">{i18n.t('phase3Advanced.support.subscriptionsTitle')}</h2>
+          <p className="mt-1 text-sm text-bone-500">{i18n.t('phase3Advanced.tierManager.clientIntro')}</p>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-2">
+        {tiers.map((tier) => (
+          <div key={tier.id} className="rounded-md border border-bone-50/8 p-4">
+            <p className="text-xs uppercase tracking-[0.16em] text-bone-500">Tier {tier.rank}</p>
+            <p className="mt-2 text-2xl text-bone-50">{tier.name}</p>
+            <p className="mt-2 font-display text-2xl text-bone-50">{formatMznFromCents(tier.price_month)} / mês</p>
+            <p className="mt-2 text-xs text-bone-500">
+              3m · {Math.round((tier.discounts?.['3'] ?? 0) * 100)}% · 6m · {Math.round((tier.discounts?.['6'] ?? 0) * 100)}% · 12m · {Math.round((tier.discounts?.['12'] ?? 0) * 100)}%
+            </p>
+            <Botao
+              className="mt-4"
+              type="button"
+              onClick={() => {
+                setSelectedTier(tier);
+                setPeriod(1);
+                setActionError(null);
+                setShowSubscribe(true);
+              }}
+            >
+              {i18n.t('phase3Advanced.tierManager.subscribe')}
+            </Botao>
+          </div>
+        ))}
+      </div>
+      {!tiers.length ? <EstadoVazio title={i18n.t('phase3Advanced.support.noTiers')} body={i18n.t('phase3Advanced.support.noTiersBody')} /> : null}
+    </Ficha>
+
+    {showSubscribe && selectedTier ? <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/85 p-5">
       <Ficha variant="focus" className="w-full max-w-md p-6">
-        <h2 className="font-display text-3xl text-bone-50">Confirmar subscrição</h2>
-        <p className="mt-2 text-sm text-bone-300">{tier.name} · preço por período</p>
-        <label className="mt-5 block text-sm text-bone-300">Período
+        <h2 className="font-display text-3xl text-bone-50">{i18n.t('phase3Advanced.tierManager.confirmTitle')}</h2>
+        <p className="mt-2 text-sm text-bone-300">{selectedTier.name} · {i18n.t('phase3Advanced.tierManager.price')}</p>
+        <label className="mt-5 block text-sm text-bone-300">{i18n.t('phase3Advanced.tierManager.period')}
           <select value={period} onChange={(event) => setPeriod(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-md bg-ink-800 px-3 text-bone-50">
-            <option value="1">1 mês</option>
-            <option value="3">3 meses</option>
-            <option value="6">6 meses</option>
-            <option value="12">12 meses</option>
+            <option value="1">1 {i18n.t('phase3Advanced.support.months', { count: 1 })}</option>
+            <option value="3">3 {i18n.t('phase3Advanced.support.months', { count: 3 })}</option>
+            <option value="6">6 {i18n.t('phase3Advanced.support.months', { count: 6 })}</option>
+            <option value="12">12 {i18n.t('phase3Advanced.support.months', { count: 12 })}</option>
           </select>
         </label>
         <p className="mt-4 font-display text-3xl text-bone-50">{formatMznFromCents(subscriptionPrice)}</p>
         <div className="mt-5 flex justify-end gap-2">
-          <Botao variant="outline" type="button" onClick={() => setShowSubscribe(false)}>Cancelar</Botao>
-          <Botao type="button" loading={subscribing} onClick={() => void subscribe()}>Confirmar</Botao>
+          <Botao variant="outline" type="button" onClick={() => setShowSubscribe(false)}>{i18n.t('phase3Advanced.tierManager.cancel')}</Botao>
+          <Botao type="button" loading={subscribing} onClick={() => void subscribe()}>{i18n.t('phase3Advanced.tierManager.confirm')}</Botao>
         </div>
       </Ficha>
     </div> : null}
