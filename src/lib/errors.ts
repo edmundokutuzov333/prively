@@ -10,6 +10,15 @@ const platformErrorKeys: Record<string, string> = {
   invalid_kyc_payload: 'errors.invalid_kyc_payload',
   kyc_not_found: 'errors.kyc_not_found',
   file_too_large: 'errors.file_too_large',
+  insufficient_funds: 'errors.insufficient_funds',
+  age_not_verified: 'errors.age_not_verified',
+  channel_not_found: 'errors.channel_not_found',
+  self_purchase_not_allowed: 'errors.self_purchase_not_allowed',
+  invalid_spend_request: 'errors.invalid_spend_request',
+  idempotency_key_required: 'errors.idempotency_key_required',
+  daily_spend_limit: 'errors.daily_spend_limit',
+  weekly_spend_limit: 'errors.weekly_spend_limit',
+  monthly_spend_limit: 'errors.monthly_spend_limit',
 };
 
 function codeFromUnknown(error: unknown): string {
