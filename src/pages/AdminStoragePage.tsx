@@ -1,5 +1,6 @@
 import { Database, HardDrives, ShieldCheck, VideoCamera } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { Botao } from '@/design/Botao';
@@ -32,6 +33,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function AdminStoragePage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<StorageStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,15 +58,15 @@ export function AdminStoragePage() {
   return (
     <PageFrame
       icon={HardDrives}
-      title="Storage"
-      intro="Estado real de media, entrega de vídeo e backups."
-      detail="Os valores apresentados vêm da base de dados. O tamanho B2 é o tamanho registado em media_assets, não uma medição externa do bucket."
+      title={t('phase14.storage.title')}
+      intro={t('phase14.storage.intro')}
+      detail={t('phase14.storage.detail')}
     >
-      {loading ? <p className="text-sm text-bone-500">A carregar estado de storage.</p> : null}
+      {loading ? <p className="text-sm text-bone-500">{t('phase14.storage.loading')}</p> : null}
       {error ? (
         <div className="flex items-center justify-between gap-4 rounded-control border border-danger/30 bg-danger/10 px-4 py-3">
           <p role="alert" className="m-0 text-sm text-danger">{error}</p>
-          <Botao variant="outline" type="button" onClick={() => void load()}>Tentar novamente</Botao>
+          <Botao variant="outline" type="button" onClick={() => void load()}>{t('phase14.storage.retry')}</Botao>
         </div>
       ) : null}
 
@@ -74,16 +76,16 @@ export function AdminStoragePage() {
             <Ficha className="p-6">
               <div className="flex items-center gap-3">
                 <Database size={22} className="text-crimson-400" />
-                <p className="m-0 text-sm text-bone-500">Backblaze B2</p>
+                <p className="m-0 text-sm text-bone-500">{t('phase14.storage.b2')}</p>
               </div>
               <p className="mt-4 font-display text-4xl text-bone-50">{data.b2.asset_count}</p>
-              <p className="mt-1 text-xs text-bone-500">media assets activos · {formatBytes(data.b2.registered_bytes)} registados</p>
+              <p className="mt-1 text-xs text-bone-500">{data.b2.asset_count} {t('phase14.storage.activeAssets')} · {formatBytes(data.b2.registered_bytes)} {t('phase14.storage.registered')}</p>
             </Ficha>
 
             <Ficha className="p-6">
               <div className="flex items-center gap-3">
                 <VideoCamera size={22} className="text-crimson-400" />
-                <p className="m-0 text-sm text-bone-500">Streamtape</p>
+                <p className="m-0 text-sm text-bone-500">{t('phase14.storage.streamtape')}</p>
               </div>
               <div className="mt-4 space-y-2">
                 {Object.keys(data.streamtape.status_counts).length ? Object.entries(data.streamtape.status_counts).map(([status, count]) => (
@@ -91,24 +93,24 @@ export function AdminStoragePage() {
                     <span className="text-bone-300">{status}</span>
                     <span className="font-semibold text-bone-50">{count}</span>
                   </div>
-                )) : <EstadoVazio title="Sem estados" body="Ainda não existem media com estado Streamtape registado." />}
+                )) : <EstadoVazio title="{t('phase14.storage.noStatuses')}" body="{t('phase14.storage.noStatusesBody')}" />}
               </div>
-              <p className="mt-4 text-xs text-bone-500">{data.streamtape.failed_over_one_hour} falhas com mais de 1 hora</p>
+              <p className="mt-4 text-xs text-bone-500">{data.streamtape.failed_over_one_hour} {t('phase14.storage.oldFailures')}</p>
             </Ficha>
 
             <Ficha className="p-6">
               <div className="flex items-center gap-3">
                 <ShieldCheck size={22} className="text-crimson-400" />
-                <p className="m-0 text-sm text-bone-500">Backups</p>
+                <p className="m-0 text-sm text-bone-500">{t('phase14.storage.backups')}</p>
               </div>
               <p className="mt-4 font-display text-4xl text-bone-50">{data.backups.runs}</p>
               {data.backups.last_success ? (
-                <p className="mt-1 text-xs text-bone-500">Último sucesso: {new Date(data.backups.last_success).toLocaleString('pt-PT')}</p>
+                <p className="mt-1 text-xs text-bone-500">{t('phase14.storage.lastSuccess')}: {new Date(data.backups.last_success).toLocaleString('pt-PT')}</p>
               ) : (
-                <p className="mt-1 text-sm text-warn">Nenhum backup confirmado em backup_runs.</p>
+                <p className="mt-1 text-sm text-warn">{t('phase14.storage.noBackup')}</p>
               )}
               <p className="mt-3 text-xs text-bone-500">
-                Workflow DB cron: {data.backups.cron_active ? 'activo' : 'não observado no pg_cron'}
+                {t('phase14.storage.workflow')}: {data.backups.cron_active ? t('phase14.storage.active') : t('phase14.storage.notObserved')}
               </p>
             </Ficha>
           </div>
@@ -116,12 +118,12 @@ export function AdminStoragePage() {
           <Ficha className="p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-bone-50">Leitura operacional</p>
+                <p className="text-sm font-semibold text-bone-50">{t('phase14.storage.operational')}</p>
                 <p className="mt-1 text-xs text-bone-500">
-                  Última leitura: {new Date(data.generated_at).toLocaleString('pt-PT')}
+                  {t('phase14.storage.lastRead')}: {new Date(data.generated_at).toLocaleString('pt-PT')}
                 </p>
               </div>
-              <Botao variant="outline" type="button" onClick={() => void load()}>Actualizar</Botao>
+              <Botao variant="outline" type="button" onClick={() => void load()}>{t('phase14.storage.refresh')}</Botao>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <div className="rounded-control border border-bone-50/8 p-4">
@@ -134,7 +136,7 @@ export function AdminStoragePage() {
               </div>
               <div className="rounded-control border border-bone-50/8 p-4">
                 <p className="text-xs text-bone-500">Backups</p>
-                <p className="mt-2 text-sm text-bone-200">{data.backups.runs} execuções registadas</p>
+                <p className="mt-2 text-sm text-bone-200">{data.backups.runs} {t('phase14.storage.executions')}</p>
               </div>
             </div>
           </Ficha>
