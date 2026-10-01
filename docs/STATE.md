@@ -332,3 +332,39 @@ Open gates:
 - provider externo SMS/safety continua não configurado ou UNVERIFIED;
 - 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
 
+## Fase 14
+Status: IMPLEMENTED / RUNTIME VERIFIED / CI CERTIFICATION PENDING
+
+Levantamentos, ganhos e admin essencial:
+- migration `20261001150929_phase14_payouts_earnings_admin_contract` aplicada;
+- migration `20261001151226_phase14_admin_storage_runtime_fix` aplicada;
+- runtime de `request_payout` existente preservado: KYC, termos, MFA AAL2 recente, idempotência, `FOR UPDATE`, hold em `creator_available` + `escrow`;
+- DML directo por `authenticated` em `payouts` revogado;
+- `get_creator_earnings_summary()` criado para agregações reais sobre ledger/payouts;
+- `/estudio/ganhos` passou a mostrar ganhos acumulados e levantamentos pedidos reais;
+- `get_admin_storage_status()` criado com controlo server-side admin + AAL2;
+- `/admin/storage` criado e protegido por `AdminGuard`;
+- B2, Streamtape e backups são apresentados a partir de dados reais;
+- suite `supabase/tests/database/phase14_payouts_admin_test.sql` criada;
+- workflow `.github/workflows/phase14-finance-admin.yml` criado;
+- ADR-018 e relatório `docs/reports/fase-14-payouts-admin.md` registados.
+
+Production verification:
+- payouts INSERT/UPDATE/DELETE por authenticated = false;
+- audit_log UPDATE/DELETE por authenticated = false;
+- audit_log immutable trigger presente;
+- request_payout, earnings summary e admin storage RPCs executáveis por authenticated;
+- request_payout confirmado por definição com `FOR UPDATE` e idempotency key;
+- media B2 activos = 1;
+- tamanho registado B2 = 2092 bytes;
+- falhas Streamtape >1h = 0;
+- backup_runs = 0;
+- não existe backup confirmado em produção neste momento.
+
+Open gates:
+- CI Fase 14 não observado nesta sessão;
+- pgTAP não executado directamente em produção;
+- restore drill continua bloqueado pelo gate 0.7 sem staging confirmado;
+- cron `prively-backup-db` não observado no pg_cron de produção;
+- 0.6, 0.7, Vercel e certificação final da Fase 8 continuam abertos.
+
