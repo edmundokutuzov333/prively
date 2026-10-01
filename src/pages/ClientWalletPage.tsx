@@ -1,26 +1,20 @@
 import { Wallet } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/app/session';
 import { requireSupabase } from '@/lib/supabase';
 import { Ficha } from '@/design/Ficha';
 import { Escudo } from '@/design/Escudo';
 import { Selo } from '@/design/Selo';
+import { Botao } from '@/design/Botao';
 import { formatMznFromCents } from '@/lib/money';
 
 type Balance = {
-  account: 'wallet' | 'creator_pending' | 'creator_available' | 'escrow' | 'platform_revenue' | 'external';
+  account: 'wallet' | 'creator_pending' | 'creator_available';
   balance: number;
 };
 
-const accountLabels: Record<string, string> = {
-  wallet: 'Saldo para gastar',
-  creator_pending: 'Pendente (72h)',
-  creator_available: 'Pronto a levantar',
-  escrow: 'Em caução',
-  platform_revenue: 'Receita da plataforma',
-  external: 'Externo',
-};
+const balanceOrder: Balance['account'][] = ['wallet', 'creator_pending', 'creator_available'];
 
 export function ClientWalletPage() {
   const { t } = useTranslation();
@@ -29,53 +23,53 @@ export function ClientWalletPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadBalances = useCallback(async () => {
     if (!user || !configured) {
+      setBalances([]);
       setLoading(false);
       return;
     }
 
-    let active = true;
-    const sb = requireSupabase();
+    setLoading(true);
+    setError(null);
 
-    const loadBalances = async () => {
-      try {
-        const { data, error: err } = await sb.rpc('get_my_balances');
-        if (err) {
-          console.error('Error loading balances:', err);
-          if (active) setError(t('wallet.loadError'));
-          return;
-        }
-        if (active) setBalances((data ?? []) as Balance[]);
-      } catch (e) {
-        console.error('Exception loading balances:', e);
-        if (active) setError(t('wallet.loadError'));
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
+    try {
+      const { data, error: rpcError } = await requireSupabase().rpc('get_my_balances');
+      if (rpcError) throw rpcError;
 
+      const rows = ((data ?? []) as Balance[])
+        .filter((row) => balanceOrder.includes(row.account))
+        .sort((a, b) => balanceOrder.indexOf(a.account) - balanceOrder.indexOf(b.account));
+
+      setBalances(rows);
+    } catch {
+      setError(t('wallet.loadError'));
+    } finally {
+      setLoading(false);
+    }
+  }, [configured, t, user]);
+
+  useEffect(() => {
     void loadBalances();
 
-    // Subscribe to balance changes via Realtime
-    const subscription = sb
-      .channel('balances')
+    if (!user || !configured) return;
+
+    const sb = requireSupabase();
+    const channel = sb
+      .channel(`balances:${user.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'balances', filter: `owner_id=eq.${user.id}` },
-        (payload) => {
-          if (active) {
-            void loadBalances();
-          }
-        }
+        () => {
+          void loadBalances();
+        },
       )
       .subscribe();
 
     return () => {
-      active = false;
-      void sb.removeChannel(subscription);
+      void sb.removeChannel(channel);
     };
-  }, [user, configured, t]);
+  }, [configured, loadBalances, user]);
 
   if (!configured) {
     return (
@@ -87,6 +81,8 @@ export function ClientWalletPage() {
     );
   }
 
+  const wallet = balances.find((row) => row.account === 'wallet')?.balance ?? 0;
+
   return (
     <>
       <Ficha variant="focus" className="mx-auto max-w-6xl p-6 md:p-8">
@@ -97,7 +93,7 @@ export function ClientWalletPage() {
               {t('experience.pages.wallet.intro')}
             </p>
             <h1 className="mt-4 font-display text-6xl leading-none text-bone-50">
-              {loading ? t('common.loading') : formatMznFromCents(balances.find(b => b.account === 'wallet')?.balance ?? 0)}
+              {loading ? t('common.loading') : formatMznFromCents(wallet)}
             </h1>
           </div>
           <Selo />
@@ -108,31 +104,36 @@ export function ClientWalletPage() {
       </Ficha>
 
       {error ? (
-        <div className="mx-auto mt-4 max-w-6xl rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
+        <div className="mx-auto mt-4 flex max-w-6xl items-center justify-between gap-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          <span role="alert">{error}</span>
+          <Botao variant="outline" type="button" onClick={() => void loadBalances()}>
+            {t('common.retry')}
+          </Botao>
         </div>
       ) : null}
 
-      {loading ? (
-        <div className="mx-auto mt-6 max-w-6xl px-5 text-center text-sm text-bone-500">
-          {t('common.loading')}
-        </div>
-      ) : balances.length > 0 ? (
-        <div className="mx-auto mt-6 max-w-6xl px-5 md:px-8">
-          <Ficha className="overflow-hidden">
+      <div className="mx-auto mt-6 max-w-6xl px-5 md:px-8">
+        <Ficha className="overflow-hidden">
+          {loading ? (
+            <div className="px-6 py-8 text-center text-sm text-bone-500">{t('common.loading')}</div>
+          ) : (
             <div className="divide-y divide-bone-50/10">
-              {balances.map((b) => (
-                <div key={b.account} className="flex items-center justify-between px-6 py-4">
-                  <span className="text-sm text-bone-300">{accountLabels[b.account] || b.account}</span>
-                  <span className="font-mono text-sm font-semibold text-bone-50">
-                    {formatMznFromCents(b.balance)}
-                  </span>
-                </div>
-              ))}
+              {balanceOrder.map((account) => {
+                const row = balances.find((item) => item.account === account);
+                const label = t(`wallet.accounts.${account}`);
+                return (
+                  <div key={account} className="flex items-center justify-between px-6 py-4">
+                    <span className="text-sm text-bone-300">{label}</span>
+                    <span className="font-mono text-sm font-semibold text-bone-50">
+                      {formatMznFromCents(row?.balance ?? 0)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          </Ficha>
-        </div>
-      ) : null}
+          )}
+        </Ficha>
+      </div>
     </>
   );
 }
