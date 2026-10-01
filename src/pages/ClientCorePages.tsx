@@ -7,7 +7,7 @@ import { Botao } from '@/design/Botao';
 import { PageFrame } from '@/pages/PageFrame';
 import { Cortina } from '@/design/Cortina';
 import { SocialPostActions } from '@/features/social/SocialPostActions';
-import { requireSupabase } from '@/lib/supabase';
+import { requireSupabase, supabaseProjectRef } from '@/lib/supabase';
 import { hasPin, setPin } from '@/lib/pin';
 import { formatMznFromCents } from '@/lib/money';
 import { platformErrorKey } from '@/lib/errors';
@@ -426,32 +426,210 @@ export function ClientProfileCorePage({ handle }: { handle: string }) {
 }
 
 export function ClientPurchasesCorePage() {
-  const [items, setItems] = useState<{ id: string; post_id: string; price_paid: number; created_at: string; caption: string | null }[]>([]);
-  const [subs, setSubs] = useState<{ id: string; channel_id: string; period_months: number; price_paid: number; status: string; current_period_end: string }[]>([]);
+  type HistoryItem = {
+    id: string;
+    type: 'ppv' | 'subscription';
+    createdAt: string;
+    amount: number;
+    title: string;
+    detail: string;
+    status: string;
+    href: string | null;
+    receiptId: string | null;
+  };
+
+  const [items, setItems] = useState<HistoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const formatDate = (value: string) => new Intl.DateTimeFormat(i18n.language, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Africa/Maputo',
+  }).format(new Date(value));
+
+  const load = async () => {
+    const sb = requireSupabase();
+    const [purchasesResult, subscriptionsResult, receiptsResult, ledgerResult] = await Promise.all([
+      sb.from('ppv_purchases')
+        .select('id,post_id,price_paid,txn_id,created_at')
+        .order('created_at', { ascending: false })
+        .limit(200),
+      sb.from('subscriptions')
+        .select('id,subscriber_id,channel_id,tier_id,period_months,price_paid,status,current_period_end,created_at')
+        .order('created_at', { ascending: false })
+        .limit(200),
+      sb.from('receipts')
+        .select('id,txn_id,kind,amount,currency,created_at')
+        .order('created_at', { ascending: false })
+        .limit(500),
+      sb.from('ledger_entries')
+        .select('txn_id,amount,kind,ref_type,ref_id,created_at')
+        .eq('kind', 'subscription')
+        .lt('amount', 0)
+        .order('created_at', { ascending: false })
+        .limit(500),
+    ]);
+
+    if (purchasesResult.error) throw purchasesResult.error;
+    if (subscriptionsResult.error) throw subscriptionsResult.error;
+    if (receiptsResult.error) throw receiptsResult.error;
+    if (ledgerResult.error) throw ledgerResult.error;
+
+    const postIds = [...new Set((purchasesResult.data ?? []).map((row) => String(row.post_id)))];
+    const channelIds = [...new Set((subscriptionsResult.data ?? []).map((row) => String(row.channel_id)))];
+    const tierIds = [...new Set((subscriptionsResult.data ?? []).map((row) => String(row.tier_id)))];
+
+    const [postsResult, channelsResult, tiersResult] = await Promise.all([
+      postIds.length
+        ? sb.from('posts').select('id,caption').in('id', postIds)
+        : Promise.resolve({ data: [], error: null }),
+      channelIds.length
+        ? sb.from('channels').select('id,handle,display_name').in('id', channelIds)
+        : Promise.resolve({ data: [], error: null }),
+      tierIds.length
+        ? sb.from('subscription_tiers').select('id,name').in('id', tierIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (postsResult.error) throw postsResult.error;
+    if (channelsResult.error) throw channelsResult.error;
+    if (tiersResult.error) throw tiersResult.error;
+
+    const captions = new Map((postsResult.data ?? []).map((row) => [String(row.id), row.caption as string | null]));
+    const channels = new Map((channelsResult.data ?? []).map((row) => [String(row.id), row]));
+    const tiers = new Map((tiersResult.data ?? []).map((row) => [String(row.id), row]));
+    const receiptsByTxn = new Map((receiptsResult.data ?? []).map((row) => [String(row.txn_id), row]));
+
+    const subscriptionLedger = (ledgerResult.data ?? []).map((row) => ({
+      ...row,
+      amount: Number(row.amount),
+      created_at: String(row.created_at),
+      txn_id: String(row.txn_id),
+      ref_id: row.ref_id ? String(row.ref_id) : null,
+    }));
+
+    const subscriptionItems = (subscriptionsResult.data ?? []).map((row) => {
+      const tierId = String(row.tier_id);
+      const candidates = subscriptionLedger
+        .filter((entry) => entry.ref_id === tierId && Math.abs(entry.amount) === Number(row.price_paid))
+        .sort((a, b) => Math.abs(new Date(a.created_at).getTime() - new Date(String(row.created_at)).getTime())
+          - Math.abs(new Date(b.created_at).getTime() - new Date(String(row.created_at)).getTime()));
+      const ledger = candidates[0];
+      const channel = channels.get(String(row.channel_id));
+      const tier = tiers.get(tierId);
+      const receipt = ledger ? receiptsByTxn.get(ledger.txn_id) : undefined;
+
+      return {
+        id: String(row.id),
+        type: 'subscription' as const,
+        createdAt: String(row.created_at),
+        amount: Number(row.price_paid),
+        title: [tier?.name, channel?.display_name].filter(Boolean).join(' · ') || i18n.t('phase10Ppv.subscription'),
+        detail: i18n.t('phase10Ppv.period', { count: row.period_months }),
+        status: String(row.status),
+        href: null,
+        receiptId: receipt?.id ? String(receipt.id) : null,
+      };
+    });
+
+    const ppvItems = (purchasesResult.data ?? []).map((row) => {
+      const receipt = receiptsByTxn.get(String(row.txn_id));
+      return {
+        id: String(row.id),
+        type: 'ppv' as const,
+        createdAt: String(row.created_at),
+        amount: Number(row.price_paid),
+        title: captions.get(String(row.post_id)) ?? i18n.t('phase10Ppv.contentPurchased'),
+        detail: i18n.t('phase10Ppv.ppv'),
+        status: i18n.t('phase10Ppv.paid'),
+        href: '/post/' + String(row.post_id),
+        receiptId: receipt?.id ? String(receipt.id) : null,
+      };
+    });
+
+    setItems([...ppvItems, ...subscriptionItems].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ));
+  };
+
   useEffect(() => {
-    const load = async () => {
-      const sb = requireSupabase();
-      const [purchases, subscriptions] = await Promise.all([
-        sb.from('ppv_purchases').select('id,post_id,price_paid,created_at').order('created_at', { ascending: false }).limit(100),
-        sb.from('subscriptions').select('id,channel_id,period_months,price_paid,status,current_period_end').order('created_at', { ascending: false }).limit(100),
-      ]);
-      if (purchases.error) throw purchases.error;
-      if (subscriptions.error) throw subscriptions.error;
-      const postIds = (purchases.data ?? []).map((row) => row.post_id);
-      const postResult = postIds.length ? await sb.from('posts').select('id,caption').in('id', postIds) : { data: [], error: null };
-      if (postResult.error) throw postResult.error;
-      const captions = new Map((postResult.data ?? []).map((row) => [String(row.id), row.caption as string | null]));
-      setItems((purchases.data ?? []).map((row) => ({ ...row, caption: captions.get(String(row.post_id)) ?? null })));
-      setSubs((subscriptions.data ?? []) as typeof subs);
-    };
-    void load().catch((value: unknown) => setError(value instanceof Error ? value.message : 'Falha ao carregar compras.'));
+    void load().catch((value: unknown) => setError(value instanceof Error ? value.message : i18n.t('phase10Ppv.loadError')));
   }, []);
-  return <PageFrame icon={ShoppingBagOpen} title="Compras e subscrições" intro="Histórico real de PPV e subscrições.">
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    <div className="grid gap-5 lg:grid-cols-2">
-      <Ficha><h2 className="text-lg text-bone-50">PPV</h2><div className="mt-4 space-y-3">{items.map((item) => <div key={item.id} className="rounded-md border border-bone-50/8 p-3"><Link to={'/post/' + item.post_id} className="text-sm font-semibold text-bone-50 no-underline">{item.caption ?? 'Conteúdo adquirido'}</Link><p className="mt-1 text-xs text-bone-500">{new Date(item.created_at).toLocaleString('pt-MZ')}</p><p className="mt-2 font-display text-xl text-bone-50">{formatMznFromCents(item.price_paid)}</p></div>)}{!items.length ? <EstadoVazio title="Sem compras PPV" body="Os conteúdos comprados aparecem aqui." /> : null}</div></Ficha>
-      <Ficha><h2 className="text-lg text-bone-50">Subscrições</h2><div className="mt-4 space-y-3">{subs.map((item) => <div key={item.id} className="rounded-md border border-bone-50/8 p-3"><p className="text-sm font-semibold text-bone-50">{item.period_months} mês(es) · {item.status}</p><p className="mt-1 text-xs text-bone-500">Até {new Date(item.current_period_end).toLocaleString('pt-MZ')}</p><p className="mt-2 font-display text-xl text-bone-50">{formatMznFromCents(item.price_paid)}</p></div>)}{!subs.length ? <EstadoVazio title="Sem subscrições" body="As subscrições activas e históricas aparecem aqui." /> : null}</div></Ficha>
+
+  const downloadReceipt = async (receiptId: string) => {
+    setDownloading(receiptId);
+    setError(null);
+    try {
+      const sb = requireSupabase();
+      const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error('session_required');
+
+      const response = await fetch(`https://${supabaseProjectRef}.supabase.co/functions/v1/financial-export`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ format: 'receipt_pdf', receiptId }),
+      });
+
+      if (!response.ok) {
+        let code = 'financial_export_failed';
+        try {
+          const body = await response.json() as { code?: unknown };
+          if (typeof body.code === 'string') code = body.code;
+        } catch {
+          // Keep the generic export failure.
+        }
+        throw new Error(code);
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') ?? '';
+      const match = disposition.match(/filename="([^"]+)"/i);
+      const filename = match?.[1] ?? 'prively-recibo.pdf';
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (value: unknown) {
+      setError(i18n.t(platformErrorKey(value)));
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return <PageFrame icon={ShoppingBagOpen} title={i18n.t('phase10Ppv.title')} intro={i18n.t('phase10Ppv.intro')}>
+    {error ? <p role="alert" className="text-sm text-danger">{i18n.t(platformErrorKey(error))}</p> : null}
+    <div className="space-y-3">
+      {!items.length && !error ? <EstadoVazio title={i18n.t('phase10Ppv.emptyTitle')} body={i18n.t('phase10Ppv.emptyBody')} /> : null}
+      {items.map((item) => (
+        <Ficha key={item.type + ':' + item.id}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.15em] text-bone-500">{item.type === 'ppv' ? i18n.t('phase10Ppv.ppv') : i18n.t('phase10Ppv.subscription')}</p>
+              {item.href
+                ? <Link to={item.href} className="mt-1 block truncate text-lg font-semibold text-bone-50 no-underline">{item.title}</Link>
+                : <p className="mt-1 truncate text-lg font-semibold text-bone-50">{item.title}</p>}
+              <p className="mt-1 text-sm text-bone-400">{item.detail} · {item.status}</p>
+              <p className="mt-1 text-xs text-bone-500">{formatDate(item.createdAt)}</p>
+            </div>
+            <div className="flex flex-col items-start gap-2 md:items-end">
+              <p className="font-display text-2xl text-bone-50">{formatMznFromCents(item.amount)}</p>
+              {item.receiptId
+                ? <Botao variant="outline" type="button" loading={downloading === item.receiptId} onClick={() => void downloadReceipt(item.receiptId!)}>
+                    {i18n.t('phase10Ppv.downloadReceipt')}
+                  </Botao>
+                : <span className="text-xs text-bone-500">{i18n.t('phase10Ppv.receiptUnavailable')}</span>}
+            </div>
+          </div>
+        </Ficha>
+      ))}
     </div>
   </PageFrame>;
 }

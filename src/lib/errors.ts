@@ -26,6 +26,14 @@ const platformErrorKeys: Record<string, string> = {
   daily_spend_limit: 'errors.daily_spend_limit',
   weekly_spend_limit: 'errors.weekly_spend_limit',
   monthly_spend_limit: 'errors.monthly_spend_limit',
+  invalid_ppv_request: 'errors.invalid_ppv_request',
+  post_not_found: 'errors.post_not_found',
+  ppv_not_available: 'errors.ppv_not_available',
+  ppv_purchase_record_failed: 'errors.ppv_purchase_record_failed',
+  financial_export_failed: 'errors.financial_export_failed',
+  receipt_not_found: 'errors.receipt_not_found',
+  invalid_receipt_id: 'errors.invalid_receipt_id',
+  session_required: 'errors.unauthorized',
 };
 
 function codeFromUnknown(error: unknown): string {
