@@ -44,6 +44,7 @@ Não foi criada Edge Function porque a operação é transaccional e pertence ao
   - consentimento persistido no servidor;
   - publicação imediata;
   - agendamento com datetime-local;
+  - visibilidade private exposta no selector e limitada ao proprietário pelo can_view_post();
   - estados de erro/sucesso mantidos;
   - validação server-side continua dominante.
 - i18n actualizado em src/locales/pt-MZ/common.ts, src/locales/en/common.ts e src/locales/fr/common.ts.
@@ -78,6 +79,7 @@ O supabase test db completo e o workflow CI final desta versão ainda não foram
 - [✓] RLS/privileges removem DML directo de posts; leitura continua sujeita à política granular.
 - [✓] Consentimento é imutável.
 - [✓] Publicação agendada continua protegida no cron.
+- [✓] Visibilidade private está disponível na UI e permanece restrita ao proprietário no servidor.
 - [✓] Não existem linhas persistentes de content_consents criadas pelo teste.
 
 ## Verificação adicional
