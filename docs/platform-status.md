@@ -12,7 +12,7 @@
 | B2 Media Originals | PARCIAL | B2 observado no runtime e funções activas; Secret e CORS externos ainda não confirmados directamente | N/D |
 | Cortina/Acesso | PARCIAL | `can_view_post` e `get_media_access` activos; readiness de derivados foi endurecido fail-closed, mas processor/staging continuam por validar | N/D |
 | Carteira/Top-up | PARCIAL | reconcile=0, zero saldos negativos, webhook/idempotência no código | N/D |
-| Assinaturas/PPV | PARCIAL | contratos financeiros e testes Phase 6 presentes | N/D |
+| Assinaturas/PPV | PARCIAL | níveis, compra, renovação e visibility `subscribers`/`tier` implementados; CI/QA final pendente | N/D |
 | Escrow/Pedidos/Leilões | PARCIAL | suite Phase 9 baseline passou | 100% dos 18 checks Phase 9 nativos observados |
 | Levantamentos | PARCIAL | `approve_payout` e `payout-process` com AAL2; sandbox não validado | N/D |
 | Chat | PARCIAL | RLS, RPCs, privacy wrapper e correcção do core | N/D |
@@ -41,5 +41,5 @@ Bloqueadores:
 - Reconciliacao logica ainda requer decisao/procedimento: 205 ficheiros locais versus 203 versoes remotas, com renumeracoes entre historicos.
 - Backup restore drill continua bloqueado sem staging Supabase.
 - Projecto Vercel oficial Prively nao existe na equipa Vercel ligada ao conector.
-- CI da correccao actual ainda em execucao.
+- CI da correcção actual ainda em execução.
 - Integrações externas não validadas em sandbox.
