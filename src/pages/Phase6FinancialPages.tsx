@@ -6,7 +6,7 @@ import { Ficha } from '@/design/Ficha';
 import { EstadoVazio } from '@/design/EstadoVazio';
 import { PageFrame } from '@/pages/PageFrame';
 import { formatMznFromCents } from '@/lib/money';
-import { requireSupabase, supabase, supabaseProjectRef } from '@/lib/supabase';
+import { requireSupabase, supabaseProjectRef } from '@/lib/supabase';
 
 type WalletSummary = {
   wallet: number;
