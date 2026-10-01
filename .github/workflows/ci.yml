@@ -80,6 +80,8 @@ jobs:
         run: supabase db reset
       - name: Validate migrations and database lint
         run: supabase db lint --local
+      - name: Verify KYC bucket is not publicly readable
+        run: bash supabase/tests/http/phase2_kyc_storage_private.sh
       - name: Run canonical database suite
         id: canonical_db
         continue-on-error: true
