@@ -1,0 +1,66 @@
+name: Prively Database Backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 1 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prively-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Validate backup configuration
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          B2_BACKUP_ENDPOINT: ${{ secrets.B2_BACKUP_ENDPOINT }}
+          B2_BACKUP_REGION: ${{ secrets.B2_BACKUP_REGION }}
+          B2_BACKUP_KEY_ID: ${{ secrets.B2_BACKUP_KEY_ID }}
+          B2_BACKUP_APPLICATION_KEY: ${{ secrets.B2_BACKUP_APPLICATION_KEY }}
+          B2_BACKUP_BUCKET: ${{ secrets.B2_BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          for key in SUPABASE_PROJECT_REF SUPABASE_DB_PASSWORD B2_BACKUP_ENDPOINT B2_BACKUP_REGION B2_BACKUP_KEY_ID B2_BACKUP_APPLICATION_KEY B2_BACKUP_BUCKET; do
+            if [ -z "${!key}" ]; then
+              echo "Missing production backup secret: $key"
+              exit 1
+            fi
+          done
+
+      - name: Run production backup
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          B2_BACKUP_ENDPOINT: ${{ secrets.B2_BACKUP_ENDPOINT }}
+          B2_BACKUP_REGION: ${{ secrets.B2_BACKUP_REGION }}
+          B2_BACKUP_KEY_ID: ${{ secrets.B2_BACKUP_KEY_ID }}
+          B2_BACKUP_APPLICATION_KEY: ${{ secrets.B2_BACKUP_APPLICATION_KEY }}
+          B2_BACKUP_BUCKET: ${{ secrets.B2_BACKUP_BUCKET }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/backup-db.mjs
