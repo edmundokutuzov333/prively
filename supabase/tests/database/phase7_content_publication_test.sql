@@ -63,9 +63,9 @@ begin
   channel_id := public.create_creator_channel('phase7_channel','Phase 7 Creator','Publication contract test');
   set local role postgres;
 
-  set_config('request.jwt.claim.sub',creator::text,true);
-  set_config('request.jwt.claim.role','authenticated',true);
-  set_config('request.jwt.claims',json_build_object(
+  perform set_config('request.jwt.claim.sub',creator::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  perform set_config('request.jwt.claims',json_build_object(
     'sub',creator::text,'role','authenticated','aud','authenticated','aal','aal2','session_id',gen_random_uuid()::text
   )::text,true);
 
@@ -91,9 +91,9 @@ begin
 
   perform public.attest_post_content_consent(scheduled_id,true);
 
-  set_config('app.phase7_draft_id',draft_id::text,false);
-  set_config('app.phase7_scheduled_id',scheduled_id::text,false);
-  set_config('app.phase7_channel_id',channel_id::text,false);
+  perform set_config('app.phase7_draft_id',draft_id::text,false);
+  perform set_config('app.phase7_scheduled_id',scheduled_id::text,false);
+  perform set_config('app.phase7_channel_id',channel_id::text,false);
 end $$;
 
 set local role authenticated;
