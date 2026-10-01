@@ -54,6 +54,8 @@ verify_jwt = true
 verify_jwt = false
 [functions.safety-alert-dispatch]
 verify_jwt = true
+[functions.trigger-panic]
+verify_jwt = true
 [functions.track-analytics]
 verify_jwt = true
 [functions.translate-message]
