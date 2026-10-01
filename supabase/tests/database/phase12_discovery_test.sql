@@ -27,6 +27,9 @@ values
 on conflict(id) do update
 set status=excluded.status, age_verified_at=excluded.age_verified_at;
 
+insert into public.kyc_verifications(user_id,provider,status,reviewed_by,reviewed_at)
+values('71200000-0000-0000-0000-000000000001','manual','approved','71200000-0000-0000-0000-000000000001',now());
+
 insert into public.channels(owner_id,handle,display_name,bio,city,bairro,province,is_seed)
 values
   ('71200000-0000-0000-0000-000000000002','p12active','Active Maputo','Active creator','Maputo','Centro','Maputo',false),
