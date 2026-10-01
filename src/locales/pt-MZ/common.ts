@@ -79,6 +79,7 @@ errors: { unauthorized: 'A tua sessão expirou. Entra novamente.', forbidden: 'N
     state: 'Estado',
     stateBackend: 'Este estado deve ser ligado ao fluxo real que o produziu antes de ser exposto como experiência de produção.'
   },
+  phase6Spend: { topUpAction: 'Carregar carteira' },
   phase5Topup: {
     intro: 'Saldo, recargas e histórico financeiro reais.',
     balance: 'Saldo para gastar',
