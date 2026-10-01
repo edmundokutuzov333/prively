@@ -114,11 +114,11 @@ begin
   on conflict do nothing;
 
   insert into public.channels(
-    id,owner_id,handle,display_name,kind,is_seed
+    id,owner_id,handle,display_name,is_seed
   )
   values(
     channel,creator,'phase6_spend_creator',
-    'Phase 6 Spend Creator','main',true
+    'Phase 6 Spend Creator',true
   )
   on conflict(id) do nothing;
 
