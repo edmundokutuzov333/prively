@@ -49,7 +49,7 @@ select is((select min(week_start) from public.kyc_manual_queue_weekly_volume_gua
 
 select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
 select set_config('request.jwt.claim.role','authenticated',true);
-select set_config('request.jwt.claims',json_build_object('sub','72000000-0000-0000-0000-000000000002','role','authenticated','aud','authenticated','aal2')::text,true);
+select set_config('request.jwt.claims',json_build_object('sub','72000000-0000-0000-0000-000000000002','role','authenticated','aud','authenticated','aal','aal2')::text,true);
 
 select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),0::bigint,'ordinary user receives no KYC weekly volume');
 select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),0::bigint,'weekly volume remains hidden without admin.kyc permission');
