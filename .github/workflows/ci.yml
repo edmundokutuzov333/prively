@@ -176,7 +176,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    needs: quality
+    needs: [quality, database]
     env:
       VITE_SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
