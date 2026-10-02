@@ -152,7 +152,7 @@ select set_config('request.jwt.claims',json_build_object(
   'aal','aal1'
 )::text,true);
 
-select throws_ok($
+select throws_ok($$
   select public.create_conversation(
     (select id from public.channels where handle='p11off_7110000001')
   )
