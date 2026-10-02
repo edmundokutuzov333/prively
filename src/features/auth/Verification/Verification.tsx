@@ -106,7 +106,7 @@ export default function Verification() {
         throw selfieUpload.error;
       }
 
-      const submission = await sb.functions.invoke("kyc-submit", {
+      const submission = await sb.functions.invoke("kyc-start", {
         body: {
           docPath: documentPath,
           selfiePath,
