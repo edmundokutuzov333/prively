@@ -2,9 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.VITE_SUPABASE_URL;
-const anon = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !anon || !service) throw new Error('missing_local_e2e_env');
+if (!url || !service) throw new Error('missing_local_e2e_env');
 
 const admin = createClient(url, service, {
   auth: { autoRefreshToken: false, persistSession: false },
