@@ -283,10 +283,10 @@ begin
   insert into _phase6_meta(key,value)
   select
     'release_count',
-    count(distinct release_source_id)::text
-  from public.ledger_entries
-  where release_source_id=(select value::bigint from _phase6_meta where key='release_source_id')
-    and kind='release';
+    count(distinct le.release_source_id)::text
+  from public.ledger_entries le
+  where le.release_source_id=(select value::bigint from _phase6_meta where key='release_source_id')
+    and le.kind='release';
 
   perform public.release_due_earnings();
 
