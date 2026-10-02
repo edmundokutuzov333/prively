@@ -176,7 +176,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     if (adminRole.error) throw adminRole.error;
 
     const aal1Token = signAccessToken(adminUserId, 'aal1', randomUUID());
-    const aal1Response = await fetch(`${url}/rest/v1/rpc/approve_kyc`, {
+    const aal1Response = await fetch(`${url}/functions/v1/kyc-review`, {
       method: 'POST',
       headers: {
         apikey: anon,
@@ -184,9 +184,9 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        _kyc: kycId,
-        _approved: true,
-        _reason: 'AAL1 negative control',
+        kycId,
+        approved: true,
+        reason: 'AAL1 negative control',
       }),
     });
     const aal1Body = await aal1Response.text();
@@ -194,7 +194,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     expect([401, 403]).toContain(aal1Response.status);
 
     const aal2Token = signAccessToken(adminUserId, 'aal2', randomUUID());
-    const aal2Response = await fetch(`${url}/rest/v1/rpc/approve_kyc`, {
+    const aal2Response = await fetch(`${url}/functions/v1/kyc-review`, {
       method: 'POST',
       headers: {
         apikey: anon,
@@ -202,14 +202,14 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        _kyc: kycId,
-        _approved: true,
-        _reason: 'AAL2 positive control',
+        kycId,
+        approved: true,
+        reason: 'AAL2 positive control',
       }),
     });
     const aal2Body = await aal2Response.text();
     console.log('A.3.13 AAL2 approve HTTP=', aal2Response.status, 'body=', aal2Body);
-    expect(aal2Response.status).toBe(204);
+    expect(aal2Response.status).toBe(200);
 
     const finalKyc = await admin.from('kyc_verifications')
       .select('status,reviewed_by,reviewed_at')
