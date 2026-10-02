@@ -28,6 +28,14 @@ const schema = z.object({
   reason: z.string().max(500).nullable().optional(),
 });
 
+const kycState = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  status: z.enum(["pending", "approved", "rejected", "review"]),
+  reviewed_by: z.string().uuid().nullable(),
+  reviewed_at: z.string().nullable(),
+});
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors(request) });
   if (request.method !== "POST") return respond(request, { code: "method_not_allowed" }, 405);
@@ -65,7 +73,29 @@ Deno.serve(async (request) => {
       return respond(request, { code }, code === "kyc_not_found" ? 404 : code === "forbidden" ? 403 : 422);
     }
 
-    return respond(request, { ok: true, status: body.approved ? "approved" : "rejected" });
+    const { data: persisted, error: persistenceError } = await admin
+      .from("kyc_verifications")
+      .select("id,user_id,status,reviewed_by,reviewed_at")
+      .eq("id", body.kycId)
+      .maybeSingle();
+
+    if (persistenceError) {
+      return respond(request, { code: "kyc_persistence_check_failed" }, 503);
+    }
+
+    const expectedStatus = body.approved ? "approved" : "rejected";
+    const parsed = persisted ? kycState.safeParse(persisted) : null;
+
+    if (
+      !parsed?.success
+      || parsed.data.id !== body.kycId
+      || parsed.data.status !== expectedStatus
+      || parsed.data.reviewed_by !== authData.user.id
+    ) {
+      return respond(request, { code: "kyc_persistence_mismatch" }, 500);
+    }
+
+    return respond(request, { ok: true, status: expectedStatus });
   } catch (error) {
     if (error instanceof z.ZodError) return respond(request, { code: "invalid_kyc_payload" }, 400);
     const code = error instanceof Error ? error.message : "kyc_review_failed";
