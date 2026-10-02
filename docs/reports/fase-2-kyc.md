@@ -1,53 +1,164 @@
-# RELATÓRIO — FASE 2
+# RELATÓRIO — PARTE 2 — KYC END-TO-END
 
-Funcionalidade concluída: KYC real manual com revisão protegida, fila de volume e estados de experiência.
+Data: 2026-10-02
+Branch: main
+Supabase: gaonupelgtpfthouyobh
+CI final: 36992014658
+SHA certificado: 48d245c68c4dd7ceb27e751c1d438f93cfc7b94d
 
-Migrações aplicadas:
-1. 20261001084134_phase2_kyc_reviewer_role_guard
-2. 20261001084255_prephase_kyc_weekly_volume
-3. 20261001090654_phase2_kyc_security_contract
-4. 20261001090838_phase2_kyc_status_detail
+## 1. Estado
 
-RLS testada:
-- kyc_verifications: leitura do próprio pedido e inserção do próprio estado pending.
-- prively-kyc: bucket privado; upload do próprio utilizador e leitura administrativa/compliance.
-- approve_kyc: execução removida de authenticated; exige service_role e reviewer admin/compliance.
-- volume semanal: função de base não é executável por authenticated; a variante guarded é usada pelo Control Room.
+A Parte 2 foi concluída e certificada.
 
-Edge Functions/RPCs:
-- kyc-start: ACTIVE, JWT protegido, fallback manual quando o provider não está configurado.
-- kyc-submit: ACTIVE v1, JWT protegido.
-- kyc-review: ACTIVE v1, JWT protegido e permissão admin.kyc.
-- get_my_kyc_status: RPC protegida para estado, motivo e timestamps do próprio utilizador.
-- kyc_manual_queue_weekly_volume_guarded: RPC protegida para métricas de conformidade.
+A base KYC já existente foi reutilizada sem duplicar tabelas, RLS ou funções. As migrações funcionais de KYC já presentes foram reconstruídas e validadas no CI.
 
-Rotas/páginas:
-- /admin/kyc: fila real e volume semanal.
-- área de verificação: pending/review, approved, rejected com motivo, loading/error/success.
+A superfície de submissão passou a usar o fluxo real `kyc-start`. O fallback manual foi corrigido para criar a submissão `pending` através de `submit_kyc`.
 
-Testes correram:
-- A validação é executada pelo GitHub Actions, não pelo container local. O rebuild local de Supabase, migrations, lint, teste HTTP do bucket e suite canónica passaram numa execução anterior; a suite nativa foi corrigida para usar o contrato de reviewer real.
-- `supabase/tests/database/phase2_kyc_test.sql` cobre agora as últimas 8 semanas e o bloqueio da métrica para utilizador comum.
-- SQL de produção confirmou grants, bucket privado e RPCs.
+A função `kyc-start` foi publicada no Supabase na versão 33 com `verify_jwt=true` e CORS compatível com o restante da plataforma.
 
-Critérios de aceitação:
-- ✓ is_age_verified() permanece falso sem approved.
-- ✓ approve_kyc não é executável por authenticated.
-- ✓ reviewer admin/compliance é validado no servidor.
-- ✓ bucket KYC é privado.
-- ✓ métrica semanal calcula exactamente as últimas oito semanas quando existem nove semanas de dados e a variante guarded é protegida.
-- ✓ Control Room usa dados reais e estados de UI.
-- ✓ pending/review bloqueia novo envio; rejected mostra motivo.
-- ✓ Teste HTTP local do endpoint público do bucket privado nega leitura anónima no CI.
-- ✗ Não existe objecto real no bucket de produção para executar uma prova HTTP contra produção sem criar dados KYC reais.
-- ✗ CI verde para o commit actual: ainda não demonstrado.
+## 2. Backend e segurança
 
-Bugs conhecidos / UNVERIFIED:
-- Restore drill bloqueado sem projecto Supabase de staging.
-- Projecto Vercel oficial de Prively não está verificado na conta ligada.
-- Limiar operacional definido: N=100 pedidos manuais por semana.
-- SLA interno alvo definido: 24 horas úteis. Não é mostrado ao utilizador.
+Schema remoto validado:
+- `public.kyc_verifications` com RLS activo.
+- Leitura própria e escrita própria apenas em estado `pending`.
+- Gestão administrativa condicionada a `admin.kyc` / compliance.
+- `approve_kyc` protegido contra execução por `authenticated`.
+- `is_age_verified` depende de KYC aprovado e estado de perfil válido.
+- `get_my_kyc_status` expõe apenas o estado do próprio utilizador.
+- `get_admin_kyc_queue` exige `admin.kyc`.
+- `kyc_manual_queue_weekly_volume_guarded()` expõe apenas a agregação autorizada.
 
-docs/STATE.md actualizado: sim.
+Storage:
+- Bucket real existente: `prively-kyc`.
+- Bucket privado.
+- Upload condicionado à pasta do próprio utilizador.
+- Leitura administrativa através de URL assinada.
+- Teste HTTP de acesso público: PASS, endpoint devolveu HTTP 400.
 
-Pronto para a Fase 3 do ponto de vista funcional da Fase 2: sim. Os gates de CI e os bloqueadores de infraestrutura continuam separados da funcionalidade KYC.
+## 3. Frontend
+
+### /verificacao
+Ligado ao backend real:
+- consulta `get_my_kyc_status`;
+- upload de documento e selfie para `prively-kyc`;
+- chama `kyc-start`;
+- trata `pending`, `review`, `approved`, `rejected`;
+- inclui loading, empty, error, offline, forbidden e success;
+- possui mensagens pt-MZ, en e fr.
+
+### /admin/kyc
+Ligado ao backend real:
+- fila via `get_admin_kyc_queue`;
+- volume semanal via `kyc_manual_queue_weekly_volume_guarded`;
+- abre documentos com URL assinada;
+- aprova/recusa através da Edge Function `kyc-review`;
+- estados de loading, empty, error, offline, forbidden e success.
+
+### /boas-vindas
+Ligado ao estado KYC real:
+- bloqueia continuação sem KYC aprovado;
+- mostra estado pendente/em análise/recusado;
+- após aprovação libera o onboarding;
+- estados loading, error, offline, forbidden e success.
+
+O guard de experiência foi ajustado para permitir a rota `/boas-vindas` antes da aprovação do KYC, mantendo a verificação como gate da progressão.
+
+## 4. Testes SQL
+
+Suite:
+`supabase/tests/database/phase2_kyc_test.sql`
+
+Coberturas:
+- existência da tabela e RLS;
+- bucket privado;
+- privilégio de execução de `approve_kyc`;
+- volume semanal protegido;
+- `get_my_kyc_status`;
+- políticas de storage;
+- 8 semanas consecutivas de volume manual;
+- utilizador sem KYC aprovado não é age verified.
+
+Output final do CI:
+```
+phase2_kyc_test.sql ... PASSED
+Native SQL suites failed: 0
+```
+
+Além da suite específica, `phase1_identity_roles_kyc_test.sql` passou no mesmo runner e continua a provar a chamada protegida de `approve_kyc` por utilizador autenticado.
+
+## 5. E2E
+
+Suite executada:
+`tests/e2e/journey-client-a2-a3.spec.ts`
+
+Output real:
+```
+A.2.10 UI onboarding KYC gate=blocked
+A.3.12 UI KYC state=pending
+A.3.13 RLS admin-scoped AAL2 KYC read= approved row
+A.3.14 KYC read attempt=1 ok
+A.3.14 DB final KYC= approved
+A.3.14 DB final profile= active + age_verified_at
+A.3.14 UI onboarding KYC=approved
+
+1 skipped
+148 passed (1.7m)
+```
+
+O fluxo ponta a ponta cobre submissão, persistência em `pending`, aprovação administrativa, leitura AAL2, actualização de perfil e desbloqueio do onboarding.
+
+## 6. CI global
+
+Run:
+`36992014658`
+
+Resultado:
+- quality: SUCCESS
+- Edge Functions contract tests: SUCCESS
+- database: SUCCESS
+- e2e: SUCCESS
+- CI: SUCCESS
+
+Quality confirmou:
+- migrations check: PASS
+- Supabase gateway check: PASS
+- page structure: PASS
+- typecheck: PASS
+- lint: PASS
+- unit tests: PASS
+- production source audit: PASS
+- build: PASS
+
+Database confirmou:
+- rebuild from zero: PASS
+- migrations lint: PASS
+- KYC private storage HTTP test: PASS
+- canonical database suite: PASS
+- native SQL regression suites: PASS
+
+Production Smoke para o mesmo SHA concluiu o job com sucesso, mas o teste de produção foi explicitamente skipped porque `PRIVELY_PRODUCTION_URL` não está configurado no ambiente de produção.
+
+## 7. Correcções relevantes
+
+| ID | Área | Correcção | Estado |
+|---|---|---|---|
+| P2-001 | KYC start | Fallback manual passou a criar `pending` através de `submit_kyc` | Corrigido |
+| P2-002 | CORS | `kyc-start` recebeu CORS e OPTIONS compatíveis | Corrigido |
+| P2-003 | Verification | /verificacao passou a usar `kyc-start` real | Corrigido |
+| P2-004 | KYC Queue | fila e volume passaram a ler dados reais | Corrigido |
+| P2-005 | Onboarding | estado real de KYC passou a bloquear/desbloquear progressão | Corrigido |
+| P2-006 | SQL tests | corrigido erro de delimitador pgTAP introduzido no teste | Corrigido |
+
+## 8. UNVERIFIED / dívida técnica
+
+O caminho de provider externo continua condicionado às variáveis `KYC_START_URL`, `KYC_API_KEY` e `KYC_WEBHOOK_SECRET`. Não foi inventado contrato de fornecedor externo.
+
+O smoke de produção continua sem execução efectiva porque `PRIVELY_PRODUCTION_URL` não está configurado no GitHub Actions.
+
+## 9. Gate
+
+Parte 2: CERTIFICADA.
+
+Parte 3: não iniciada.
+
+A execução pára aqui conforme a ordem do Superprompt 2.
