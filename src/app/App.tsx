@@ -200,6 +200,7 @@ export function App() {
             <Route path="/c/:handle" element={<CreatorProfile />} />
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
+            <Route path="/estudio/conteudo" element={<ContentStudioPage />} />
             <Route path="/estudio/perfil" element={<CreatorProfileEditor />} />
           </Route>
         </Route>
