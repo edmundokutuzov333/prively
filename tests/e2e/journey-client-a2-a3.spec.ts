@@ -237,8 +237,11 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
 
     const finalKyc = await readSingleWithRetry(
       () => admin.from('kyc_verifications')
-        .select('status,reviewed_by,reviewed_at')
-        .eq('id', kycId)
+        .select('id,status,reviewed_by,reviewed_at')
+        .eq('user_id', created.id)
+        .eq('status', 'approved')
+        .order('reviewed_at', { ascending: false })
+        .limit(1)
         .maybeSingle(),
       'A.3.14 KYC',
     );
