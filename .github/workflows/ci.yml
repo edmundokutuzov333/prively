@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: prively-ci-${{ github.ref_name }}
+  group: prively-ci-v2-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
