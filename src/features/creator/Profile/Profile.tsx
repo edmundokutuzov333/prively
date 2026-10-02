@@ -239,9 +239,10 @@ export default function Profile() {
           </div>
 
           <div className="mt-7 grid gap-5 md:grid-cols-2">
-            <label>
+            <label htmlFor="creator-profile-handle">
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.handle")}</span>
               <input
+                id="creator-profile-handle"
                 value={form.handle}
                 onChange={(event) => setForm((current) => ({ ...current, handle: event.target.value.toLowerCase() }))}
                 maxLength={24}
@@ -257,25 +258,25 @@ export default function Profile() {
                  handleState === 'error' ? t("content.handleValidationError") : ""}
               </p>
             </label>
-            <label>
+            <label htmlFor="creator-profile-display-name">
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.displayName")}</span>
-              <input value={form.display_name} onChange={(event) => setForm((current) => ({ ...current, display_name: event.target.value }))} maxLength={60} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
+              <input id="creator-profile-display-name" value={form.display_name} onChange={(event) => setForm((current) => ({ ...current, display_name: event.target.value }))} maxLength={60} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
             </label>
-            <label className="md:col-span-2">
+            <label className="md:col-span-2" htmlFor="creator-profile-bio">
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.bio")}</span>
-              <textarea value={form.bio ?? ""} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} maxLength={500} rows={5} className="w-full rounded-md border border-input bg-ink-850 p-3 text-bone-50 outline-none" />
+              <textarea id="creator-profile-bio" value={form.bio ?? ""} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} maxLength={500} rows={5} className="w-full rounded-md border border-input bg-ink-850 p-3 text-bone-50 outline-none" />
             </label>
-            <label>
+            <label htmlFor="creator-profile-city">
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.city")}</span>
-              <input value={form.city ?? ""} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
+              <input id="creator-profile-city" value={form.city ?? ""} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
             </label>
-            <label>
+            <label htmlFor="creator-profile-bairro">
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.bairro")}</span>
-              <input value={form.bairro ?? ""} onChange={(event) => setForm((current) => ({ ...current, bairro: event.target.value }))} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
+              <input id="creator-profile-bairro" value={form.bairro ?? ""} onChange={(event) => setForm((current) => ({ ...current, bairro: event.target.value }))} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
             </label>
-            <label>
+            <label htmlFor="creator-profile-province">
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.province")}</span>
-              <input value={form.province ?? ""} onChange={(event) => setForm((current) => ({ ...current, province: event.target.value }))} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
+              <input id="creator-profile-province" value={form.province ?? ""} onChange={(event) => setForm((current) => ({ ...current, province: event.target.value }))} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
             </label>
           </div>
 
