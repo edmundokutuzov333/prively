@@ -194,7 +194,8 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     );
     if (adminRole.error) throw adminRole.error;
 
-    const adminLogin = await admin.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+    const adminAuthClient = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
+    const adminLogin = await adminAuthClient.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
     if (adminLogin.error || !adminLogin.data.session) throw adminLogin.error ?? new Error('admin_login_failed');
     const aal1Token = adminLogin.data.session.access_token;
     const aal1Claims = JSON.parse(Buffer.from(aal1Token.split('.')[1], 'base64url').toString()) as { session_id?: string };
@@ -234,6 +235,21 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     const aal2Body = await aal2Response.text();
     console.log('A.3.13 AAL2 approve HTTP=', aal2Response.status, 'body=', aal2Body);
     expect(aal2Response.status).toBe(200);
+
+    const adminScopedClient = createClient(url, anon, {
+      global: { headers: { Authorization: 'Bearer ' + aal2Token } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const adminScopedKyc = await adminScopedClient.from('kyc_verifications')
+      .select('id,status,reviewed_by,reviewed_at')
+      .eq('user_id', created.id)
+      .eq('status', 'approved')
+      .order('reviewed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    console.log('A.3.13 RLS admin-scoped KYC read=', JSON.stringify(adminScopedKyc));
+    expect(adminScopedKyc.error).toBeNull();
+    expect(adminScopedKyc.data).toBeNull();
 
     const finalKyc = await readSingleWithRetry(
       () => admin.from('kyc_verifications')
