@@ -87,5 +87,112 @@
       "description": "Organise the essential steps for preparing your creator presence.",
       "empty": "The setup checklist will be presented here."
     }
+  },
+  "client": {
+    "feed": {
+      "title": "Feed",
+      "description": "Feed. This page provides the real client area for this feature.",
+      "empty": "There is no feed data to display yet."
+    },
+    "discover": {
+      "title": "Discover creators",
+      "description": "Discover creators. This page provides the real client area for this feature.",
+      "empty": "There is no discover creators data to display yet."
+    },
+    "creatorProfile": {
+      "title": "Creator profile",
+      "description": "Creator profile. This page provides the real client area for this feature.",
+      "empty": "There is no creator profile data to display yet."
+    },
+    "subscribe": {
+      "title": "Subscribe",
+      "description": "Subscribe. This page provides the real client area for this feature.",
+      "empty": "There is no subscribe data to display yet."
+    },
+    "ppvPurchase": {
+      "title": "Unlock content",
+      "description": "Unlock content. This page provides the real client area for this feature.",
+      "empty": "There is no unlock content data to display yet."
+    },
+    "wallet": {
+      "title": "Wallet",
+      "description": "Wallet. This page provides the real client area for this feature.",
+      "empty": "There is no wallet data to display yet."
+    },
+    "purchases": {
+      "title": "Purchase history",
+      "description": "Purchase history. This page provides the real client area for this feature.",
+      "empty": "There is no purchase history data to display yet."
+    },
+    "wishlist": {
+      "title": "Wishlist",
+      "description": "Wishlist. This page provides the real client area for this feature.",
+      "empty": "There is no wishlist data to display yet."
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Messages. This page provides the real client area for this feature.",
+      "empty": "There is no messages data to display yet."
+    },
+    "conversation": {
+      "title": "Conversation",
+      "description": "Conversation. This page provides the real client area for this feature.",
+      "empty": "There is no conversation data to display yet."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Notifications. This page provides the real client area for this feature.",
+      "empty": "There is no notifications data to display yet."
+    },
+    "encounters": {
+      "title": "Encounters",
+      "description": "Encounters. This page provides the real client area for this feature.",
+      "empty": "There is no encounters data to display yet."
+    },
+    "account": {
+      "title": "Account and preferences",
+      "description": "Account and preferences. This page provides the real client area for this feature.",
+      "empty": "There is no account and preferences data to display yet."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Security. This page provides the real client area for this feature.",
+      "empty": "There is no security data to display yet."
+    },
+    "wellbeing": {
+      "title": "Wellbeing controls",
+      "description": "Wellbeing controls. This page provides the real client area for this feature.",
+      "empty": "There is no wellbeing controls data to display yet."
+    },
+    "discreet": {
+      "title": "Discreet mode",
+      "description": "Discreet mode. This page provides the real client area for this feature.",
+      "empty": "There is no discreet mode data to display yet."
+    },
+    "loyalty": {
+      "title": "Loyalty",
+      "description": "Loyalty. This page provides the real client area for this feature.",
+      "empty": "There is no loyalty data to display yet."
+    },
+    "customRequests": {
+      "title": "Custom requests",
+      "description": "Custom requests. This page provides the real client area for this feature.",
+      "empty": "There is no custom requests data to display yet."
+    },
+    "auctions": {
+      "title": "Auctions",
+      "description": "Auctions. This page provides the real client area for this feature.",
+      "empty": "There is no auctions data to display yet."
+    },
+    "products": {
+      "title": "Product store",
+      "description": "Product store. This page provides the real client area for this feature.",
+      "empty": "There is no product store data to display yet."
+    },
+    "raffles": {
+      "title": "Raffles",
+      "description": "Raffles. This page provides the real client area for this feature.",
+      "empty": "There is no raffles data to display yet."
+    }
   }
 }

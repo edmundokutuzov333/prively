@@ -87,5 +87,112 @@
       "description": "Organiza os passos essenciais para preparar a tua presença como criadora.",
       "empty": "O checklist de configuração será apresentado aqui."
     }
+  },
+  "client": {
+    "feed": {
+      "title": "Feed",
+      "description": "O feed centraliza publicações públicas disponibilizadas pelas criadoras.",
+      "empty": "O feed ainda está vazio. Publicações públicas aparecem à medida que forem publicadas."
+    },
+    "discover": {
+      "title": "Descobrir criadoras",
+      "description": "Explora criadoras e encontra perfis disponíveis para descoberta.",
+      "empty": "Não existem criadoras para mostrar nesta pesquisa."
+    },
+    "creatorProfile": {
+      "title": "Perfil da criadora",
+      "description": "Consulta a presença pública de uma criadora, o seu conteúdo e as opções disponíveis.",
+      "empty": "O perfil desta criadora não tem conteúdo disponível para mostrar."
+    },
+    "subscribe": {
+      "title": "Assinar",
+      "description": "Escolhe a forma de apoio disponível para acompanhar uma criadora.",
+      "empty": "Não existem níveis de assinatura disponíveis para mostrar."
+    },
+    "ppvPurchase": {
+      "title": "Desbloquear conteúdo",
+      "description": "Consulta e desbloqueia conteúdo protegido através do fluxo de compra aplicável.",
+      "empty": "O conteúdo protegido não está disponível para esta sessão."
+    },
+    "wallet": {
+      "title": "Carteira",
+      "description": "Consulta o estado da tua carteira, movimentos e valores disponíveis.",
+      "empty": "A carteira não tem movimentos para apresentar."
+    },
+    "purchases": {
+      "title": "Histórico de compras",
+      "description": "Consulta as compras efectuadas e o respetivo estado.",
+      "empty": "Sem compras ainda."
+    },
+    "wishlist": {
+      "title": "Lista de desejos",
+      "description": "Guarda e revê itens que pretendes consultar ou comprar mais tarde.",
+      "empty": "Sem itens guardados."
+    },
+    "messages": {
+      "title": "Mensagens",
+      "description": "Acede às conversas privadas e mantém a tua comunicação organizada.",
+      "empty": "Ainda não tens conversas."
+    },
+    "conversation": {
+      "title": "Conversa",
+      "description": "Consulta a conversa privada e as ferramentas disponíveis nessa relação.",
+      "empty": "Esta conversa não tem mensagens para mostrar."
+    },
+    "notifications": {
+      "title": "Notificações",
+      "description": "Consulta alertas e eventos relevantes para a tua conta.",
+      "empty": "Sem notificações."
+    },
+    "encounters": {
+      "title": "Encontros",
+      "description": "Consulta pedidos e estados relacionados com encontros privados.",
+      "empty": "Sem pedidos activos."
+    },
+    "account": {
+      "title": "Conta e preferências",
+      "description": "Gere os dados da tua conta e as preferências pessoais da experiência.",
+      "empty": "Não existem preferências adicionais para apresentar."
+    },
+    "security": {
+      "title": "Segurança",
+      "description": "Gere proteção de conta, sessões e controlos de segurança.",
+      "empty": "Não existem eventos de segurança para apresentar nesta camada."
+    },
+    "wellbeing": {
+      "title": "Controlo e bem-estar",
+      "description": "Define limites de utilização e controlos associados ao teu bem-estar.",
+      "empty": "Não existem limites activos para apresentar."
+    },
+    "discreet": {
+      "title": "Modo discreto",
+      "description": "Configura o acesso discreto e os controlos de proteção associados.",
+      "empty": "O modo discreto ainda não tem uma configuração definida."
+    },
+    "loyalty": {
+      "title": "Fidelidade",
+      "description": "Consulta o estado da tua participação no programa de fidelidade.",
+      "empty": "Sem pontos ainda."
+    },
+    "customRequests": {
+      "title": "Pedidos personalizados",
+      "description": "Acompanha pedidos personalizados enviados a criadoras.",
+      "empty": "Sem pedidos activos."
+    },
+    "auctions": {
+      "title": "Leilões",
+      "description": "Consulta leilões disponíveis e acompanha a tua participação.",
+      "empty": "Sem leilões a decorrer."
+    },
+    "products": {
+      "title": "Loja de produtos",
+      "description": "Explora produtos físicos disponibilizados na plataforma.",
+      "empty": "Sem produtos disponíveis."
+    },
+    "raffles": {
+      "title": "Sorteios",
+      "description": "Consulta sorteios e condições de participação disponíveis.",
+      "empty": "Sem sorteios activos."
+    }
   }
 }

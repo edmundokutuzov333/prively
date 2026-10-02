@@ -87,5 +87,112 @@
       "description": "Organise les étapes essentielles pour préparer ta présence de créatrice.",
       "empty": "La checklist de configuration sera présentée ici."
     }
+  },
+  "client": {
+    "feed": {
+      "title": "Fil",
+      "description": "Fil. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée fil n’est disponible à afficher pour le moment."
+    },
+    "discover": {
+      "title": "Découvrir des créatrices",
+      "description": "Découvrir des créatrices. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée découvrir des créatrices n’est disponible à afficher pour le moment."
+    },
+    "creatorProfile": {
+      "title": "Profil de la créatrice",
+      "description": "Profil de la créatrice. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée profil de la créatrice n’est disponible à afficher pour le moment."
+    },
+    "subscribe": {
+      "title": "S’abonner",
+      "description": "S’abonner. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée s’abonner n’est disponible à afficher pour le moment."
+    },
+    "ppvPurchase": {
+      "title": "Déverrouiller le contenu",
+      "description": "Déverrouiller le contenu. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée déverrouiller le contenu n’est disponible à afficher pour le moment."
+    },
+    "wallet": {
+      "title": "Portefeuille",
+      "description": "Portefeuille. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée portefeuille n’est disponible à afficher pour le moment."
+    },
+    "purchases": {
+      "title": "Historique des achats",
+      "description": "Historique des achats. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée historique des achats n’est disponible à afficher pour le moment."
+    },
+    "wishlist": {
+      "title": "Liste de souhaits",
+      "description": "Liste de souhaits. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée liste de souhaits n’est disponible à afficher pour le moment."
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Messages. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée messages n’est disponible à afficher pour le moment."
+    },
+    "conversation": {
+      "title": "Conversation",
+      "description": "Conversation. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée conversation n’est disponible à afficher pour le moment."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Notifications. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée notifications n’est disponible à afficher pour le moment."
+    },
+    "encounters": {
+      "title": "Rencontres",
+      "description": "Rencontres. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée rencontres n’est disponible à afficher pour le moment."
+    },
+    "account": {
+      "title": "Compte et préférences",
+      "description": "Compte et préférences. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée compte et préférences n’est disponible à afficher pour le moment."
+    },
+    "security": {
+      "title": "Sécurité",
+      "description": "Sécurité. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée sécurité n’est disponible à afficher pour le moment."
+    },
+    "wellbeing": {
+      "title": "Contrôle et bien-être",
+      "description": "Contrôle et bien-être. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée contrôle et bien-être n’est disponible à afficher pour le moment."
+    },
+    "discreet": {
+      "title": "Mode discret",
+      "description": "Mode discret. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée mode discret n’est disponible à afficher pour le moment."
+    },
+    "loyalty": {
+      "title": "Fidélité",
+      "description": "Fidélité. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée fidélité n’est disponible à afficher pour le moment."
+    },
+    "customRequests": {
+      "title": "Demandes personnalisées",
+      "description": "Demandes personnalisées. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée demandes personnalisées n’est disponible à afficher pour le moment."
+    },
+    "auctions": {
+      "title": "Enchères",
+      "description": "Enchères. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée enchères n’est disponible à afficher pour le moment."
+    },
+    "products": {
+      "title": "Boutique de produits",
+      "description": "Boutique de produits. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée boutique de produits n’est disponible à afficher pour le moment."
+    },
+    "raffles": {
+      "title": "Tirages",
+      "description": "Tirages. Cette page présente l’espace client réel pour cette fonctionnalité.",
+      "empty": "Aucune donnée tirages n’est disponible à afficher pour le moment."
+    }
   }
 }
