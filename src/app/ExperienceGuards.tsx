@@ -55,6 +55,7 @@ export function ExperienceGuard() {
         setCreatorTermsAccepted(Boolean(!creatorTermsResult.error && creatorTermsStatus?.accepted));
         setAccountState(null);
         setSelfExcludedUntil(null);
+        setCheckedKey(guardKey);
         setChecking(false);
         return;
       }
