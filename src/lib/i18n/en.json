@@ -88,7 +88,29 @@
     "verification": {
       "title": "Identity verification",
       "description": "Track and complete the identity verification process required by the platform.",
-      "empty": "Your real verification status will be presented here."
+      "empty": "Your real verification status will be presented here.",
+      "authRequired": "Sign in to submit and track your identity verification.",
+      "goLogin": "Sign in",
+      "retry": "Try again",
+      "intro": "Upload a valid identity document and a selfie to start manual review.",
+      "rejectedIntro": "The previous submission was rejected. You can submit a new verification.",
+      "document": "Identity document",
+      "selfie": "Selfie",
+      "chooseFile": "Choose file",
+      "submit": "Submit verification",
+      "submitSuccess": "Your verification was submitted and is now pending review.",
+      "pending": "We received your documents. Your verification is pending review.",
+      "review": "Your verification is under review by the authorised team.",
+      "approved": "Your identity has been verified. You can continue to onboarding.",
+      "rejectedReason": "Rejection reason:",
+      "rejectedGeneric": "It was rejected by the review team.",
+      "fileTooLarge": "Each file must be at most 10 MB.",
+      "goWelcome": "Continue",
+      "status": "Status",
+      "states": {
+        "pending": "Pending",
+        "review": "Under review"
+      }
     },
     "onboardingClient": {
       "title": "Welcome to Privê",
@@ -97,7 +119,16 @@
       "step1": "Confirm your experience preferences.",
       "step2": "Learn the discovery tools.",
       "step3": "Configure privacy controls.",
-      "step4": "Explore your wallet and purchases."
+      "step4": "Explore your wallet and purchases.",
+      "authRequired": "Sign in to access onboarding.",
+      "goLogin": "Sign in",
+      "retry": "Try again",
+      "kycRequired": "Complete identity verification before continuing with onboarding.",
+      "kycPending": "Your verification was submitted and is waiting for review.",
+      "kycReview": "Your verification is under review.",
+      "kycRejected": "Your verification was rejected. Submit a new verification to continue.",
+      "goVerification": "Go to verification",
+      "kycApproved": "Your identity has been verified. Onboarding can continue."
     },
     "onboardingCreator": {
       "title": "Set up your presence",
