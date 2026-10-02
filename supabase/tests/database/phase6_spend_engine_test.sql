@@ -387,13 +387,8 @@ select is(
 
 select is(
   (select count(*)::bigint
-   from public.ledger_entries
-   where release_source_id in (
-     select id
-     from public.ledger_entries
-     where txn_id=(select value::uuid from _phase6_meta where key='txn_one')
-       and account='creator_pending'
-   )),
+   from public.ledger_entries le
+   where le.release_source_id=(select value::bigint from _phase6_meta where key='release_source_id')),
   2::bigint,
   'one release source creates paired pending and available entries'
 );
