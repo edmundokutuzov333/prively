@@ -16,7 +16,16 @@
       "step1": "Cria e verifica a tua conta.",
       "step2": "Completa a tua presença de criadora.",
       "step3": "Prepara o teu conteúdo e as tuas regras.",
-      "step4": "Publica e gere a tua comunidade com segurança."
+      "step4": "Publica e gere a tua comunidade com segurança.",
+      "authRequired": "Entra na tua conta para continuares.",
+      "checking": "A verificar o teu estado de criadora…",
+      "kycRequired": "Completa a verificação de identidade antes de te tornares criadora.",
+      "kycPending": "A tua verificação de identidade ainda está em análise. Aguarda a decisão antes de continuares.",
+      "grant": "Torna-te criadora",
+      "granted": "O papel de criadora foi atribuído. A abrir o teu onboarding…",
+      "retry": "Tentar novamente",
+      "goVerification": "Ir para verificação",
+      "goLogin": "Entrar"
     },
     "terms": {
       "title": "Termos e Condições",
