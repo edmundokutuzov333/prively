@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
 import { PageShell, type PageState } from "@/components/layout/PageShell";
@@ -116,7 +116,7 @@ export default function BecomeCreator() {
 
   let pageState: PageState = "empty";
   let message = t("public.becomeCreator.empty");
-  let action = (
+  let action: ReactNode = (
     <div className="space-y-5">
       <ol className="grid gap-3 text-sm leading-6 text-bone-300">
         {steps.map((step) => (
