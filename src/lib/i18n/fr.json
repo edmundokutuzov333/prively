@@ -16,7 +16,16 @@
       "step1": "Crée et vérifie ton compte.",
       "step2": "Complète ta présence de créatrice.",
       "step3": "Prépare ton contenu et tes règles.",
-      "step4": "Publie et gère ta communauté en sécurité."
+      "step4": "Publie et gère ta communauté en sécurité.",
+      "authRequired": "Connecte-toi pour continuer.",
+      "checking": "Vérification de ton statut de créatrice…",
+      "kycRequired": "Termine la vérification d’identité avant de devenir créatrice.",
+      "kycPending": "Ta vérification d’identité est encore en cours. Attends la décision avant de continuer.",
+      "grant": "Devenir créatrice",
+      "granted": "Le rôle de créatrice a été attribué. Ouverture de ton onboarding…",
+      "retry": "Réessayer",
+      "goVerification": "Aller à la vérification",
+      "goLogin": "Se connecter"
     },
     "terms": {
       "title": "Conditions générales",
