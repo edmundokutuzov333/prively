@@ -126,6 +126,13 @@ test.describe("phase 3 creator channel", () => {
       creatorContext = creator.context;
 
       await creator.page.goto("/estudio/conteudo");
+      const creatorDiagnostics = await creator.page.evaluate(async () => {
+        const tokenKey = Object.keys(localStorage).find((key) => key.endsWith("-auth-token"));
+        const raw = tokenKey ? localStorage.getItem(tokenKey) : null;
+        const parsed = raw ? JSON.parse(raw) : null;
+        return { storageUserId: parsed?.user?.id ?? null, storageRole: parsed?.user?.role ?? null };
+      });
+      console.log("P3_DEBUG creator.diagnostics_storage=", JSON.stringify(creatorDiagnostics));
       console.log("P3_DEBUG creator.url_after_conteudo=", creator.page.url());
       console.log("P3_DEBUG creator.body_after_conteudo=", (await creator.page.locator("body").innerText()).slice(0, 2500));
       await expect(creator.page.getByLabel(/handle do canal|channel handle/i)).toBeVisible({ timeout: 15000 });
