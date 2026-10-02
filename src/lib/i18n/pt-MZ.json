@@ -390,5 +390,27 @@
       "description": "Consulta o estado das verificações necessárias para avaliar a prontidão operacional.",
       "empty": "O gate de produção não tem resultados para apresentar nesta camada."
     }
+  },
+  "systemPages": {
+    "error": {
+      "title": "Erro",
+      "description": "Apresenta um estado genérico de erro sem assumir uma causa que ainda não foi determinada.",
+      "empty": "Não existem detalhes de erro para apresentar nesta camada."
+    },
+    "notFound": {
+      "title": "Página não encontrada",
+      "description": "Indica que o endereço pedido não corresponde a uma página conhecida.",
+      "empty": "A página que procuras não existe."
+    },
+    "forbidden": {
+      "title": "Esta área deixou de estar disponível.",
+      "description": "Apresenta o estado de acesso recusado quando a conta não tem permissão para continuar.",
+      "empty": "Não tens permissão para aceder a esta área."
+    },
+    "offline": {
+      "title": "Sem ligação",
+      "description": "Apresenta uma superfície estável quando a aplicação não tem ligação.",
+      "empty": "Verifica a tua ligação e tenta novamente."
+    }
   }
 }
