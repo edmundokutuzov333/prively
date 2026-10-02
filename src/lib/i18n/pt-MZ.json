@@ -306,5 +306,37 @@
       "description": "Acede ao espaço de suporte de emergência da criadora.",
       "empty": "O suporte de emergência está sem dados para apresentar."
     }
+  },
+  "shared": {
+    "settings": {
+      "title": "Definições",
+      "description": "Centraliza as preferências gerais partilhadas entre cliente e criadora.",
+      "empty": "Não existem preferências gerais para apresentar nesta camada."
+    },
+    "receipts": {
+      "title": "Recibos",
+      "description": "Consulta os recibos associados às operações da tua conta.",
+      "empty": "Sem recibos."
+    },
+    "report": {
+      "title": "Denunciar",
+      "description": "Submete uma denúncia através do fluxo de segurança aplicável.",
+      "empty": "O formulário de denúncia será apresentado aqui."
+    },
+    "blocks": {
+      "title": "Bloqueios",
+      "description": "Consulta e gere contas que bloqueaste.",
+      "empty": "Sem bloqueados."
+    },
+    "devices": {
+      "title": "Dispositivos e sessões",
+      "description": "Consulta dispositivos e sessões associados à tua conta.",
+      "empty": "Não existem sessões ou dispositivos para apresentar."
+    },
+    "notifications": {
+      "title": "Notificações partilhadas",
+      "description": "Superfície partilhada de notificações utilizada pelos diferentes portais.",
+      "empty": "A superfície partilhada não tem dados para apresentar nesta camada."
+    }
   }
 }

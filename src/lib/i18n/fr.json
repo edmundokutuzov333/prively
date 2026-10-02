@@ -306,5 +306,37 @@
       "description": "Support d’urgence. Cette page présente l’espace créatrice pour cette fonctionnalité.",
       "empty": "Aucune donnée support d’urgence n’est disponible à afficher pour le moment."
     }
+  },
+  "shared": {
+    "settings": {
+      "title": "Paramètres",
+      "description": "Paramètres. Espace partagé du compte.",
+      "empty": "Aucune donnée paramètres n’est disponible à afficher pour le moment."
+    },
+    "receipts": {
+      "title": "Reçus",
+      "description": "Reçus. Espace partagé du compte.",
+      "empty": "Aucune donnée reçus n’est disponible à afficher pour le moment."
+    },
+    "report": {
+      "title": "Signaler",
+      "description": "Signaler. Espace partagé du compte.",
+      "empty": "Aucune donnée signaler n’est disponible à afficher pour le moment."
+    },
+    "blocks": {
+      "title": "Blocages",
+      "description": "Blocages. Espace partagé du compte.",
+      "empty": "Aucune donnée blocages n’est disponible à afficher pour le moment."
+    },
+    "devices": {
+      "title": "Appareils et sessions",
+      "description": "Appareils et sessions. Espace partagé du compte.",
+      "empty": "Aucune donnée appareils et sessions n’est disponible à afficher pour le moment."
+    },
+    "notifications": {
+      "title": "Notifications partagées",
+      "description": "Notifications partagées. Espace partagé du compte.",
+      "empty": "Aucune donnée notifications partagées n’est disponible à afficher pour le moment."
+    }
   }
 }

@@ -68,6 +68,12 @@ const Encounters = lazy(() => import("@/features/creator/Encounters"));
 const Profile = lazy(() => import("@/features/creator/Profile"));
 const Blocks = lazy(() => import("@/features/creator/Blocks"));
 const Emergency = lazy(() => import("@/features/creator/Emergency"));
+const SharedSettings = lazy(() => import("@/features/shared/Settings"));
+const SharedReceipts = lazy(() => import("@/features/shared/Receipts"));
+const SharedReport = lazy(() => import("@/features/shared/Report"));
+const SharedBlocks = lazy(() => import("@/features/shared/Blocks"));
+const SharedDevices = lazy(() => import("@/features/shared/Devices"));
+const SharedNotifications = lazy(() => import("@/features/shared/Notifications"));
 
 function FeatureSuspense() {
   const { t } = useTranslation();
@@ -89,6 +95,8 @@ function ProtectedAgeGate() {
 function ClientLayout() { return <div className="space-y-6"><ClientNav /><Outlet /></div>; }
 
 function CreatorLayout() { return <div className="space-y-6"><CreatorNav /><Outlet /></div>; }
+
+function SharedLayout() { return <div className="space-y-6"><Outlet /></div>; }
 
 function AuthenticatedFeatureGuard() {
   const { user, loading } = useAuth();
@@ -187,7 +195,19 @@ const CREATOR_ROUTES: RouteObject[] = [{
   }],
 }];
 
-const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES];
+const SHARED_ROUTES: RouteObject[] = [{
+  element: <AuthenticatedFeatureGuard />,
+  children: [{ element: <SharedLayout />, children: [
+        { path: "/definicoes", element: lazyElement(SharedSettings) },
+        { path: "/recibos", element: lazyElement(SharedReceipts) },
+        { path: "/denunciar", element: lazyElement(SharedReport) },
+        { path: "/bloqueios", element: lazyElement(SharedBlocks) },
+        { path: "/definicoes/dispositivos", element: lazyElement(SharedDevices) },
+        { path: "/notificacoes", element: lazyElement(SharedNotifications) },
+  ] }],
+}];
+
+const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES, ...SHARED_ROUTES];
 
 export function FeatureRouteResolver() {
   return useRoutes(FEATURE_ROUTES) ?? <Navigate to="/404" replace />;

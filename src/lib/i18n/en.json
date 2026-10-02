@@ -306,5 +306,37 @@
       "description": "Emergency support. This page provides the creator workspace for this feature.",
       "empty": "No emergency support data is available to display yet."
     }
+  },
+  "shared": {
+    "settings": {
+      "title": "Settings",
+      "description": "Settings. Shared account area.",
+      "empty": "No settings data is available to display yet."
+    },
+    "receipts": {
+      "title": "Receipts",
+      "description": "Receipts. Shared account area.",
+      "empty": "No receipts data is available to display yet."
+    },
+    "report": {
+      "title": "Report",
+      "description": "Report. Shared account area.",
+      "empty": "No report data is available to display yet."
+    },
+    "blocks": {
+      "title": "Blocks",
+      "description": "Blocks. Shared account area.",
+      "empty": "No blocks data is available to display yet."
+    },
+    "devices": {
+      "title": "Devices and sessions",
+      "description": "Devices and sessions. Shared account area.",
+      "empty": "No devices and sessions data is available to display yet."
+    },
+    "notifications": {
+      "title": "Shared notifications",
+      "description": "Shared notifications. Shared account area.",
+      "empty": "No shared notifications data is available to display yet."
+    }
   }
 }
