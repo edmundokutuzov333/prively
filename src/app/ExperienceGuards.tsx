@@ -36,8 +36,8 @@ export function ExperienceGuard() {
       const sb = requireSupabase();
 
       if (isCreatorArea) {
-        const [roleResult, ageResult, creatorTermsResult] = await Promise.all([
-          sb.rpc('has_role', { _uid: user.id, _role: 'creator' }),
+        const [rolesResult, ageResult, creatorTermsResult] = await Promise.all([
+          sb.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'creator').maybeSingle(),
           sb.rpc('is_age_verified', { _uid: user.id }),
           sb.rpc('get_creator_terms_status'),
         ]);
@@ -45,7 +45,7 @@ export function ExperienceGuard() {
         if (!active) return;
 
         setCreatorArea(true);
-        setRoles(roleResult.error ? [] : roleResult.data ? ['creator'] : []);
+        setRoles(rolesResult.error || !rolesResult.data ? [] : ['creator']);
         setKycStatus(ageResult.error ? null : ageResult.data ? 'approved' : null);
         const creatorTermsStatus = Array.isArray(creatorTermsResult.data) ? creatorTermsResult.data[0] : null;
         setCreatorTermsAccepted(Boolean(!creatorTermsResult.error && creatorTermsStatus?.accepted));
