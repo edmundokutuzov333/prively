@@ -316,7 +316,9 @@
     "emergency": {
       "title": "Support d’urgence",
       "description": "Support d’urgence. Cette page présente l’espace créatrice pour cette fonctionnalité.",
-      "empty": "Aucune donnée support d’urgence n’est disponible à afficher pour le moment."
+      "empty": "Aucune donnée support d’urgence n’est disponible à afficher pour le moment.",
+      "cta": "Ouvrir le support d’urgence",
+      "disabledReason": "L’opération réelle d’urgence sera reliée au Superprompt 2."
     }
   },
   "shared": {
