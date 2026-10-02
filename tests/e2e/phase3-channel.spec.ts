@@ -126,7 +126,7 @@ test.describe("phase 3 creator channel", () => {
       creatorContext = creator.context;
 
       await creator.page.goto("/estudio/conteudo");
-      await expect(creator.page.getByRole("heading", { name: /conteúdo|content/i })).toBeVisible();
+      await expect(creator.page.getByLabel(/handle do canal|channel handle/i)).toBeVisible({ timeout: 15000 });
 
       await creator.page.getByLabel(/handle do canal|channel handle/i).fill(channelHandle);
       await creator.page.getByLabel(/nome público|public name/i).fill("Phase 3 Creator");
