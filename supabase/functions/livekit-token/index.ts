@@ -9,12 +9,12 @@ function env(name: string): string {
 }
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return optionsResponse();
+  if (request.method === "OPTIONS") return optionsResponse(request);
   try {
     const { client, user } = await requireUser(request);
     const payload = await request.json() as { sessionId?: unknown };
     const sessionId = requireUuid(payload.sessionId);
-    const { data, error } = await client.rpc("issue_live_access", { _session: sessionId });
+    const { data, error } = await client.rpc("issue_live_access_guarded", { _session: sessionId });
     if (error || !data || typeof data !== "object") return jsonResponse({ code: error?.code ?? "LIVE_ACCESS_DENIED" }, 403);
 
     const row = data as { room_name?: unknown; role?: unknown; kind?: unknown; mode?: unknown; per_minute_price?: unknown; session_id?: unknown };
@@ -40,6 +40,6 @@ Deno.serve(async (request) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     const code = error instanceof Error ? error.message : "live_token_error";
-    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400);
+    return jsonResponse({ code }, code === "unauthorized" ? 401 : 400, request);
   }
 });
