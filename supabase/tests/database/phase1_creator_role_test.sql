@@ -1,9 +1,40 @@
 begin;
-select plan(8);
+select plan(10);
 
 select ok(to_regprocedure('public.has_role(uuid,public.app_role)') is not null,'has_role exists');
 select ok(to_regprocedure('public.grant_creator_role(uuid)') is not null,'grant_creator_role exists');
 select ok(not has_function_privilege('authenticated','public.grant_creator_role(uuid)','EXECUTE'),'authenticated cannot execute creator grant RPC');
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub','72000000-0000-0000-0000-000000000002',
+  'role','authenticated',
+  'aal','aal2'
+)::text,true);
+insert into public.user_roles(user_id,role)
+values ('72000000-0000-0000-0000-000000000001','creator');
+select ok(
+  public.has_role('72000000-0000-0000-0000-000000000001','creator'::public.app_role),
+  'AAL2 admin can write a role through user_roles RLS'
+);
+
+set_config('request.jwt.claims',json_build_object(
+  'sub','72000000-0000-0000-0000-000000000002',
+  'role','authenticated',
+  'aal','aal1'
+)::text,true);
+do $
+begin
+  begin
+    insert into public.user_roles(user_id,role)
+    values ('72000000-0000-0000-0000-000000000001','agency');
+    raise exception 'aal1_admin_inserted_role';
+  exception when insufficient_privilege then
+    null;
+  end;
+end $;
 
 insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data)
 values
