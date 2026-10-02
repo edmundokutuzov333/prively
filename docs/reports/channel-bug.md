@@ -97,3 +97,25 @@ A criação de canal já estava implementada no backend e parcialmente ligada a 
 A causa do bug histórico de criação não é a inexistência da tabela nem a ausência estrutural do papel creator. O problema foi a combinação do contrato de segurança/policies de `channels`, ausência do marcador de seed e validação de handle insuficientemente exposta à UI.
 
 A correcção de backend existente deve ser preservada. A execução desta Parte 3 deve completar as superfícies de perfil e a prova E2E, sem recriar a fundação já aplicada.
+
+## 5. Diagnóstico E2E da guard de workspace
+
+A primeira certificação completa da Parte 3 (`37022560505`) executou o Playwright e falhou no primeiro controlo de `/estudio/conteudo`.
+
+Output real:
+```
+P3_DEBUG creator.diagnostics_storage= {"storageUserId":"0d242d09-91dc-4358-9cd7-540ac6c77304","storageRole":"authenticated","rolesStatus":200,"rolesBody":"[{\"role\":\"client\"}, \n {\"role\":\"creator\"}]","hasRoleStatus":200,"hasRoleBody":"true"}
+P3_DEBUG creator.url_after_conteudo= http://127.0.0.1:4173/estado/acesso-negado
+148 passed (1.5m)
+1 failed
+1 skipped
+```
+
+Isto elimina a hipótese de ausência do papel `creator`: a sessão autenticada conseguia ler o papel e o RPC autoritativo `has_role()` devolvia `true`. O bloqueio estava no guard de workspace, que derivava a autorização da leitura directa de `user_roles` em vez de usar o RPC autoritativo.
+
+Correcção aplicada em `src/app/ExperienceGuards.tsx`:
+- a autorização de `/estudio/*` passa a chamar `has_role(auth.uid(),'creator')`;
+- a UI deixa de inferir o papel a partir de uma leitura de tabela para esta decisão;
+- KYC e Creator Terms continuam verificados separadamente.
+
+O E2E existente permanece como regressão directa deste bug.
