@@ -126,6 +126,8 @@ test.describe("phase 3 creator channel", () => {
       creatorContext = creator.context;
 
       await creator.page.goto("/estudio/conteudo");
+      console.log("P3_DEBUG creator.url_after_conteudo=", creator.page.url());
+      console.log("P3_DEBUG creator.body_after_conteudo=", (await creator.page.locator("body").innerText()).slice(0, 2500));
       await expect(creator.page.getByLabel(/handle do canal|channel handle/i)).toBeVisible({ timeout: 15000 });
 
       await creator.page.getByLabel(/handle do canal|channel handle/i).fill(channelHandle);
