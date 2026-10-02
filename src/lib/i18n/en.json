@@ -316,7 +316,9 @@
     "emergency": {
       "title": "Emergency support",
       "description": "Emergency support. This page provides the creator workspace for this feature.",
-      "empty": "No emergency support data is available to display yet."
+      "empty": "No emergency support data is available to display yet.",
+      "cta": "Open emergency support",
+      "disabledReason": "The real emergency operation will be connected in Superprompt 2."
     }
   },
   "shared": {
