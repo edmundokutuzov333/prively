@@ -338,5 +338,57 @@
       "description": "Notifications partagées. Espace partagé du compte.",
       "empty": "Aucune donnée notifications partagées n’est disponible à afficher pour le moment."
     }
+  },
+  "adminPages": {
+    "dashboard": {
+      "title": "Administration",
+      "description": "Accède aux raccourcis administratifs et aux zones protégées du Control Room.",
+      "empty": "Aucun raccourci administratif n’est disponible à afficher."
+    },
+    "users": {
+      "title": "Utilisateurs",
+      "description": "Recherche et consulte les utilisateurs via les contrôles administratifs disponibles.",
+      "empty": "Aucun utilisateur trouvé."
+    },
+    "kycQueue": {
+      "title": "File KYC",
+      "description": "Consulte les demandes de vérification d’identité en attente.",
+      "empty": "Aucune vérification en attente."
+    },
+    "moderationQueue": {
+      "title": "Modération",
+      "description": "Consulte les signalements et éléments nécessitant une revue de modération.",
+      "empty": "Aucun signalement."
+    },
+    "finance": {
+      "title": "Finance",
+      "description": "Consulte les opérations financières administratives protégées.",
+      "empty": "Aucun retrait en attente."
+    },
+    "compliance": {
+      "title": "Conformité",
+      "description": "Consulte les domaines de conformité et les rapports opérationnels.",
+      "empty": "Aucun rapport disponible."
+    },
+    "config": {
+      "title": "Configuration",
+      "description": "Gère les paramètres administratifs, commissions et fonctionnalités disponibles.",
+      "empty": "Aucune donnée de configuration à afficher à ce niveau."
+    },
+    "support": {
+      "title": "Support",
+      "description": "Consulte les demandes de support nécessitant une intervention de l’équipe.",
+      "empty": "Aucune demande de support."
+    },
+    "storage": {
+      "title": "Stockage",
+      "description": "Consulte l’état des infrastructures de stockage, traitement et sauvegarde.",
+      "empty": "Aucun événement de stockage à afficher."
+    },
+    "productionGate": {
+      "title": "État de production",
+      "description": "Consulte les vérifications nécessaires à la préparation opérationnelle.",
+      "empty": "Aucun résultat du gate de production à afficher."
+    }
   }
 }
