@@ -49,5 +49,43 @@
       "description": "Trouve les canaux appropriés pour les questions générales, le support, la sécurité et les sujets juridiques.",
       "empty": "Aucun contact dynamique n’est affiché à ce niveau de structure."
     }
+  },
+  "authPages": {
+    "ageGate": {
+      "title": "Confirmation d’âge",
+      "description": "Confirme ton âge avant d’accéder aux zones réservées aux adultes.",
+      "empty": "La confirmation d’âge est effectuée avant l’accès aux zones protégées.",
+      "cta": "Retour à l’accueil"
+    },
+    "register": {
+      "title": "Créer un compte",
+      "description": "Crée ton compte Prively et définis les informations nécessaires pour commencer.",
+      "empty": "Le formulaire d’inscription sera présenté sur cette page."
+    },
+    "login": {
+      "title": "Entrer dans le Privê",
+      "description": "Accède à ton compte Prively avec tes identifiants.",
+      "empty": "Le formulaire de connexion sera présenté sur cette page."
+    },
+    "recover": {
+      "title": "Récupérer le compte",
+      "description": "Récupère l’accès à ton compte via le parcours de récupération disponible.",
+      "empty": "Le formulaire de récupération sera présenté sur cette page."
+    },
+    "verification": {
+      "title": "Vérification d’identité",
+      "description": "Suis et complète le processus de vérification d’identité requis par la plateforme.",
+      "empty": "L’état réel de ta vérification sera présenté ici."
+    },
+    "onboardingClient": {
+      "title": "Bienvenue dans le Privê",
+      "description": "Découvre les étapes optionnelles pour configurer ton expérience client.",
+      "empty": "Aucune étape personnalisée n’est disponible à afficher."
+    },
+    "onboardingCreator": {
+      "title": "Configure ta présence",
+      "description": "Organise les étapes essentielles pour préparer ta présence de créatrice.",
+      "empty": "La checklist de configuration sera présentée ici."
+    }
   }
 }

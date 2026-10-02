@@ -49,5 +49,43 @@
       "description": "Find the appropriate channels for general, support, security and legal matters.",
       "empty": "There are no dynamic contacts to display at this structure layer."
     }
+  },
+  "authPages": {
+    "ageGate": {
+      "title": "Age confirmation",
+      "description": "Confirm your age before accessing adult areas.",
+      "empty": "Age confirmation is completed before protected areas can be accessed.",
+      "cta": "Back to home"
+    },
+    "register": {
+      "title": "Create account",
+      "description": "Create your Prively account and provide the information needed to start.",
+      "empty": "The registration form will be presented on this page."
+    },
+    "login": {
+      "title": "Sign in",
+      "description": "Access your Prively account with your account credentials.",
+      "empty": "The sign-in form will be presented on this page."
+    },
+    "recover": {
+      "title": "Recover account",
+      "description": "Recover access to your account through the available recovery flow.",
+      "empty": "The recovery form will be presented on this page."
+    },
+    "verification": {
+      "title": "Identity verification",
+      "description": "Track and complete the identity verification process required by the platform.",
+      "empty": "Your real verification status will be presented here."
+    },
+    "onboardingClient": {
+      "title": "Welcome to Privê",
+      "description": "Review the optional steps for setting up your client experience.",
+      "empty": "There are no personalised steps to display yet."
+    },
+    "onboardingCreator": {
+      "title": "Set up your presence",
+      "description": "Organise the essential steps for preparing your creator presence.",
+      "empty": "The setup checklist will be presented here."
+    }
   }
 }
