@@ -9,6 +9,8 @@ import { useAuth } from "@/app/session";
 import { ExperienceGuard } from "@/app/ExperienceGuards";
 import { ClientNav } from "@/components/layout/ClientNav";
 import { CreatorNav } from "@/components/layout/CreatorNav";
+import { AdminNav } from "@/components/layout/AdminNav";
+import { AdminGuard } from "@/app/AdminGuard";
 
 const BecomeCreator = lazy(() => import("@/features/public/BecomeCreator"));
 const AgeGate = lazy(() => import("@/features/auth/AgeGate"));
@@ -74,6 +76,16 @@ const SharedReport = lazy(() => import("@/features/shared/Report"));
 const SharedBlocks = lazy(() => import("@/features/shared/Blocks"));
 const SharedDevices = lazy(() => import("@/features/shared/Devices"));
 const SharedNotifications = lazy(() => import("@/features/shared/Notifications"));
+const AdminDashboard = lazy(() => import("@/features/admin/Dashboard"));
+const AdminUsers = lazy(() => import("@/features/admin/Users"));
+const AdminKycQueue = lazy(() => import("@/features/admin/KycQueue"));
+const AdminModerationQueue = lazy(() => import("@/features/admin/ModerationQueue"));
+const AdminFinance = lazy(() => import("@/features/admin/Finance"));
+const AdminCompliance = lazy(() => import("@/features/admin/Compliance"));
+const AdminConfig = lazy(() => import("@/features/admin/Config"));
+const AdminSupport = lazy(() => import("@/features/admin/Support"));
+const AdminStorage = lazy(() => import("@/features/admin/Storage"));
+const AdminProductionGate = lazy(() => import("@/features/admin/ProductionGate"));
 
 function FeatureSuspense() {
   const { t } = useTranslation();
@@ -97,6 +109,7 @@ function ClientLayout() { return <div className="space-y-6"><ClientNav /><Outlet
 function CreatorLayout() { return <div className="space-y-6"><CreatorNav /><Outlet /></div>; }
 
 function SharedLayout() { return <div className="space-y-6"><Outlet /></div>; }
+function AdminFeatureLayout() { return <div className="space-y-6"><AdminNav /><Outlet /></div>; }
 
 function AuthenticatedFeatureGuard() {
   const { user, loading } = useAuth();
@@ -207,7 +220,26 @@ const SHARED_ROUTES: RouteObject[] = [{
   ] }],
 }];
 
-const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES, ...SHARED_ROUTES];
+const ADMIN_ROUTES: RouteObject[] = [{
+  element: <AdminGuard />,
+  children: [{
+    element: <AdminFeatureLayout />,
+    children: [
+        { path: "/admin", element: lazyElement(AdminDashboard) },
+        { path: "/admin/utilizadores", element: lazyElement(AdminUsers) },
+        { path: "/admin/kyc", element: lazyElement(AdminKycQueue) },
+        { path: "/admin/moderacao", element: lazyElement(AdminModerationQueue) },
+        { path: "/admin/financeiro", element: lazyElement(AdminFinance) },
+        { path: "/admin/conformidade", element: lazyElement(AdminCompliance) },
+        { path: "/admin/configuracao", element: lazyElement(AdminConfig) },
+        { path: "/admin/suporte", element: lazyElement(AdminSupport) },
+        { path: "/admin/storage", element: lazyElement(AdminStorage) },
+        { path: "/admin/producao", element: lazyElement(AdminProductionGate) },
+    ],
+  }],
+}];
+
+const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES, ...SHARED_ROUTES, ...ADMIN_ROUTES];
 
 export function FeatureRouteResolver() {
   return useRoutes(FEATURE_ROUTES) ?? <Navigate to="/404" replace />;
