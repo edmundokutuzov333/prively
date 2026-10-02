@@ -82,7 +82,7 @@ jobs:
           mkdir -p supabase/functions
           printf 'APP_ALLOWED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173\\n' > supabase/functions/.env
       - name: Start local Supabase
-        run: supabase start
+        run: supabase start --exclude studio,imgproxy,mailpit,logflare,vector,supavisor,postgres-meta
       - name: Rebuild database from zero
         run: supabase db reset
       - name: Validate migrations and database lint
