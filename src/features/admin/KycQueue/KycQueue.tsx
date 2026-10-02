@@ -106,6 +106,7 @@ export default function KycQueue() {
       title={t("adminPages.kycQueue.title")}
       description={t("adminPages.kycQueue.description")}
       state={pageState}
+      emptyState={pageState === "empty" ? { message: t("adminPages.kycQueue.empty") } : undefined}
     >
       <div className="space-y-6">
         {errorKey ? (
