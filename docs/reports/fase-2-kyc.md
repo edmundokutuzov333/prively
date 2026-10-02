@@ -3,8 +3,8 @@
 Data: 2026-10-02
 Branch: main
 Supabase: gaonupelgtpfthouyobh
-CI final: 36992014658
-SHA certificado: 48d245c68c4dd7ceb27e751c1d438f93cfc7b94d
+CI final: 37005708194
+SHA certificado: de83b5b3d5d779ed188a544cf65e4cdac57f4042
 
 ## 1. Estado
 
@@ -72,6 +72,7 @@ Coberturas:
 - existência da tabela e RLS;
 - bucket privado;
 - privilégio de execução de `approve_kyc`;
+- privilégio de execução de `apply_kyc_result` restrito a `service_role`;
 - volume semanal protegido;
 - `get_my_kyc_status`;
 - políticas de storage;
@@ -149,6 +150,21 @@ Production Smoke para o mesmo SHA concluiu o job com sucesso, mas o teste de pro
 | P2-005 | Onboarding | estado real de KYC passou a bloquear/desbloquear progressão | Corrigido |
 | P2-006 | SQL tests | corrigido erro de delimitador pgTAP introduzido no teste | Corrigido |
 
+
+| P2-007 | KYC provider result | `apply_kyc_result` deixou de ser executável por `authenticated`; apenas `service_role` mantém execução | Corrigido |
+
+## 8.1 Evidência live do endurecimento
+
+Query executada no Supabase após a migração `20261002141500_phase2_kyc_apply_result_hardening`:
+```
+authenticated_execute=false
+anon_execute=false
+service_role_execute=true
+security_definer=true
+```
+
+A suite `supabase/tests/database/phase2_kyc_test.sql` passou a ter 19 assertions, incluindo a prova de que `authenticated` não pode executar `apply_kyc_result`.
+
 ## 8. UNVERIFIED / dívida técnica
 
 O caminho de provider externo continua condicionado às variáveis `KYC_START_URL`, `KYC_API_KEY` e `KYC_WEBHOOK_SECRET`. Não foi inventado contrato de fornecedor externo.
@@ -158,6 +174,8 @@ O smoke de produção continua sem execução efectiva porque `PRIVELY_PRODUCTIO
 ## 9. Gate
 
 Parte 2: CERTIFICADA.
+
+CI definitivo após o endurecimento: `37005708194` SUCCESS. Production Smoke do mesmo SHA: `37005708448` SUCCESS.
 
 Parte 3: não iniciada.
 
