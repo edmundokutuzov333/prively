@@ -1,68 +1,200 @@
-# RELATÓRIO — FASE 1 — Papéis e perfis protegidos
+# RELATÓRIO — FASE 1 — IDENTIDADE
 
-Data: 2026-10-01
+Data: 2026-10-02
 Branch: main
-Supabase: gaonupelgtpfthouyobh
+CI final: 36988763106
+SHA final: bc312851bc59fd5480196798ec964a499dd5c4f2
+Supabase remoto: gaonupelgtpfthouyobh
 
-## Funcionalidade concluída
-Fundação de identidade e autorização da Fase 1: papéis fora de profiles, proteção server-side de age_verified_at/status/self_excluded_until, helper has_role(), RLS em user_roles e integração com a camada KYC existente.
+## 1. Resumo
 
-## Migrações aplicadas
-Não foi aplicada uma nova migração nesta execução. O equivalente funcional da Fase 1 já está aplicado na base remota:
-- 20261001080920 — phase1_identity_roles_kyc_hardening
-- 20261001083223 — phase1_internal_profile_write_context
+A Parte 1 do Superprompt 2 foi concluída e certificada com CI verde.
 
-O checkout contém as versões forward-only correspondentes com timestamps locais diferentes. Não foram editadas nem apagadas migrações já aplicadas.
+A base de identidade já existente foi reutilizada. Não foram duplicados `app_role`, `user_roles`, `has_role` nem o trigger de protecção de perfis.
 
-## Evidência de schema remoto
-Verificado directamente na base:
-- public.app_role existe.
-- public.user_roles existe e tem RLS activo.
-- public.profiles tem RLS activo.
-- trigger trg_profiles_protected_fields existe em public.profiles.
-- public.has_role(uuid, public.app_role) existe.
-- public.has_role() é executável por authenticated.
-- public.approve_kyc() não é executável por authenticated.
-- public.is_age_verified() é executável por authenticated.
+Foi adicionada a concessão atómica do papel `creator`, condicionada a KYC aprovado, idade verificada e perfil activo.
 
-## RLS verificada
-public.user_roles:
-- roles_own_read: cada utilizador pode ler os seus próprios papéis.
-- admin_manage_all: escrita administrativa condicionada por private.is_platform_admin().
+Foi criada e publicada a Edge Function `become-creator`.
 
-public.profiles:
-- profiles_own_read: leitura do próprio perfil.
-- profiles_own_update: actualização apenas do próprio perfil.
-- Campos sensíveis são restaurados pelo trigger antes da escrita quando a sessão não é service_role, admin, compliance ou contexto interno autorizado.
+A rota efectiva `/se-criadora` da aplicação principal foi ligada ao componente funcional `BecomeCreator`.
 
-## Testes
-Ficheiro: supabase/tests/database/phase1_identity_roles_kyc_test.sql
+A jornada E2E cobre KYC aprovado e utilizador sem KYC aprovado.
 
-Correcções efectuadas nesta execução:
-- plan(12) -> plan(18), alinhado com os 18 asserts reais.
-- Corrigida uma sequência "\\n" literal que tornava inválido o SQL do assert sobre EXECUTE de approve_kyc.
+## 2. Backend
 
-O CI local da branch cria a extensão pgTAP antes de executar as suites nativas. A base de produção não tem pgTAP instalado, portanto a suite não é executada directamente em produção.
+### Migração
 
-Estado do runner CI para o último commit: execução `36839605507` em andamento. Os jobs `quality` e `Edge Functions contract tests` terminaram com sucesso; o job `database` e o E2E ainda estão presos em `Start local Supabase` no runner GitHub. Não existe evidência de falha da implementação da Fase 1 nesta execução.
+Ficheiro:
 
-## Rotas/páginas alteradas
-Nenhuma rota de UI foi alterada nesta fase. A Fase 1 é fundacional e não expõe nova superfície.
+`supabase/migrations/20261002080000_phase1_creator_role_grant.sql`
 
-## Critérios de aceitação
-- [✓] user_roles existe com RLS.
-- [✓] has_role() existe e devolve false para papel não atribuído por contrato.
-- [✓] Trigger protege age_verified_at, status e self_excluded_until.
-- [✓] Escrita administrativa de roles está restrita.
-- [✓] approve_kyc não está exposto a authenticated.
-- [⚠] Prova pgTAP completa: preparada e incluída no CI; aguarda o runner concluir `Start local Supabase` e executar a suite.
+Função:
 
-## Bugs / UNVERIFIED
-- Existe divergência de timestamp entre as migrações locais e as versões com o mesmo propósito já registadas remotamente. Não foi criada uma duplicata adicional.
-- Os Security Advisors da base ainda reportam achados globais de funções SECURITY DEFINER e outros temas fora do escopo funcional desta fase.
+`public.grant_creator_role(uuid)`
 
-## docs/STATE.md
-Actualizado.
+Regras:
+- utilizador deve existir
+- perfil deve estar activo
+- `age_verified_at` deve existir
+- auto-exclusão não pode estar activa
+- deve existir KYC aprovado
+- concessão é idempotente
+- concessão escreve `creator_role_granted` no `audit_log`
+- execução restringida a `service_role`
 
-## Pronto para Fase 2
-Não confirmado. O código da Fase 1, as migrações, RLS, trigger, funções e testes estão concluídos. A única condição pendente é a conclusão do runner CI `36839605507`, que ainda não chegou à execução do pgTAP.
+A migração foi aplicada no projecto Supabase remoto acessível.
+
+### Edge Function
+
+Ficheiro:
+
+`supabase/functions/become-creator/index.ts`
+
+Comportamento:
+- JWT obrigatório
+- usa `has_role()` para verificar o papel actual
+- lê o KYC do próprio utilizador com RLS
+- bloqueia `pending` e `review`
+- exige KYC `approved`
+- confirma `is_age_verified()`
+- executa `grant_creator_role()` pelo client service-role
+- responde com estado explícito
+
+Gateway configurado com `verify_jwt = true`.
+
+## 3. Frontend
+
+Componente funcional:
+
+`src/features/public/BecomeCreator/BecomeCreator.tsx`
+
+Estados implementados:
+- loading
+- empty
+- forbidden
+- success
+- error
+- offline
+
+A rota efectiva da aplicação principal:
+
+`/se-criadora`
+
+passou a usar directamente `BecomeCreator`.
+
+Após concessão do papel, o utilizador é encaminhado para:
+
+`/se-criadora/passos`
+
+O botão público existente em `PublicNav` continua a apontar para `ROUTES.BECOME_CREATOR`.
+
+## 4. i18n
+
+Paridade mantida em:
+- `src/lib/i18n/pt-MZ.json`
+- `src/lib/i18n/en.json`
+- `src/lib/i18n/fr.json`
+
+Incluídas mensagens para:
+- autenticação
+- KYC pendente
+- KYC obrigatório
+- erro de permissões
+- indisponibilidade de verificação
+- concessão do papel
+- retry
+- ligação para verificação
+
+## 5. Testes SQL
+
+Suite:
+
+`supabase/tests/database/phase1_identity_roles_kyc_test.sql`
+
+Output real relevante:
+
+```
+1..18
+ok 5 - protected status cannot be changed by normal user
+ok 6 - protected age_verified_at cannot be changed
+ok 7 - protected self exclusion cannot be changed
+ok 8 - unassigned admin role returns false
+ok 11 - approved KYC enables age verification
+ok 12 - rejected KYC disables age verification
+ok 13 - authenticated cannot execute approve_kyc
+ok 14 - role read RLS policy exists
+ok 15 - role write RLS policy exists
+ok 16 - KYC read RLS policy exists
+ok 17 - KYC write RLS policy exists
+ok 18 - KYC storage is private
+PASSED: phase1_identity_roles_kyc_test.sql
+```
+
+## 6. E2E
+
+Suite consolidada:
+
+`tests/e2e/phase1-identity-creator.spec.ts`
+
+Cenários:
+1. KYC aprovado -> botão de creator -> concessão real do papel -> onboarding -> verificação do papel e audit log.
+2. Sem KYC aprovado -> bloqueio -> ligação para verificação -> ausência do papel creator.
+
+Output real da suite completa no CI:
+
+```
+148 passed (1.8m)
+1 skipped
+0 failed
+```
+
+## 7. Evidências globais
+
+CI:
+- Run: 36988763106
+- SHA: bc312851bc59fd5480196798ec964a499dd5c4f2
+- database: SUCCESS
+- quality: SUCCESS
+- Edge Functions contract tests: SUCCESS
+- e2e: SUCCESS
+- CI: SUCCESS
+
+Production Smoke:
+- Run: 36988763193
+- SHA: bc312851bc59fd5480196798ec964a499dd5c4f2
+- result: SUCCESS
+
+Quality:
+- migrations check: OK
+- Supabase config check: OK
+- page structure: OK
+- typecheck: SUCCESS
+- lint: SUCCESS
+- unit tests: SUCCESS
+- production source audit: SUCCESS
+- build: SUCCESS
+
+## 8. Bugs encontrados e corrigidos
+
+| ID | Área | Severidade | Correcção | Estado |
+|---|---|---:|---|---|
+| P1-001 | Routing | Alta | `/se-criadora` passou a usar o fluxo funcional real | Corrigido |
+| P1-002 | E2E | Média | Suite duplicada de creator consolidada numa única suite | Corrigido |
+| P1-003 | E2E | Média | Fixtures ajustados ao limite real de `profiles.handle` | Corrigido |
+| P1-004 | Quality | Baixa | Import obsoleto removido de `App.tsx` | Corrigido |
+
+## 9. Dívida técnica restante
+
+Existe uma camada histórica de routing com páginas equivalentes. Nesta parte foi corrigida apenas a rota efectiva necessária para a fundação de identidade.
+
+Não existe um segundo projecto Supabase de staging separado disponível neste contexto. A migração foi aplicada e validada no projecto remoto acessível.
+
+## 10. Pedidos ao Dono do Produto
+
+Nenhum bloqueio de produto é necessário para a Parte 2.
+
+## 11. Pronto para Superprompt 3
+
+Não. Ainda faltam as Partes 2, 3 e 4 do Superprompt 2.
+
+A execução deve parar aqui.
