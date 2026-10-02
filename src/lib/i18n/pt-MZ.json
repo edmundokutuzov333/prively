@@ -12,7 +12,11 @@
       "title": "Sê criadora",
       "description": "Conhece o percurso para criar a tua presença na Prively e trabalhar com ferramentas privadas para conteúdo e comunidade.",
       "empty": "Começa pelo primeiro passo para conheceres o percurso de criação da tua presença.",
-      "cta": "Começar"
+      "cta": "Começar",
+      "step1": "Cria e verifica a tua conta.",
+      "step2": "Completa a tua presença de criadora.",
+      "step3": "Prepara o teu conteúdo e as tuas regras.",
+      "step4": "Publica e gere a tua comunidade com segurança."
     },
     "terms": {
       "title": "Termos e Condições",
@@ -80,12 +84,20 @@
     "onboardingClient": {
       "title": "Bem-vindo ao Privê",
       "description": "Conhece os principais passos opcionais para configurar a tua experiência como cliente.",
-      "empty": "Ainda não existem passos personalizados para apresentar."
+      "empty": "Ainda não existem passos personalizados para apresentar.",
+      "step1": "Confirma as preferências da tua experiência.",
+      "step2": "Conhece as ferramentas de descoberta.",
+      "step3": "Configura os controlos de privacidade.",
+      "step4": "Explora a tua carteira e as tuas compras."
     },
     "onboardingCreator": {
       "title": "Configura a tua presença",
       "description": "Organiza os passos essenciais para preparar a tua presença como criadora.",
-      "empty": "O checklist de configuração será apresentado aqui."
+      "empty": "O checklist de configuração será apresentado aqui.",
+      "step1": "Conclui a verificação de identidade.",
+      "step2": "Prepara o perfil público.",
+      "step3": "Configura conteúdo e assinaturas.",
+      "step4": "Revisa segurança e suporte."
     }
   },
   "client": {
