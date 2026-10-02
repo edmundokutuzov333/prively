@@ -247,9 +247,10 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
       .order('reviewed_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    console.log('A.3.13 RLS admin-scoped KYC read=', JSON.stringify(adminScopedKyc));
+    console.log('A.3.13 RLS admin-scoped AAL2 KYC read=', JSON.stringify(adminScopedKyc));
     expect(adminScopedKyc.error).toBeNull();
-    expect(adminScopedKyc.data).toBeNull();
+    expect(adminScopedKyc.data?.id).toBe(kycId);
+    expect(adminScopedKyc.data?.status).toBe('approved');
 
     const finalKyc = await readSingleWithRetry(
       () => admin.from('kyc_verifications')
