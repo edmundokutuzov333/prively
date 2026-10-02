@@ -30,8 +30,17 @@ const emptyForm: Channel = {
 };
 
 function errorCode(error: unknown): string {
-  const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
-  return raw.toLowerCase().split(":")[0].replace(/[^a-z0-9_]/g, "");
+  const raw = error instanceof Error ? error.message.toLowerCase() : typeof error === "string" ? error.toLowerCase() : "";
+  const codes = [
+    "not_creator",
+    "channel_not_found",
+    "channel_forbidden",
+    "channel_handle_taken",
+    "invalid_channel_handle",
+    "display_name_invalid",
+    "bio_too_long",
+  ];
+  return codes.find((code) => raw.includes(code)) ?? "";
 }
 
 export default function Profile() {
