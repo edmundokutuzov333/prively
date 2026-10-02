@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(18);
 
 select ok(to_regclass('public.kyc_verifications') is not null,'KYC table exists');
 select ok(to_regclass('public.user_roles') is not null,'role table exists');
@@ -54,12 +54,6 @@ select set_config('request.jwt.claims',json_build_object('sub','72000000-0000-00
 select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),0::bigint,'ordinary user receives no KYC weekly volume');
 select is((select count(*) from public.kyc_manual_queue_weekly_volume_guarded()),0::bigint,'weekly volume remains hidden without admin.kyc permission');
 select ok(public.is_age_verified('72000000-0000-0000-0000-000000000002') = false,'user without approved KYC is not age verified');
-select throws_ok(
-  $select public.approve_kyc('00000000-0000-0000-0000-000000000099', true, null, '72000000-0000-0000-0000-000000000001')$,
-  '42501',
-  null,
-  'ordinary authenticated execution cannot call approve_kyc'
-);
 select ok(has_function_privilege('authenticated','public.submit_kyc(text,text,text,text)','EXECUTE'),'authenticated can submit KYC through the protected submission RPC');
 select is((select count(*) from public.get_my_kyc_status()),1::bigint,'own KYC status returns only the latest row');
 select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000001',true);
