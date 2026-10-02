@@ -68,7 +68,7 @@ jobs:
 
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -181,37 +181,13 @@ jobs:
             echo "supabase test db failed; native suites above provide the isolated regression signal."
             exit 1
           fi
-      - name: Stop local Supabase
-        if: always()
-        run: supabase stop --no-backup
-
-
-  e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    needs: [quality, database]
-    env:
-      VITE_SUPABASE_URL: https://gaonupelgtpfthouyobh.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_nOlc5uc4GLZQzLTYpytHwA_mhlPtPcK
-      VITE_APP_ENV: development
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
+      - name: Setup Node for E2E
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-      - name: Install dependencies
+      - name: Install dependencies for E2E
         run: npm ci --no-audit --no-fund
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.118.0
-      - name: Start local Supabase
-        run: supabase start
-      - name: Reset local database
-        run: supabase db reset
       - name: Export local E2E environment
         shell: bash
         run: |
