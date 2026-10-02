@@ -3,6 +3,7 @@
 Data: 2026-10-02
 Branch: main
 Supabase: gaonupelgtpfthouyobh
+Head actual: 6a376a8141f2863277087984a1c81805edd8c541
 
 ## 1. Estado
 
@@ -156,9 +157,9 @@ Output E2E final: pendente do CI desta versão final.
 
 ## 8. CI
 
-O workflow ficou sujeito a cancelamentos por novos commits sucessivos durante a implementação.
-CI definitivo da versão final: pendente.
-Production Smoke da versão final: pendente.
+O código da Parte 3 está integrado na `main` actual. A execução técnica mais recente `37015928852` chegou a `quality=SUCCESS`, `database=SUCCESS` e `Edge Functions contract tests=SUCCESS`, mas ficou presa no job `e2e` durante `Start local Supabase`, antes da execução dos testes. Esta ocorrência não constitui uma falha funcional do Canal.
+
+Foi emitida uma nova execução a partir deste estado documental para obter um gate limpo. A certificação final só será declarada após `quality`, `database`, `Edge Functions` e `e2e` terminarem com `SUCCESS`.
 
 Production Delivery continua independente do gate técnico e pode falhar quando os secrets de produção estão ausentes. Isso não altera os jobs de Prively CI.
 
