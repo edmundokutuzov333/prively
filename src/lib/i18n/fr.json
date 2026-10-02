@@ -407,7 +407,25 @@
     "kycQueue": {
       "title": "File KYC",
       "description": "Consulte les demandes de vérification d’identité en attente.",
-      "empty": "Aucune vérification en attente."
+      "empty": "Aucune demande KYC en attente.",
+      "volumeEyebrow": "OPÉRATIONS",
+      "volumeTitle": "Volume manuel",
+      "volumeDescription": "Demandes KYC manuelles reçues au cours des huit dernières semaines.",
+      "volumeEmpty": "Aucune demande manuelle au cours des huit dernières semaines.",
+      "week": "Semaine",
+      "requests": "Demandes",
+      "document": "Ouvrir le document",
+      "selfie": "Ouvrir le selfie",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "approveReason": "Approuvée par l’équipe autorisée.",
+      "rejectReason": "Refusée par l’équipe autorisée.",
+      "states": {
+        "pending": "En attente",
+        "review": "En cours d’examen",
+        "approved": "Approuvée",
+        "rejected": "Refusée"
+      }
     },
     "moderationQueue": {
       "title": "Modération",
