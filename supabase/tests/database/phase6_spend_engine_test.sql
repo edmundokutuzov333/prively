@@ -156,7 +156,7 @@ begin
   where key='commission.by_kind';
 
   update public.platform_settings
-  set value='0'::jsonb
+  set value='72'::jsonb
   where key='hold_hours';
 
   update public.platform_settings
