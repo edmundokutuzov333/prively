@@ -316,7 +316,9 @@
     "emergency": {
       "title": "Suporte de emergência",
       "description": "Acede ao espaço de suporte de emergência da criadora.",
-      "empty": "O suporte de emergência está sem dados para apresentar."
+      "empty": "O suporte de emergência está sem dados para apresentar.",
+      "cta": "Abrir suporte de emergência",
+      "disabledReason": "A operação real de emergência será ligada no Superprompt 2."
     }
   },
   "shared": {
