@@ -14,11 +14,26 @@ const schema = z.object({
   locale: z.string().min(2).max(12).default("pt-MZ"),
 });
 
-const json = (body: Record<string, unknown>, status: number) =>
-  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+const cors = (request: Request): Record<string, string> => {
+  const allowedOrigins = (Deno.env.get("APP_ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const origin = request.headers.get("origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : "null",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-prively-job-token",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+};
+
+const json = (body: Record<string, unknown>, status: number, request: Request) =>
+  new Response(JSON.stringify(body), { status, headers: { ...cors(request), "content-type": "application/json" } });
 
 Deno.serve(async (request) => {
-  if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
+  if (request.method === "OPTIONS") return new Response("ok", { headers: cors(request) });
+  if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405, request);
 
   try {
     const authorization = request.headers.get("Authorization") ?? "";
@@ -28,7 +43,7 @@ Deno.serve(async (request) => {
     });
 
     const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError || !authData.user) return json({ code: "unauthorized" }, 401);
+    if (authError || !authData.user) return json({ code: "unauthorized" }, 401, request);
 
     const body = schema.parse(await request.json());
     const providerConfigured = Boolean(
@@ -48,10 +63,10 @@ Deno.serve(async (request) => {
       if (error) {
         const code = error.message.split(":")[0].trim();
         const status = code === "kyc_already_pending" ? 409 : code === "kyc_path_forbidden" ? 403 : 422;
-        return json({ code }, status);
+        return json({ code }, status, request);
       }
 
-      return json({ ok: true, mode: "manual", kycId: data, status: "pending" }, 200);
+      return json({ ok: true, mode: "manual", kycId: data, status: "pending" }, 200, request);
     }
 
     const response = await fetch(env("KYC_START_URL"), {
@@ -63,16 +78,16 @@ Deno.serve(async (request) => {
       body: JSON.stringify({ userId: authData.user.id, locale: body.locale }),
     });
 
-    if (!response.ok) return json({ code: "kyc_provider_unavailable" }, 503);
+    if (!response.ok) return json({ code: "kyc_provider_unavailable" }, 503, request);
     const providerBody = await response.json() as { url?: unknown; providerRef?: unknown };
     if (typeof providerBody.url !== "string" || typeof providerBody.providerRef !== "string") {
-      return json({ code: "kyc_provider_invalid_response" }, 502);
+      return json({ code: "kyc_provider_invalid_response" }, 502, request);
     }
 
-    return json({ ok: true, mode: "provider", url: providerBody.url, providerRef: providerBody.providerRef }, 200);
+    return json({ ok: true, mode: "provider", url: providerBody.url, providerRef: providerBody.providerRef }, 200, request);
   } catch (error) {
-    if (error instanceof z.ZodError) return json({ code: "invalid_kyc_payload" }, 400);
+    if (error instanceof z.ZodError) return json({ code: "invalid_kyc_payload" }, 400, request);
     const code = error instanceof Error ? error.message : "kyc_start_failed";
-    return json({ code }, code === "unauthorized" ? 401 : 503);
+    return json({ code }, code === "unauthorized" ? 401 : 503, request);
   }
 });
