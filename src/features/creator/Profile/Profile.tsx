@@ -51,6 +51,7 @@ export default function Profile() {
   const [pageState, setPageState] = useState<PageState>("loading");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [handleState, setHandleState] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'>('idle');
 
   const load = async () => {
     if (!user) {
@@ -99,6 +100,50 @@ export default function Profile() {
     }
     void load();
   }, [authLoading, user?.id]);
+
+  useEffect(() => {
+    let active = true;
+    const normalizedHandle = form.handle.trim().toLowerCase();
+
+    if (!user || !normalizedHandle) {
+      setHandleState('idle');
+      return () => {
+        active = false;
+      };
+    }
+
+    if (channel?.handle && normalizedHandle === channel.handle.toLowerCase()) {
+      setHandleState('available');
+      return () => {
+        active = false;
+      };
+    }
+
+    if (!/^[a-z0-9_]{3,24}$/.test(normalizedHandle)) {
+      setHandleState('invalid');
+      return () => {
+        active = false;
+      };
+    }
+
+    setHandleState('checking');
+    const timer = window.setTimeout(() => {
+      void requireSupabase().rpc('check_channel_handle', { _handle: normalizedHandle })
+        .then(({ data, error: rpcError }) => {
+          if (!active) return;
+          if (rpcError) {
+            setHandleState('error');
+            return;
+          }
+          setHandleState(data === true ? 'available' : 'taken');
+        });
+    }, 400);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [channel?.handle, form.handle, user]);
 
   const save = async () => {
     if (!channel || saving) return;
@@ -196,7 +241,21 @@ export default function Profile() {
           <div className="mt-7 grid gap-5 md:grid-cols-2">
             <label>
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.handle")}</span>
-              <input value={form.handle} onChange={(event) => setForm((current) => ({ ...current, handle: event.target.value.toLowerCase() }))} maxLength={24} className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none" />
+              <input
+                value={form.handle}
+                onChange={(event) => setForm((current) => ({ ...current, handle: event.target.value.toLowerCase() }))}
+                maxLength={24}
+                autoComplete="off"
+                aria-invalid={handleState === 'invalid' || handleState === 'taken'}
+                className="min-h-12 w-full rounded-md border border-input bg-ink-850 px-3 text-bone-50 outline-none"
+              />
+              <p role="status" className="mt-2 text-xs text-bone-500">
+                {handleState === 'checking' ? t("content.handleChecking") :
+                 handleState === 'available' ? t("content.handleAvailable") :
+                 handleState === 'taken' ? t("content.handleTaken") :
+                 handleState === 'invalid' ? t("content.handleInvalid") :
+                 handleState === 'error' ? t("content.handleValidationError") : ""}
+              </p>
             </label>
             <label>
               <span className="mb-2 block text-sm text-bone-300">{t("experience.pages.creator.profile.displayName")}</span>
@@ -221,7 +280,7 @@ export default function Profile() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <Botao onClick={() => void save()} loading={saving} disabled={!form.handle.trim() || !form.display_name.trim()}>
+            <Botao onClick={() => void save()} loading={saving} disabled={!form.handle.trim() || !form.display_name.trim() || handleState !== 'available'}>
               {t("experience.pages.creator.profile.save")}
             </Botao>
             <Link to={ROUTES.CLIENT_CREATOR_PROFILE(form.handle)} className="inline-flex min-h-11 items-center rounded-xl border border-bone-50/12 px-4 text-sm font-semibold text-bone-50">
