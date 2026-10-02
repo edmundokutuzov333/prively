@@ -338,5 +338,57 @@
       "description": "Shared notifications. Shared account area.",
       "empty": "No shared notifications data is available to display yet."
     }
+  },
+  "adminPages": {
+    "dashboard": {
+      "title": "Administration",
+      "description": "Administrative shortcuts and protected Control Room areas.",
+      "empty": "No administrative shortcuts are available to display yet."
+    },
+    "users": {
+      "title": "Users",
+      "description": "Search and review users through the available administrative controls.",
+      "empty": "No users found."
+    },
+    "kycQueue": {
+      "title": "KYC queue",
+      "description": "Review pending identity verification requests.",
+      "empty": "No pending verification requests."
+    },
+    "moderationQueue": {
+      "title": "Moderation",
+      "description": "Review reports and items that require moderation.",
+      "empty": "No reports."
+    },
+    "finance": {
+      "title": "Finance",
+      "description": "Review protected administrative financial operations.",
+      "empty": "No pending withdrawals."
+    },
+    "compliance": {
+      "title": "Compliance",
+      "description": "Review compliance areas and operational reports.",
+      "empty": "No reports available."
+    },
+    "config": {
+      "title": "Configuration",
+      "description": "Manage administrative parameters, commissions and available flags.",
+      "empty": "No configuration data is available at this layer."
+    },
+    "support": {
+      "title": "Support",
+      "description": "Review support requests that require team intervention.",
+      "empty": "No support requests."
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "Review the state of storage, processing and backup infrastructure.",
+      "empty": "No storage events are available to display."
+    },
+    "productionGate": {
+      "title": "Production status",
+      "description": "Review checks required for operational readiness.",
+      "empty": "No production gate results are available at this layer."
+    }
   }
 }
