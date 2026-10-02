@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle, Clock, ShieldCheck } from "@phosphor-icons/react";
+import { CheckCircle } from "@phosphor-icons/react";
 import { useTranslation } from "@/lib/i18n";
 import { PageShell, type PageState } from "@/components/layout/PageShell";
 import { Ficha } from "@/design/Ficha";
