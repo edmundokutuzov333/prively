@@ -105,9 +105,22 @@ select is(
 );
 
 select is(
-  (select count(*) from public.ledger_entries where owner_id='71400000-0000-0000-0000-000000000001'::uuid and kind='payout_hold'),
+  (select count(*) from public.ledger_entries where kind='payout_hold' and ref_type='payout'),
   2::bigint,
   'payout hold creates creator and escrow ledger entries'
+);
+
+select ok(
+  exists(
+    select 1
+    from public.ledger_entries
+    where kind='payout_hold'
+      and ref_type='payout'
+      and account='escrow'
+      and owner_id='00000000-0000-0000-0000-000000000000'::uuid
+      and amount=60000
+  ),
+  'payout hold includes escrow counterpart'
 );
 
 set local role authenticated;
