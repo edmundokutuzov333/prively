@@ -67,9 +67,9 @@ export default function CreatorProfile() {
 
   if (state !== "success") {
     const message = state === "empty"
-      ? t("experience.pages.profile.notFound")
+      ? t("publicCreatorProfile.notFound")
       : state === "forbidden"
-        ? t("experience.pages.profile.authRequired")
+        ? t("publicCreatorProfile.authRequired")
         : state === "offline"
           ? t("pageShell.offline")
           : state === "loading"
@@ -79,13 +79,13 @@ export default function CreatorProfile() {
     return (
       <PageShell
         title={t("experience.pages.profile.title")}
-        description={t("experience.pages.profile.description")}
+        description={t("experience.pages.profile.intro")}
         state={state}
         emptyState={{
           message,
           action: state === "error" || state === "offline"
             ? <button type="button" onClick={() => void load()} className="inline-flex min-h-11 items-center rounded-xl border border-bone-50/12 px-4 text-sm font-semibold text-bone-50">{t("common.retry")}</button>
-            : <Link to={ROUTES.DISCOVER} className="inline-flex min-h-11 items-center rounded-xl border border-bone-50/12 px-4 text-sm font-semibold text-bone-50">{t("experience.pages.profile.backToDiscover")}</Link>,
+            : <Link to={ROUTES.DISCOVER} className="inline-flex min-h-11 items-center rounded-xl border border-bone-50/12 px-4 text-sm font-semibold text-bone-50">{t("publicCreatorProfile.backToDiscover")}</Link>,
         }}
       />
     );
@@ -96,7 +96,7 @@ export default function CreatorProfile() {
   return (
     <PageShell
       title={channel?.display_name ?? t("experience.pages.profile.title")}
-      description={t("experience.pages.profile.publicDescription")}
+      description={t("publicCreatorProfile.publicDescription")}
       state="success"
     >
       <div className="space-y-6">
@@ -115,7 +115,7 @@ export default function CreatorProfile() {
 
           <div className="mt-6 flex items-start gap-3 text-sm text-bone-500">
             <MapPin size={18} className="mt-0.5 shrink-0" />
-            <span>{location || t("experience.pages.profile.locationEmpty")}</span>
+            <span>{location || t("publicCreatorProfile.locationEmpty")}</span>
           </div>
         </Ficha>
       </div>
