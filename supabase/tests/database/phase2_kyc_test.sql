@@ -1,10 +1,11 @@
 begin;
-select plan(18);
+select plan(19);
 
 select ok(to_regclass('public.kyc_verifications') is not null,'KYC table exists');
 select ok(to_regclass('public.user_roles') is not null,'role table exists');
 select ok((select public from storage.buckets where id='prively-kyc') = false,'KYC bucket is private');
 select ok(not has_function_privilege('authenticated','public.approve_kyc(uuid,boolean,text,uuid)','EXECUTE'),'authenticated cannot execute approve_kyc');
+select ok(not has_function_privilege('authenticated','public.apply_kyc_result(uuid,text,text,text,boolean,text,timestamptz)','EXECUTE'),'authenticated cannot execute provider KYC result apply');
 select ok(not has_function_privilege('authenticated','public.kyc_manual_queue_weekly_volume()','EXECUTE'),'unguarded KYC volume is not public to authenticated');
 select ok(has_function_privilege('authenticated','public.kyc_manual_queue_weekly_volume_guarded()','EXECUTE'),'guarded KYC volume is executable by authenticated');
 select ok(has_function_privilege('authenticated','public.get_my_kyc_status()','EXECUTE'),'own KYC status detail is executable by authenticated');
