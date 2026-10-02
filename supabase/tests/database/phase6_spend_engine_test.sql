@@ -79,12 +79,14 @@ do $$
 declare
   buyer uuid := '96060000-0000-0000-0000-000000000001';
   creator uuid := '96060000-0000-0000-0000-000000000002';
+  release_creator uuid := '96060000-0000-0000-0000-000000000003';
   channel uuid := '96060000-0000-0000-0000-000000000010';
   ref_id uuid := '96060000-0000-0000-0000-000000000020';
   txn_one uuid;
   txn_two uuid;
   seed_txn uuid;
   release_count integer;
+  release_source_id bigint;
   caught text;
   creator_pending_before bigint;
   platform_before bigint;
@@ -105,12 +107,17 @@ begin
       creator,'authenticated','authenticated',
       'phase6-spend-creator@example.test','test',
       '{"handle":"phase6_spend_creator"}'::jsonb,now()
+    ),
+    (
+      release_creator,'authenticated','authenticated',
+      'phase6-spend-release@example.test','test',
+      '{"handle":"phase6_spend_release"}'::jsonb,now()
     )
   on conflict(id) do nothing;
 
   update public.profiles
   set status='active', age_verified_at=now()
-  where id in (buyer,creator);
+  where id in (buyer,creator,release_creator);
 
   insert into public.kyc_verifications(user_id,provider,status,reviewed_at)
   values
@@ -241,29 +248,35 @@ begin
   set local role service_role;
 
   insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id,release_at,metadata)
-  values
-    (
-      '96060000-0000-0000-0000-000000000088'::uuid,
-      'creator_pending',
-      creator,
-      5000,
-      'phase6_release_probe',
-      'phase6_release_probe',
-      ref_id,
-      now(),
-      '{}'::jsonb
-    ),
-    (
-      '96060000-0000-0000-0000-000000000088'::uuid,
-      'external',
-      '00000000-0000-0000-0000-000000000000'::uuid,
-      -5000,
-      'phase6_release_probe',
-      'phase6_release_probe',
-      ref_id,
-      null,
-      '{}'::jsonb
-    );
+  values(
+    '96060000-0000-0000-0000-000000000088'::uuid,
+    'creator_pending',
+    release_creator,
+    7000,
+    'phase6_release_probe',
+    'phase6_release_probe',
+    ref_id,
+    now(),
+    '{}'::jsonb
+  )
+  returning id into release_source_id;
+
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id,release_at,metadata)
+  values(
+    '96060000-0000-0000-0000-000000000088'::uuid,
+    'external',
+    '00000000-0000-0000-0000-000000000000'::uuid,
+    -7000,
+    'phase6_release_probe',
+    'phase6_release_probe',
+    ref_id,
+    null,
+    '{}'::jsonb
+  );
+
+  insert into _phase6_meta(key,value)
+  values('release_source_id',release_source_id::text)
+  on conflict(key) do update set value=excluded.value;
 
   perform public.release_due_earnings();
 
@@ -272,7 +285,7 @@ begin
     'release_count',
     count(distinct release_source_id)::text
   from public.ledger_entries
-  where release_source_id is not null
+  where release_source_id=release_source_id
     and kind='release';
 
   perform public.release_due_earnings();
@@ -391,19 +404,19 @@ select is(
 select is(
   (select balance
    from public.balances
-   where owner_id='96060000-0000-0000-0000-000000000002'::uuid
+   where owner_id='96060000-0000-0000-0000-000000000003'::uuid
      and account='creator_pending'),
   0::bigint,
-  'released pending balance is cleared'
+  'released probe pending balance is cleared'
 );
 
 select is(
   (select balance
    from public.balances
-   where owner_id='96060000-0000-0000-0000-000000000002'::uuid
+   where owner_id='96060000-0000-0000-0000-000000000003'::uuid
      and account='creator_available'),
   7000::bigint,
-  'released earnings become available'
+  'released probe earnings become available'
 );
 
 select is(
