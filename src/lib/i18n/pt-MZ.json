@@ -1,0 +1,10 @@
+{
+  "pageShell": {
+    "loading": "A carregar",
+    "empty": "Ainda não existem dados para mostrar.",
+    "error": "Não foi possível carregar esta área.",
+    "offline": "Sem ligação. Verifica a ligação à internet e tenta novamente.",
+    "forbidden": "Não tens permissão para aceder a esta área.",
+    "success": "Operação concluída."
+  }
+}

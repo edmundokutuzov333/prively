@@ -1,0 +1,10 @@
+{
+  "pageShell": {
+    "loading": "Chargement",
+    "empty": "Il n’y a encore aucune donnée à afficher.",
+    "error": "Cette zone n’a pas pu être chargée.",
+    "offline": "Vous êtes hors connexion. Vérifiez votre connexion et réessayez.",
+    "forbidden": "Vous n’avez pas la permission d’accéder à cette zone.",
+    "success": "Opération terminée."
+  }
+}

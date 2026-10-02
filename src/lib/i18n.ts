@@ -1,4 +1,5 @@
 import i18n from 'i18next';
+export { useTranslation, Trans, Translation } from 'react-i18next';
 import { initReactI18next } from 'react-i18next';
 import ptMZ from '@/locales/pt-MZ/common';
 import en from '@/locales/en/common';
