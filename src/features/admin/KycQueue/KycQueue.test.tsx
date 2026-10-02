@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import KycQueue from "./KycQueue";
 
 describe("KycQueue", () => {
-  it("renders title and empty state", () => {
+  it("renders the real queue surface and weekly volume heading", () => {
     render(<KycQueue />);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
-    expect(screen.getByTestId("page-shell-empty")).toBeInTheDocument();
+    expect(screen.getByText("Volume manual")).toBeInTheDocument();
   });
 });
