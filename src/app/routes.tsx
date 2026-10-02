@@ -50,7 +50,6 @@ const Auctions = lazy(() => import("@/features/client/Auctions"));
 const Products = lazy(() => import("@/features/client/Products"));
 const Raffles = lazy(() => import("@/features/client/Raffles"));
 const Studio = lazy(() => import("@/features/creator/Studio"));
-const Wall = lazy(() => import("@/features/creator/Wall"));
 const CreateChannel = lazy(() => import("@/features/creator/CreateChannel"));
 const Publish = lazy(() => import("@/features/creator/Publish"));
 const Store = lazy(() => import("@/features/creator/Store"));
