@@ -12,7 +12,11 @@
       "title": "Become a creator",
       "description": "Learn the path to creating your presence on Prively and working with private tools for content and community.",
       "empty": "Start with the first step to learn the creator journey.",
-      "cta": "Start"
+      "cta": "Start",
+      "step1": "Create and verify your account.",
+      "step2": "Complete your creator presence.",
+      "step3": "Prepare your content and rules.",
+      "step4": "Publish and manage your community safely."
     },
     "terms": {
       "title": "Terms and Conditions",
@@ -80,12 +84,20 @@
     "onboardingClient": {
       "title": "Welcome to Privê",
       "description": "Review the optional steps for setting up your client experience.",
-      "empty": "There are no personalised steps to display yet."
+      "empty": "There are no personalised steps to display yet.",
+      "step1": "Confirm your experience preferences.",
+      "step2": "Learn the discovery tools.",
+      "step3": "Configure privacy controls.",
+      "step4": "Explore your wallet and purchases."
     },
     "onboardingCreator": {
       "title": "Set up your presence",
       "description": "Organise the essential steps for preparing your creator presence.",
-      "empty": "The setup checklist will be presented here."
+      "empty": "The setup checklist will be presented here.",
+      "step1": "Complete identity verification.",
+      "step2": "Prepare your public profile.",
+      "step3": "Configure content and subscriptions.",
+      "step4": "Review safety and support."
     }
   },
   "client": {
