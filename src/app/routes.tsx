@@ -86,7 +86,6 @@ const AdminConfig = lazy(() => import("@/features/admin/Config"));
 const AdminSupport = lazy(() => import("@/features/admin/Support"));
 const AdminStorage = lazy(() => import("@/features/admin/Storage"));
 const AdminProductionGate = lazy(() => import("@/features/admin/ProductionGate"));
-const SystemError = lazy(() => import("@/features/system/Error"));
 const SystemNotFound = lazy(() => import("@/features/system/NotFound"));
 const SystemForbidden = lazy(() => import("@/features/system/Forbidden"));
 const SystemOffline = lazy(() => import("@/features/system/Offline"));
