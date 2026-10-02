@@ -153,6 +153,7 @@ jobs:
             "phase1_identity_roles_kyc_test.sql"
             "phase2_kyc_test.sql"
             "phase3_channel_creation_test.sql"
+            "phase3_channel_profile_test.sql"
             "phase4_ledger_test.sql"
             "phase3_channel_seed_visibility_test.sql"
             "phase10_sensitive_access_aal2_test.sql"
