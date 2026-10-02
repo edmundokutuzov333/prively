@@ -1,5 +1,5 @@
 import { AccessToken, VideoGrant } from "npm:livekit-server-sdk@2.19.1";
-import { corsHeaders, jsonResponse, optionsResponse } from "../_shared/cors.ts";
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { requireUser, requireUuid } from "../_shared/auth.ts";
 
 function env(name: string): string {
@@ -41,7 +41,7 @@ Deno.serve(async (request) => {
       canPublishData: canPublish,
     }));
 
-    return new Response(JSON.stringify({
+    return jsonResponse({
       token: await token.toJwt(),
       url: env("LIVEKIT_URL"),
       sessionId: row.session_id ?? sessionId,
@@ -49,7 +49,7 @@ Deno.serve(async (request) => {
       mode: row.mode ?? null,
       role: row.role,
       perMinutePrice: row.per_minute_price ?? null,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }, 200, request);
   } catch (error) {
     const code = error instanceof Error ? error.message : "live_token_error";
     return jsonResponse({ code }, code === "unauthorized" ? 401 : 400, request);
