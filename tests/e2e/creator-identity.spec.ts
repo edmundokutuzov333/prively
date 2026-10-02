@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.SUPABASE_URL;
@@ -59,7 +59,7 @@ async function createTestUser(kind: 'no-kyc' | 'approved') {
   return { userId, email, password };
 }
 
-async function loginCreator(page: Parameters<typeof test>[0]['page'], email: string, password: string) {
+async function loginCreator(page: Page, email: string, password: string) {
   await page.goto('/entrar?role=creator');
   await page.locator('#auth-email').fill(email);
   await page.locator('#auth-password').fill(password);
