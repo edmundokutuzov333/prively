@@ -76,6 +76,15 @@ export const ROUTES = {
   NOT_FOUND: "*",
   FORBIDDEN: "/sem-permissao",
   OFFLINE: "/offline",
+  CLIENT_ACCOUNT: "/definicoes/conta",
+  CLIENT_SECURITY: "/definicoes/seguranca",
+  CLIENT_WELLBEING: "/definicoes/bem-estar",
+  CLIENT_DISCREET: "/definicoes/discreto",
+  CLIENT_LOYALTY: "/fidelidade",
+  CLIENT_CUSTOM_REQUESTS: "/pedidos",
+  CLIENT_AUCTIONS: "/leiloes",
+  CLIENT_PRODUCTS: "/produtos",
+  CLIENT_RAFFLES: "/sorteios",
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

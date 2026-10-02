@@ -7,6 +7,7 @@ import { ROUTES } from "@/lib/routes";
 import { readAgeVerification } from "@/lib/ageGate";
 import { useAuth } from "@/app/session";
 import { ExperienceGuard } from "@/app/ExperienceGuards";
+import { ClientNav } from "@/components/layout/ClientNav";
 
 const BecomeCreator = lazy(() => import("@/features/public/BecomeCreator"));
 const AgeGate = lazy(() => import("@/features/auth/AgeGate"));
@@ -23,6 +24,27 @@ const Refunds = lazy(() => import("@/features/public/Legal/Refunds"));
 const Cookies = lazy(() => import("@/features/public/Legal/Cookies"));
 const Dmca = lazy(() => import("@/features/public/Legal/Dmca"));
 const Contacts = lazy(() => import("@/features/public/Legal/Contacts"));
+const Feed = lazy(() => import("@/features/client/Feed"));
+const Discover = lazy(() => import("@/features/client/Discover"));
+const CreatorProfile = lazy(() => import("@/features/client/CreatorProfile"));
+const Subscribe = lazy(() => import("@/features/client/Subscribe"));
+const PpvPurchase = lazy(() => import("@/features/client/PpvPurchase"));
+const Wallet = lazy(() => import("@/features/client/Wallet"));
+const Purchases = lazy(() => import("@/features/client/Purchases"));
+const Wishlist = lazy(() => import("@/features/client/Wishlist"));
+const Messages = lazy(() => import("@/features/client/Messages"));
+const Conversation = lazy(() => import("@/features/client/Conversation"));
+const Notifications = lazy(() => import("@/features/client/Notifications"));
+const Encounters = lazy(() => import("@/features/client/Encounters"));
+const Account = lazy(() => import("@/features/client/Account"));
+const Security = lazy(() => import("@/features/client/Security"));
+const Wellbeing = lazy(() => import("@/features/client/Wellbeing"));
+const Discreet = lazy(() => import("@/features/client/Discreet"));
+const Loyalty = lazy(() => import("@/features/client/Loyalty"));
+const CustomRequests = lazy(() => import("@/features/client/CustomRequests"));
+const Auctions = lazy(() => import("@/features/client/Auctions"));
+const Products = lazy(() => import("@/features/client/Products"));
+const Raffles = lazy(() => import("@/features/client/Raffles"));
 
 function FeatureSuspense() {
   const { t } = useTranslation();
@@ -40,6 +62,8 @@ function ProtectedAgeGate() {
   if (!readAgeVerification()) return <Navigate to={ROUTES.AGE_GATE} replace state={{ from: location }} />;
   return <Outlet />;
 }
+
+function ClientLayout() { return <div className="space-y-6"><ClientNav /><Outlet /></div>; }
 
 function AuthenticatedFeatureGuard() {
   const { user, loading } = useAuth();
@@ -83,7 +107,31 @@ const AUTH_ROUTES: RouteObject[] = [
   { path: ROUTES.RECOVER, element: lazyElement(Recover) },
 ];
 
-const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES];
+const CLIENT_ROUTES: RouteObject[] = [{ element: <ExperienceGuard />, children: [{ element: <ClientLayout />, children: [
+        { path: "/feed", element: lazyElement(Feed) },
+        { path: "/descobrir", element: lazyElement(Discover) },
+        { path: "/c/:handle", element: lazyElement(CreatorProfile) },
+        { path: "/c/:handle/assinar", element: lazyElement(Subscribe) },
+        { path: "/c/:handle/p/:postId", element: lazyElement(PpvPurchase) },
+        { path: "/carteira", element: lazyElement(Wallet) },
+        { path: "/compras", element: lazyElement(Purchases) },
+        { path: "/desejos", element: lazyElement(Wishlist) },
+        { path: "/mensagens", element: lazyElement(Messages) },
+        { path: "/mensagens/:id", element: lazyElement(Conversation) },
+        { path: "/notificacoes", element: lazyElement(Notifications) },
+        { path: "/encontros", element: lazyElement(Encounters) },
+        { path: "/definicoes/conta", element: lazyElement(Account) },
+        { path: "/definicoes/seguranca", element: lazyElement(Security) },
+        { path: "/definicoes/bem-estar", element: lazyElement(Wellbeing) },
+        { path: "/definicoes/discreto", element: lazyElement(Discreet) },
+        { path: "/fidelidade", element: lazyElement(Loyalty) },
+        { path: "/pedidos", element: lazyElement(CustomRequests) },
+        { path: "/leiloes", element: lazyElement(Auctions) },
+        { path: "/produtos", element: lazyElement(Products) },
+        { path: "/sorteios", element: lazyElement(Raffles) },
+] }] }];
+
+const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES];
 
 export function FeatureRouteResolver() {
   return useRoutes(FEATURE_ROUTES) ?? <Navigate to="/404" replace />;
