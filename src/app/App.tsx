@@ -25,6 +25,8 @@ import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
 import { FeatureRouteResolver } from '@/app/routes';
 import BecomeCreator from '@/features/public/BecomeCreator';
+import CreatorProfile from '@/features/client/CreatorProfile';
+import CreatorProfileEditor from '@/features/creator/Profile';
 import { InfoPage } from '@/pages/InfoPage';
 import { SurfaceStatePage } from '@/pages/SurfacePages';
 import { CreatorTermsPage } from '@/pages/CreatorTermsPage';
@@ -192,6 +194,15 @@ export function App() {
           <Route path="/estudio/lives" element={<Navigate to="/404" replace />} />
           <Route path="/estudio/chamadas" element={<Navigate to="/404" replace />} />
         </> : null}
+
+        <Route element={<ExperienceGuard />}>
+          <Route element={<WorkspaceLayout variant="client" />}>
+            <Route path="/c/:handle" element={<CreatorProfile />} />
+          </Route>
+          <Route element={<WorkspaceLayout variant="creator" />}>
+            <Route path="/estudio/perfil" element={<CreatorProfileEditor />} />
+          </Route>
+        </Route>
 
         {phase2RoutesEnabled ? <Route element={<ExperienceGuard />}>
           <Route element={<WorkspaceLayout variant="client" />}>
