@@ -24,6 +24,7 @@ import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
 import { FeatureRouteResolver } from '@/app/routes';
+import BecomeCreator from '@/features/public/BecomeCreator';
 import { InfoPage } from '@/pages/InfoPage';
 import { SurfaceStatePage } from '@/pages/SurfacePages';
 import { CreatorTermsPage } from '@/pages/CreatorTermsPage';
@@ -358,7 +359,7 @@ export function App() {
         {phase2RoutesEnabled ? <Route path="/legal/reembolsos" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/cookies" element={<InfoPage />} /> : null}
         {phase2RoutesEnabled ? <Route path="/legal/dmca" element={<Phase8DmcaPage />} /> : null}
-        {phase2RoutesEnabled ? <Route path="/se-criadora" element={<SeCriadoraPage />} /> : <Route path="/se-criadora" element={<Navigate to="/registo" replace />} />}
+        <Route path="/se-criadora" element={<BecomeCreator />} />
 
         <Route path="/404" element={<SurfaceStatePage />} />
         {stateSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfaceStatePage />} />)}
