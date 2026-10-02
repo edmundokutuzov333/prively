@@ -338,5 +338,57 @@
       "description": "Superfície partilhada de notificações utilizada pelos diferentes portais.",
       "empty": "A superfície partilhada não tem dados para apresentar nesta camada."
     }
+  },
+  "adminPages": {
+    "dashboard": {
+      "title": "Administração",
+      "description": "Centraliza atalhos operacionais e acesso às áreas protegidas do Control Room.",
+      "empty": "Não existem atalhos com dados para apresentar."
+    },
+    "users": {
+      "title": "Utilizadores",
+      "description": "Pesquisa e consulta utilizadores através dos controlos administrativos disponíveis.",
+      "empty": "Nenhum utilizador encontrado."
+    },
+    "kycQueue": {
+      "title": "Fila de KYC",
+      "description": "Acompanha verificações de identidade pendentes para revisão autorizada.",
+      "empty": "Sem verificações pendentes."
+    },
+    "moderationQueue": {
+      "title": "Moderação",
+      "description": "Acompanha denúncias e itens que requerem revisão de moderação.",
+      "empty": "Sem denúncias."
+    },
+    "finance": {
+      "title": "Financeiro",
+      "description": "Acompanha operações financeiras administrativas através do fluxo protegido.",
+      "empty": "Sem levantamentos pendentes."
+    },
+    "compliance": {
+      "title": "Conformidade",
+      "description": "Consulta áreas de conformidade e relatórios operacionais.",
+      "empty": "Não existem relatórios para apresentar."
+    },
+    "config": {
+      "title": "Configuração",
+      "description": "Gere parâmetros administrativos, comissões e flags disponibilizadas ao Control Room.",
+      "empty": "Não existem parâmetros para apresentar nesta camada."
+    },
+    "support": {
+      "title": "Suporte",
+      "description": "Acompanha pedidos de suporte que exigem intervenção da equipa.",
+      "empty": "Sem pedidos."
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "Consulta o estado das infraestruturas de armazenamento, processamento e backups.",
+      "empty": "Não existem eventos de storage para apresentar."
+    },
+    "productionGate": {
+      "title": "Estado de produção",
+      "description": "Consulta o estado das verificações necessárias para avaliar a prontidão operacional.",
+      "empty": "O gate de produção não tem resultados para apresentar nesta camada."
+    }
   }
 }
