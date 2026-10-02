@@ -6,10 +6,11 @@ A estrutura feature-based do Superprompt 1 foi criada directamente na main, coex
 Foram criadas 78 pastas de página em src/features, cada uma com os cinco ficheiros exigidos.
 O registry lazy foi centralizado em src/app/routes.tsx e os caminhos em src/lib/routes.ts.
 Os ficheiros de i18n têm 256 chaves folha em pt-MZ, en e fr, com paridade confirmada.
-O gate estrutural passou, o typecheck passou, o lint passou, os testes unitários passaram e o build passou.
-A auditoria de produção passou. Os jobs Edge Functions e database da CI final passaram.
-O E2E final ficou vermelho por um teste KYC existente: A.3.14 KYC_not_found; 145 testes E2E passaram, 1 falhou e 1 foi ignorado.
-Por isso, a aceitação final do Superprompt 1 permanece bloqueada e este relatório não declara a sessão como totalmente verde.
+Typecheck, lint, testes unitários, build, auditoria de produção, Edge Functions contract tests e database CI ficaram verdes na run 36979532340.
+A mesma run ficou vermelha apenas no E2E KYC existente: A.3.14 KYC_not_found, com 145 testes E2E passados, 1 falhado e 1 ignorado.
+O gate de estrutura foi posteriormente endurecido no commit 31fd983321df41bc2ba51cdc8573f7099ee0b184 para falhar de facto perante ficheiros, i18n, rotas ou copy proibido em falta.
+A nova CI da main para esse endurecimento é a run 36980524836 e estava pendente no momento deste relatório.
+Por isso, a aceitação global permanece condicionada pela validação da nova CI e pelo E2E KYC.
 
 ## 2. Commits / marcos
 
@@ -26,21 +27,23 @@ O Superprompt pede 10 commits de domínio/fase. A implementação real na main c
 9. c445adffddd2d4ec38bb80735ff659422a03a0de — estrutura: ci: validar contrato das paginas
 10. 3cb05d05fa5edf166d3f5d23d029bb94d5e719ae — estrutura: docs: ADR coexistencia feature based
 
+Hardening adicional: 31fd983321df41bc2ba51cdc8573f7099ee0b184 — estrutura: tests: tornar gate de paginas executavel.
+
 Além destes marcos, houve correcções necessárias de TypeScript, lint, router de testes, paridade i18n, normalização das constantes e ajustes do shell.
 
 ## 3. Evidências
 
-check:page-structure: passou na CI final. 78 páginas, 0 falhas no contrato de ficheiros, 256 chaves folha em cada língua, paridade completa e scan de placeholders proibidos sem ocorrências.
+check:page-structure na run 36979532340: executou sem falha. O gate foi posteriormente endurecido no commit 31fd9833; a nova execução estava pendente na run 36980524836.
 
-npm run typecheck: passou.
-npm run lint: passou.
-npm run test: passou na CI final. 84 ficheiros de teste, 94 testes.
-npm run audit:production: passou. 403 browser files e 48 Edge Function files inspeccionados.
-npm run build: passou.
-Edge Functions contract tests: passou.
-Database CI: passou, incluindo reset, lint, KYC bucket, suite canónica e regressões SQL.
+npm run typecheck na run 36979532340: passou.
+npm run lint na run 36979532340: passou.
+npm run test na run 36979532340: passou. 84 ficheiros de teste, 94 testes.
+npm run audit:production na run 36979532340: passou. 403 browser files e 48 Edge Function files inspeccionados.
+npm run build na run 36979532340: passou.
+Edge Functions contract tests na run 36979532340: passou.
+Database CI na run 36979532340: passou, incluindo reset, lint, KYC bucket, suite canónica e regressões SQL.
 
-CI final: run 36979532340.
+CI 36979532340:
 Quality: success.
 Edge Functions: success.
 Database: success.
@@ -48,6 +51,10 @@ E2E: failure.
 E2E: 145 passed, 1 failed, 1 skipped.
 Falha exacta: tests/e2e/journey-client-a2-a3.spec.ts em A.3.14 KYC_not_found.
 O log mostra A.3.13 AAL1 com HTTP 403 e A.3.13 AAL2 com HTTP 200, mas a leitura KYC subsequente não encontrou o registo após cinco tentativas.
+
+CI 36980524836:
+Estado no momento do relatório: pending.
+Motivo: validação do novo gate estrutural endurecido no commit 31fd9833.
 
 ## 4. Mapa de páginas criadas
 
@@ -91,5 +98,5 @@ system/Error aparece na estrutura de pastas, mas não tem rota no mapa; a pasta 
 
 Não.
 A espinha dorsal de páginas, ficheiros, rotas, i18n, guards, testes unitários, build e auditoria está pronta.
-A aceitação global não está verde porque a CI continua vermelha no E2E KYC existente: A.3.14 KYC_not_found.
+A aceitação global não está verde até a nova CI do commit 31fd9833 fechar e, principalmente, enquanto o E2E KYC A.3.14 continuar vermelho.
 O Superprompt 2 não deve ser tratado como oficialmente desbloqueado enquanto esse critério continuar vermelho.
