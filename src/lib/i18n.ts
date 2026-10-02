@@ -4,6 +4,9 @@ import { initReactI18next } from 'react-i18next';
 import ptMZ from '@/locales/pt-MZ/common';
 import en from '@/locales/en/common';
 import fr from '@/locales/fr/common';
+import pagePtMZ from '@/lib/i18n/pt-MZ.json';
+import pageEn from '@/lib/i18n/en.json';
+import pageFr from '@/lib/i18n/fr.json';
 
 export const supportedLanguages = ['pt-MZ', 'en', 'fr'] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
@@ -24,9 +27,9 @@ const initialLanguage: SupportedLanguage = supportedLanguages.includes(storedLan
 
 void i18n.use(initReactI18next).init({
   resources: {
-    'pt-MZ': { common: ptMZ },
-    en: { common: en },
-    fr: { common: fr }
+    'pt-MZ': { common: { ...ptMZ, ...pagePtMZ } },
+    en: { common: { ...en, ...pageEn } },
+    fr: { common: { ...fr, ...pageFr } }
   },
   lng: initialLanguage,
   fallbackLng: 'pt-MZ',

@@ -6,5 +6,48 @@
     "offline": "Sem ligação. Verifica a ligação à internet e tenta novamente.",
     "forbidden": "Não tens permissão para aceder a esta área.",
     "success": "Operação concluída."
+  },
+  "public": {
+    "becomeCreator": {
+      "title": "Sê criadora",
+      "description": "Conhece o percurso para criar a tua presença na Prively e trabalhar com ferramentas privadas para conteúdo e comunidade.",
+      "empty": "Começa pelo primeiro passo para conheceres o percurso de criação da tua presença.",
+      "cta": "Começar"
+    },
+    "terms": {
+      "title": "Termos e Condições",
+      "description": "Consulta as regras que definem a utilização da Prively e a relação entre utilizadores, criadoras e a plataforma.",
+      "empty": "O conteúdo dos Termos e Condições será apresentado aqui como documento legal."
+    },
+    "privacy": {
+      "title": "Política de Privacidade",
+      "description": "Consulta como os dados pessoais e os dados de utilização são tratados dentro da Prively.",
+      "empty": "O conteúdo da Política de Privacidade será apresentado aqui como documento legal."
+    },
+    "forbiddenContent": {
+      "title": "Conteúdo proibido",
+      "description": "Consulta as categorias de conteúdo e condutas que não são permitidas na Prively.",
+      "empty": "As regras de conteúdo proibido serão apresentadas aqui como documento de referência."
+    },
+    "refunds": {
+      "title": "Política de Reembolsos",
+      "description": "Consulta as regras aplicáveis a pagamentos, compras e pedidos de reembolso.",
+      "empty": "A Política de Reembolsos será apresentada aqui como documento de referência."
+    },
+    "cookies": {
+      "title": "Política de Cookies",
+      "description": "Consulta como a Prively utiliza cookies e tecnologias semelhantes no produto.",
+      "empty": "A Política de Cookies será apresentada aqui como documento de referência."
+    },
+    "dmca": {
+      "title": "Remoção de conteúdo (DMCA)",
+      "description": "Consulta o processo para pedidos de remoção de conteúdo ao abrigo das regras aplicáveis.",
+      "empty": "O procedimento de remoção de conteúdo será apresentado aqui como documento de referência."
+    },
+    "contacts": {
+      "title": "Contactos",
+      "description": "Encontra os canais adequados para questões gerais, suporte, segurança e assuntos legais.",
+      "empty": "Não existem contactos dinâmicos para mostrar nesta camada de estrutura."
+    }
   }
 }

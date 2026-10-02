@@ -6,5 +6,48 @@
     "offline": "Vous êtes hors connexion. Vérifiez votre connexion et réessayez.",
     "forbidden": "Vous n’avez pas la permission d’accéder à cette zone.",
     "success": "Opération terminée."
+  },
+  "public": {
+    "becomeCreator": {
+      "title": "Devenir créatrice",
+      "description": "Découvre le parcours pour créer ta présence sur Prively et utiliser des outils privés pour le contenu et la communauté.",
+      "empty": "Commence par la première étape pour découvrir le parcours de création.",
+      "cta": "Commencer"
+    },
+    "terms": {
+      "title": "Conditions générales",
+      "description": "Consulte les règles qui définissent l’utilisation de Prively et la relation entre les utilisateurs, les créatrices et la plateforme.",
+      "empty": "Le contenu des Conditions générales sera présenté ici comme document légal."
+    },
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "description": "Consulte la manière dont les données personnelles et les données d’utilisation sont traitées dans Prively.",
+      "empty": "Le contenu de la Politique de confidentialité sera présenté ici comme document légal."
+    },
+    "forbiddenContent": {
+      "title": "Contenu interdit",
+      "description": "Consulte les catégories de contenu et de conduite qui ne sont pas autorisées sur Prively.",
+      "empty": "Les règles relatives au contenu interdit seront présentées ici comme document de référence."
+    },
+    "refunds": {
+      "title": "Politique de remboursement",
+      "description": "Consulte les règles applicables aux paiements, achats et demandes de remboursement.",
+      "empty": "La Politique de remboursement sera présentée ici comme document de référence."
+    },
+    "cookies": {
+      "title": "Politique relative aux cookies",
+      "description": "Consulte la manière dont Prively utilise les cookies et technologies similaires dans le produit.",
+      "empty": "La Politique relative aux cookies sera présentée ici comme document de référence."
+    },
+    "dmca": {
+      "title": "Retrait de contenu (DMCA)",
+      "description": "Consulte le processus applicable aux demandes de retrait de contenu selon les règles en vigueur.",
+      "empty": "La procédure de retrait de contenu sera présentée ici comme document de référence."
+    },
+    "contacts": {
+      "title": "Contacts",
+      "description": "Trouve les canaux appropriés pour les questions générales, le support, la sécurité et les sujets juridiques.",
+      "empty": "Aucun contact dynamique n’est affiché à ce niveau de structure."
+    }
   }
 }

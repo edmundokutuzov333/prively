@@ -23,6 +23,7 @@ import { AdminAuditPage } from '@/pages/AdminAuditPage';
 import { AgeGatePage } from '@/pages/AgeGatePage';
 import { AuthPage } from '@/pages/AuthPage';
 import { DesignSystemPage } from '@/pages/DesignSystemPage';
+import { FeatureRouteResolver } from '@/app/routes';
 import { InfoPage } from '@/pages/InfoPage';
 import { SurfaceStatePage } from '@/pages/SurfacePages';
 import { CreatorTermsPage } from '@/pages/CreatorTermsPage';
@@ -362,7 +363,7 @@ export function App() {
         <Route path="/404" element={<SurfaceStatePage />} />
         {stateSurfaceRoutes.map((path) => <Route key={path} path={path} element={<SurfaceStatePage />} />)}
         {import.meta.env.DEV && featureFlags.designSystem ? <Route path="/system" element={<DesignSystemPage />} /> : null}
-        <Route path="*" element={<Navigate to="/404" replace />} />
+        <Route path="*" element={<FeatureRouteResolver />} />
       </Routes>
     </main>
   </BrowserRouter></SessionProvider>;

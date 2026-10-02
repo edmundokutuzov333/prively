@@ -6,5 +6,48 @@
     "offline": "You are offline. Check your connection and try again.",
     "forbidden": "You do not have permission to access this area.",
     "success": "Operation completed."
+  },
+  "public": {
+    "becomeCreator": {
+      "title": "Become a creator",
+      "description": "Learn the path to creating your presence on Prively and working with private tools for content and community.",
+      "empty": "Start with the first step to learn the creator journey.",
+      "cta": "Start"
+    },
+    "terms": {
+      "title": "Terms and Conditions",
+      "description": "Review the rules that define how Prively is used and the relationship between users, creators and the platform.",
+      "empty": "The Terms and Conditions content will be presented here as a legal document."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "Review how personal data and usage data are handled within Prively.",
+      "empty": "The Privacy Policy content will be presented here as a legal document."
+    },
+    "forbiddenContent": {
+      "title": "Prohibited content",
+      "description": "Review the categories of content and conduct that are not allowed on Prively.",
+      "empty": "The prohibited content rules will be presented here as a reference document."
+    },
+    "refunds": {
+      "title": "Refund Policy",
+      "description": "Review the rules that apply to payments, purchases and refund requests.",
+      "empty": "The Refund Policy will be presented here as a reference document."
+    },
+    "cookies": {
+      "title": "Cookie Policy",
+      "description": "Review how Prively uses cookies and similar technologies in the product.",
+      "empty": "The Cookie Policy will be presented here as a reference document."
+    },
+    "dmca": {
+      "title": "Content removal (DMCA)",
+      "description": "Review the process for content removal requests under applicable rules.",
+      "empty": "The content removal procedure will be presented here as a reference document."
+    },
+    "contacts": {
+      "title": "Contacts",
+      "description": "Find the appropriate channels for general, support, security and legal matters.",
+      "empty": "There are no dynamic contacts to display at this structure layer."
+    }
   }
 }
