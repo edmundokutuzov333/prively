@@ -13,8 +13,8 @@ jobs:
     timeout-minutes: 15
     env:
       VITE_APP_ENV: production
-      PLAYWRIGHT_BASE_URL: https://prively.vercel.app
-      PRIVELY_PRODUCTION_URL: https://prively.vercel.app
+      PLAYWRIGHT_BASE_URL: ${{ secrets.PRIVELY_PRODUCTION_URL }}
+      PRIVELY_PRODUCTION_URL: ${{ secrets.PRIVELY_PRODUCTION_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,5 +23,15 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
+      - name: Check production smoke configuration
+        id: config
+        run: |
+          if [ -z "${PRIVELY_PRODUCTION_URL}" ]; then
+            echo "Production smoke skipped: PRIVELY_PRODUCTION_URL is not configured in the production environment."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Run production smoke
+        if: steps.config.outputs.configured == 'true'
         run: npx playwright test tests/e2e/production-smoke.spec.ts --reporter=list
