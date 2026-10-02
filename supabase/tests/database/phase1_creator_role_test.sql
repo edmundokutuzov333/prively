@@ -5,37 +5,6 @@ select ok(to_regprocedure('public.has_role(uuid,public.app_role)') is not null,'
 select ok(to_regprocedure('public.grant_creator_role(uuid)') is not null,'grant_creator_role exists');
 select ok(not has_function_privilege('authenticated','public.grant_creator_role(uuid)','EXECUTE'),'authenticated cannot execute creator grant RPC');
 
-set local role authenticated;
-select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
-select set_config('request.jwt.claim.role','authenticated',true);
-select set_config('request.jwt.claims',json_build_object(
-  'sub','72000000-0000-0000-0000-000000000002',
-  'role','authenticated',
-  'aal','aal2'
-)::text,true);
-insert into public.user_roles(user_id,role)
-values ('72000000-0000-0000-0000-000000000001','creator');
-select ok(
-  public.has_role('72000000-0000-0000-0000-000000000001','creator'::public.app_role),
-  'AAL2 admin can write a role through user_roles RLS'
-);
-
-set_config('request.jwt.claims',json_build_object(
-  'sub','72000000-0000-0000-0000-000000000002',
-  'role','authenticated',
-  'aal','aal1'
-)::text,true);
-do $
-begin
-  begin
-    insert into public.user_roles(user_id,role)
-    values ('72000000-0000-0000-0000-000000000001','agency');
-    raise exception 'aal1_admin_inserted_role';
-  exception when insufficient_privilege then
-    null;
-  end;
-end $;
-
 insert into auth.users(id,aud,role,email,encrypted_password,raw_user_meta_data)
 values
   ('72000000-0000-0000-0000-000000000001','authenticated','authenticated','phase1-creator-client@example.test','test','{"handle":"phase1_creator_client"}'::jsonb),
@@ -57,15 +26,55 @@ values
   ('72000000-0000-0000-0000-000000000002','admin')
 on conflict do nothing;
 
-insert into public.kyc_verifications(user_id,provider,status,doc_path,selfie_path)
-values
-  ('72000000-0000-0000-0000-000000000001','manual','approved','72000000-0000-0000-0000-000000000001/doc.jpg','72000000-0000-0000-0000-000000000001/selfie.jpg');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claims',json_build_object(
+  'sub','72000000-0000-0000-0000-000000000002',
+  'role','authenticated',
+  'aal','aal2'
+)::text,true);
+select set_config('app.internal_write','off',true);
+
+insert into public.user_roles(user_id,role)
+values ('72000000-0000-0000-0000-000000000001','creator');
+select ok(
+  public.has_role('72000000-0000-0000-0000-000000000001','creator'::public.app_role),
+  'AAL2 admin can write a role through user_roles RLS'
+);
+
+select set_config('request.jwt.claims',json_build_object(
+  'sub','72000000-0000-0000-0000-000000000002',
+  'role','authenticated',
+  'aal','aal1'
+)::text,true);
+do $phase1_admin$
+begin
+  begin
+    insert into public.user_roles(user_id,role)
+    values ('72000000-0000-0000-0000-000000000001','agency');
+    raise exception 'aal1_admin_inserted_role';
+  exception when insufficient_privilege then
+    null;
+  end;
+end
+$phase1_admin$;
 
 reset role;
 set local role service_role;
 select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000002',true);
 select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claims',json_build_object('role','service_role')::text,true);
+
+insert into public.kyc_verifications(user_id,provider,status,doc_path,selfie_path)
+values
+  ('72000000-0000-0000-0000-000000000001','manual','approved','72000000-0000-0000-0000-000000000001/doc.jpg','72000000-0000-0000-0000-000000000001/selfie.jpg');
+
+select ok(public.grant_creator_role('72000000-0000-0000-0000-000000000001') = false,'creator role is already present from the RLS test');
+
+delete from public.user_roles
+where user_id='72000000-0000-0000-0000-000000000001'
+  and role='creator';
 
 select ok(public.grant_creator_role('72000000-0000-0000-0000-000000000001') = true,'approved and verified user receives creator role');
 select ok(public.has_role('72000000-0000-0000-0000-000000000001','creator'::public.app_role) = true,'creator role is persisted');
@@ -91,7 +100,7 @@ values
   ('72000000-0000-0000-0000-000000000003','phase1_no_kyc','Phase 1 No KYC','active')
 on conflict(id) do nothing;
 
-do $$
+do $phase1_no_kyc$
 begin
   begin
     perform public.grant_creator_role('72000000-0000-0000-0000-000000000003');
@@ -99,7 +108,8 @@ begin
   exception when others then
     if sqlerrm <> 'kyc_required' then raise; end if;
   end;
-end $$;
+end
+$phase1_no_kyc$;
 
 reset role;
 select * from finish();
