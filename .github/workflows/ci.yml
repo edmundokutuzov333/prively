@@ -31,6 +31,8 @@ jobs:
         run: npm run check:migrations
       - name: Check Supabase function gateway configuration
         run: npm run check:supabase-config
+      - name: Page structure contract
+        run: npm run check:page-structure
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
