@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(17);
 
 select ok(to_regclass('public.channels') is not null,'channels table exists');
 select ok(
@@ -124,9 +124,16 @@ select set_config('request.jwt.claims',json_build_object(
   'aal','aal2'
 )::text,true);
 
+create temporary table _phase3_channel_meta(channel_id uuid) on commit drop;
+
+insert into _phase3_channel_meta(channel_id)
+select id
+from public.channels
+where handle='phase3_profile_one';
+
 select is(
   public.update_creator_channel(
-    (select id from public.channels where handle='phase3_profile_one'),
+    (select channel_id from _phase3_channel_meta),
     'phase3_profile_updated',
     'Phase 3 Profile Updated',
     'Updated bio',
@@ -134,7 +141,7 @@ select is(
     'KaMpfumo',
     'Maputo'
   ),
-  (select id from public.channels where handle='phase3_profile_updated'),
+  (select channel_id from _phase3_channel_meta),
   'creator can update own channel through RPC'
 );
 
