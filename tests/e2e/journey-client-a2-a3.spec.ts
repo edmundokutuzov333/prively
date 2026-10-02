@@ -150,6 +150,11 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.2.10 DB legal=', JSON.stringify(legal.data));
     console.log('A.2.10 DB consent=', JSON.stringify(consent.data));
 
+    await page.goto('/boas-vindas');
+    await expect(page.getByRole('heading')).toBeVisible();
+    await expect(page.locator('body')).toContainText(/Completa a verificação de identidade/i);
+    console.log('A.2.10 UI onboarding KYC gate=blocked');
+
     await page.goto('/verificacao');
     await expect(page.getByRole('heading')).toBeVisible();
     const fileInputs = page.locator('input[type="file"]');
@@ -275,6 +280,11 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.3.14 DB final profile=', JSON.stringify(finalProfile));
     expect(finalKyc.status).toBe('approved');
     expect(finalProfile.age_verified_at).toBeTruthy();
+
+    await page.goto('/boas-vindas');
+    await expect(page.getByRole('heading')).toBeVisible();
+    await expect(page.locator('body')).toContainText(/A tua identidade foi verificada/i);
+    console.log('A.3.14 UI onboarding KYC=approved');
   } finally {
     if (createdUserId) await admin.auth.admin.deleteUser(createdUserId);
     if (adminUserId) await admin.auth.admin.deleteUser(adminUserId);
