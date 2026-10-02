@@ -86,7 +86,7 @@ export default function Profile() {
       setChannel(next);
       setForm(next);
       setPageState("success");
-    } catch (error) {
+    } catch {
       setPageState(navigator.onLine ? "error" : "offline");
       setMessage("experience.pages.creator.profile.errors.generic");
     }
