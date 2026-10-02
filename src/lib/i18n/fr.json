@@ -88,7 +88,29 @@
     "verification": {
       "title": "Vérification d’identité",
       "description": "Suis et complète le processus de vérification d’identité requis par la plateforme.",
-      "empty": "L’état réel de ta vérification sera présenté ici."
+      "empty": "L’état réel de ta vérification sera présenté ici.",
+      "authRequired": "Connecte-toi pour soumettre et suivre ta vérification d’identité.",
+      "goLogin": "Se connecter",
+      "retry": "Réessayer",
+      "intro": "Envoie une pièce d’identité valide et un selfie pour lancer la vérification manuelle.",
+      "rejectedIntro": "La soumission précédente a été refusée. Tu peux envoyer une nouvelle vérification.",
+      "document": "Pièce d’identité",
+      "selfie": "Selfie",
+      "chooseFile": "Choisir un fichier",
+      "submit": "Soumettre la vérification",
+      "submitSuccess": "Ta vérification a été soumise et est maintenant en attente de révision.",
+      "pending": "Tes documents ont été reçus. Ta vérification est en attente de révision.",
+      "review": "Ta vérification est en cours d’examen par l’équipe autorisée.",
+      "approved": "Ton identité a été vérifiée. Tu peux continuer vers l’onboarding.",
+      "rejectedReason": "Motif du refus :",
+      "rejectedGeneric": "La demande a été refusée par l’équipe de révision.",
+      "fileTooLarge": "Chaque fichier doit faire au maximum 10 Mo.",
+      "goWelcome": "Continuer",
+      "status": "Statut",
+      "states": {
+        "pending": "En attente",
+        "review": "En cours d’examen"
+      }
     },
     "onboardingClient": {
       "title": "Bienvenue dans le Privê",
@@ -97,7 +119,16 @@
       "step1": "Confirme les préférences de ton expérience.",
       "step2": "Découvre les outils de découverte.",
       "step3": "Configure les contrôles de confidentialité.",
-      "step4": "Explore ton portefeuille et tes achats."
+      "step4": "Explore ton portefeuille et tes achats.",
+      "authRequired": "Connecte-toi pour accéder à l’onboarding.",
+      "goLogin": "Se connecter",
+      "retry": "Réessayer",
+      "kycRequired": "Termine la vérification d’identité avant de continuer l’onboarding.",
+      "kycPending": "Ta vérification a été soumise et attend une révision.",
+      "kycReview": "Ta vérification est en cours d’examen.",
+      "kycRejected": "Ta vérification a été refusée. Soumets une nouvelle vérification pour continuer.",
+      "goVerification": "Aller à la vérification",
+      "kycApproved": "Ton identité a été vérifiée. L’onboarding peut continuer."
     },
     "onboardingCreator": {
       "title": "Configure ta présence",
