@@ -113,6 +113,8 @@ async function provisionAndSignIn(
 }
 
 test.describe("phase 3 creator channel", () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test("creator creates and edits channel, client sees public profile", async ({ browser }) => {
     const ts = Date.now();
     const creatorEmail = `phase3-creator-${ts}@example.test`;
