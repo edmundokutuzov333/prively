@@ -83,12 +83,17 @@ values
   ('71100000-0000-0000-0000-000000000003','manual','approved',now())
 on conflict do nothing;
 
-insert into public.channels(owner_id,handle,display_name,dm_mode,is_seed)
+insert into public.channels(id,owner_id,handle,display_name,dm_mode,is_seed)
 values
-  ('71100000-0000-0000-0000-000000000002','p11free_7110000001','Phase 11 Free','free',true),
-  ('71100000-0000-0000-0000-000000000002','p11off_7110000001','Phase 11 Off','off',true),
-  ('71100000-0000-0000-0000-000000000002','p11subs_7110000001','Phase 11 Subscribers','subscribers',true)
-on conflict (handle) do nothing;
+  ('71100000-0000-0000-0000-000000000011','71100000-0000-0000-0000-000000000002','p11free_7110000001','Phase 11 Free','free',true),
+  ('71100000-0000-0000-0000-000000000012','71100000-0000-0000-0000-000000000002','p11off_7110000001','Phase 11 Off','off',true),
+  ('71100000-0000-0000-0000-000000000013','71100000-0000-0000-0000-000000000002','p11subs_7110000001','Phase 11 Subscribers','subscribers',true)
+on conflict (id) do update
+set owner_id=excluded.owner_id,
+    handle=excluded.handle,
+    display_name=excluded.display_name,
+    dm_mode=excluded.dm_mode,
+    is_seed=excluded.is_seed;
 
 select set_config('request.jwt.claim.sub','71100000-0000-0000-0000-000000000001',true);
 select set_config('request.jwt.claim.role','authenticated',true);
@@ -115,10 +120,23 @@ select set_config('request.jwt.claims',json_build_object(
   'role','authenticated',
   'aal','aal1'
 )::text,false);
+select set_config('app.internal_write','off',false);
+
+set local role service_role;
+update public.profiles
+set status='active', age_verified_at=now()
+where id='71100000-0000-0000-0000-000000000002'::uuid;
+
+select diag(format(
+  'phase11 fixture channel=%s owner=%s owner_status=%s',
+  (select id::text from public.channels where id='71100000-0000-0000-0000-000000000011'::uuid),
+  (select owner_id::text from public.channels where id='71100000-0000-0000-0000-000000000011'::uuid),
+  (select status from public.profiles where id='71100000-0000-0000-0000-000000000002'::uuid)
+));
 
 select ok(
   public.create_conversation(
-    (select id from public.channels where handle='p11free_7110000001')
+    '71100000-0000-0000-0000-000000000011'::uuid
   ) is not null,
   'participant can create free conversation'
 );
@@ -127,7 +145,7 @@ set local role service_role;
 insert into public.messages(conversation_id,sender_id,kind,body)
 values(
   (select id from public.conversations
-   where channel_id=(select id from public.channels where handle='p11free_7110000001')
+   where channel_id='71100000-0000-0000-0000-000000000011'::uuid
      and client_id='71100000-0000-0000-0000-000000000001'),
   '71100000-0000-0000-0000-000000000001',
   'text',
@@ -147,7 +165,7 @@ select is((
   from public.messages
   where conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free_7110000001')
+    where channel_id='71100000-0000-0000-0000-000000000011'::uuid
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),1::bigint,'participant reads conversation messages');
@@ -162,13 +180,13 @@ select set_config('request.jwt.claims',json_build_object(
 
 select throws_ok($$
   select public.create_conversation(
-    (select id from public.channels where handle='p11off_7110000001')
+    '71100000-0000-0000-0000-000000000012'::uuid
   )
 $$,'dm_closed','DM off is enforced');
 
 select throws_ok($$
   select public.create_conversation(
-    (select id from public.channels where handle='p11subs_7110000001')
+    '71100000-0000-0000-0000-000000000013'::uuid
   )
 $$,'subscription_required','subscriber DM requires active subscription');
 
@@ -185,7 +203,7 @@ select is((
   from public.messages
   where conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free_7110000001')
+    where channel_id='71100000-0000-0000-0000-000000000011'::uuid
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),0::bigint,'nonparticipant reads no messages');
@@ -208,7 +226,7 @@ select is((
   select count(*) from public.conversation_members cm
   where cm.conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free_7110000001')
+    where channel_id='71100000-0000-0000-0000-000000000011'::uuid
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),2::bigint,'conversation has exactly two members');
@@ -228,7 +246,7 @@ select set_config('request.jwt.claims',json_build_object(
 select throws_ok($$
   select public.send_message_guarded(
     (select id from public.conversations
-     where channel_id=(select id from public.channels where handle='p11free_7110000001')
+     where channel_id='71100000-0000-0000-0000-000000000011'::uuid
        and client_id='71100000-0000-0000-0000-000000000001'),
     'blocked direct rpc probe',
     'text',
@@ -242,7 +260,7 @@ select is((
   select count(*) from public.messages
   where conversation_id=(
     select id from public.conversations
-    where channel_id=(select id from public.channels where handle='p11free_7110000001')
+    where channel_id='71100000-0000-0000-0000-000000000011'::uuid
       and client_id='71100000-0000-0000-0000-000000000001'
   )
 ),1::bigint,'blocked RPC created no extra message');
