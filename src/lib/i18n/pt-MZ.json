@@ -87,17 +87,48 @@
     },
     "verification": {
       "title": "Verificação de identidade",
-      "description": "Acompanha e completa o processo de verificação de identidade exigido pela plataforma.",
-      "empty": "O estado real da tua verificação será apresentado aqui."
+      "description": "Completa a verificação de identidade para desbloquear as funcionalidades que dependem de KYC.",
+      "empty": "O estado real da tua verificação será apresentado aqui.",
+      "authRequired": "Inicia sessão para submeter e acompanhar a tua verificação de identidade.",
+      "goLogin": "Iniciar sessão",
+      "retry": "Tentar novamente",
+      "intro": "Envia um documento de identificação válido e uma selfie para iniciar a revisão manual.",
+      "rejectedIntro": "A submissão anterior foi recusada. Podes enviar uma nova verificação.",
+      "document": "Documento de identificação",
+      "selfie": "Selfie",
+      "chooseFile": "Escolher ficheiro",
+      "submit": "Submeter verificação",
+      "submitSuccess": "A tua verificação foi submetida e está agora pendente de revisão.",
+      "pending": "Recebemos os teus documentos. A tua verificação está pendente de revisão.",
+      "review": "A tua verificação está em análise pela equipa autorizada.",
+      "approved": "A tua identidade foi verificada. Podes continuar para o onboarding.",
+      "rejectedReason": "Motivo da recusa:",
+      "rejectedGeneric": "Foi recusada pela equipa de revisão.",
+      "fileTooLarge": "Cada ficheiro deve ter no máximo 10 MB.",
+      "goWelcome": "Continuar",
+      "status": "Estado",
+      "states": {
+        "pending": "Pendente",
+        "review": "Em análise"
+      }
     },
     "onboardingClient": {
       "title": "Bem-vindo ao Privê",
-      "description": "Conhece os principais passos opcionais para configurar a tua experiência como cliente.",
+      "description": "Acompanha o estado da tua verificação e conclui a configuração inicial da tua conta.",
       "empty": "Ainda não existem passos personalizados para apresentar.",
       "step1": "Confirma as preferências da tua experiência.",
       "step2": "Conhece as ferramentas de descoberta.",
       "step3": "Configura os controlos de privacidade.",
-      "step4": "Explora a tua carteira e as tuas compras."
+      "step4": "Explora a tua carteira e as tuas compras.",
+      "authRequired": "Inicia sessão para aceder ao onboarding.",
+      "goLogin": "Iniciar sessão",
+      "retry": "Tentar novamente",
+      "kycRequired": "Completa a verificação de identidade antes de continuares com o onboarding.",
+      "kycPending": "A tua verificação foi submetida e aguarda revisão.",
+      "kycReview": "A tua verificação está em análise.",
+      "kycRejected": "A tua verificação foi recusada. Envia uma nova submissão para continuar.",
+      "goVerification": "Ir para verificação",
+      "kycApproved": "A tua identidade foi verificada. O onboarding pode continuar."
     },
     "onboardingCreator": {
       "title": "Configura a tua presença",
