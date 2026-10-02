@@ -20,6 +20,7 @@ const Recover = lazy(() => import("@/features/auth/Recover"));
 const Verification = lazy(() => import("@/features/auth/Verification"));
 const OnboardingClient = lazy(() => import("@/features/auth/OnboardingClient"));
 const OnboardingCreator = lazy(() => import("@/features/auth/OnboardingCreator"));
+const ContentStudio = lazy(() => import("@/pages/ContentStudioPage").then((module) => ({ default: module.ContentStudioPage })));
 const Terms = lazy(() => import("@/features/public/Legal/Terms"));
 const Privacy = lazy(() => import("@/features/public/Legal/Privacy"));
 const ForbiddenContent = lazy(() => import("@/features/public/Legal/ForbiddenContent"));
@@ -145,9 +146,7 @@ const AUTH_ROUTES: RouteObject[] = [
     { path: ROUTES.REGISTER, element: lazyElement(Register) },
     { element: <AuthenticatedFeatureGuard />, children: [
       { path: ROUTES.ONBOARDING_CLIENT, element: lazyElement(OnboardingClient) },
-      { element: <ExperienceGuard />, children: [
-        { path: ROUTES.ONBOARDING_CREATOR, element: lazyElement(OnboardingCreator) },
-      ]},
+      { path: ROUTES.ONBOARDING_CREATOR, element: lazyElement(OnboardingCreator) },
     ]},
   ]},
   { path: ROUTES.VERIFICATION, element: lazyElement(Verification) },
@@ -186,7 +185,7 @@ const CREATOR_ROUTES: RouteObject[] = [{
     element: <CreatorLayout />,
     children: [
         { path: ROUTES.CREATOR_STUDIO, element: lazyElement(Studio) },
-        { path: ROUTES.CREATOR_CONTENT, element: lazyElement(Wall) },
+        { path: ROUTES.CREATOR_CONTENT, element: lazyElement(ContentStudio) },
         { path: ROUTES.CREATOR_CREATE_CHANNEL, element: lazyElement(CreateChannel) },
         { path: ROUTES.CREATOR_PUBLISH, element: lazyElement(Publish) },
         { path: ROUTES.CREATOR_STORE, element: lazyElement(Store) },
