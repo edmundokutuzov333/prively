@@ -1,4 +1,4 @@
-import { test, expect, type Browser, type Page } from "@playwright/test";
+import { test, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.VITE_SUPABASE_URL;
@@ -8,6 +8,15 @@ if (!url || !service) throw new Error("missing_local_e2e_env");
 const admin = createClient(url, service, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+
+async function safeClose(context: BrowserContext | null) {
+  if (!context) return;
+  try {
+    await context.close();
+  } catch {
+    // Playwright can dispose a context before the explicit teardown close; the assertions have already completed.
+  }
+}
 
 async function provisionUser(email: string, password: string, handle: string, creator: boolean) {
   const created = await admin.auth.admin.createUser({
@@ -207,8 +216,8 @@ test.describe("phase 3 creator channel", () => {
       expect(audit.data?.some((row) => row.event_type === "channel.created")).toBe(true);
       expect(audit.data?.some((row) => row.event_type === "channel.updated")).toBe(true);
     } finally {
-      if (clientContext) await clientContext.close();
-      if (creatorContext) await creatorContext.close();
+      await safeClose(clientContext);
+      await safeClose(creatorContext);
       if (clientId) await admin.auth.admin.deleteUser(clientId);
       if (creatorId) await admin.auth.admin.deleteUser(creatorId);
     }
