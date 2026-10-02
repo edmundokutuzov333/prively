@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle, FileArrowUp, ShieldCheck, XCircle } from "@phosphor-icons/react";
 import { useTranslation } from "@/lib/i18n";
 import { PageShell, type PageState } from "@/components/layout/PageShell";
@@ -33,6 +33,7 @@ export default function KycQueue() {
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [volumeErrorKey, setVolumeErrorKey] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   const loadQueue = async () => {
     setPageState("loading");
@@ -40,10 +41,12 @@ export default function KycQueue() {
     try {
       const { data, error } = await requireSupabase().rpc("get_admin_kyc_queue", { _limit: 100 });
       if (error) throw error;
+      if (!mountedRef.current) return;
       const nextRows = (data ?? []) as KycRow[];
       setRows(nextRows);
       setPageState(nextRows.length ? "success" : "empty");
     } catch (error) {
+      if (!mountedRef.current) return;
       const key = platformErrorKey(error);
       setErrorKey(key);
       setPageState(key === "errors.forbidden" ? "forbidden" : navigator.onLine ? "error" : "offline");
@@ -56,10 +59,12 @@ export default function KycQueue() {
     try {
       const { data, error } = await requireSupabase().rpc("kyc_manual_queue_weekly_volume_guarded");
       if (error) throw error;
+      if (!mountedRef.current) return;
       const nextVolume = (data ?? []) as VolumeRow[];
       setVolume(nextVolume);
       setVolumeState(nextVolume.length ? "success" : "empty");
     } catch (error) {
+      if (!mountedRef.current) return;
       const key = platformErrorKey(error);
       setVolumeErrorKey(key);
       setVolumeState(key === "errors.forbidden" ? "forbidden" : navigator.onLine ? "error" : "offline");
@@ -67,7 +72,11 @@ export default function KycQueue() {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     void Promise.all([loadQueue(), loadVolume()]);
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   const decide = async (id: string, approved: boolean) => {
