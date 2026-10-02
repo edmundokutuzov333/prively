@@ -40,8 +40,7 @@ import {
   CreatorRequestsPage,
   CreatorSettingsPage,
   CreatorStorePage,
-  CreatorStudioPage,
-  SeCriadoraPage
+  CreatorStudioPage
 } from '@/pages/ExperiencePages';
 import i18n, { supportedLanguages } from '@/lib/i18n';
 import {
