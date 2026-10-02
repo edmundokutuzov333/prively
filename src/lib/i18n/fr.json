@@ -194,5 +194,117 @@
       "description": "Tirages. Cette page présente l’espace client réel pour cette fonctionnalité.",
       "empty": "Aucune donnée tirages n’est disponible à afficher pour le moment."
     }
+  },
+  "creator": {
+    "studio": {
+      "title": "Studio",
+      "description": "Studio. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée studio n’est disponible à afficher pour le moment."
+    },
+    "wall": {
+      "title": "Contenu",
+      "description": "Contenu. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée contenu n’est disponible à afficher pour le moment."
+    },
+    "createChannel": {
+      "title": "Créer un canal",
+      "description": "Créer un canal. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée créer un canal n’est disponible à afficher pour le moment."
+    },
+    "publish": {
+      "title": "Publier",
+      "description": "Publier. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée publier n’est disponible à afficher pour le moment."
+    },
+    "store": {
+      "title": "Boutique de contenu",
+      "description": "Boutique de contenu. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée boutique de contenu n’est disponible à afficher pour le moment."
+    },
+    "subscriptions": {
+      "title": "Abonnements et niveaux",
+      "description": "Abonnements et niveaux. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée abonnements et niveaux n’est disponible à afficher pour le moment."
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Messages. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée messages n’est disponible à afficher pour le moment."
+    },
+    "lives": {
+      "title": "Lives et appels",
+      "description": "Lives et appels. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée lives et appels n’est disponible à afficher pour le moment."
+    },
+    "requests": {
+      "title": "Demandes",
+      "description": "Demandes. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée demandes n’est disponible à afficher pour le moment."
+    },
+    "auctions": {
+      "title": "Enchères",
+      "description": "Enchères. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée enchères n’est disponible à afficher pour le moment."
+    },
+    "promotions": {
+      "title": "Promotions",
+      "description": "Promotions. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée promotions n’est disponible à afficher pour le moment."
+    },
+    "raffles": {
+      "title": "Tirages et sondages",
+      "description": "Tirages et sondages. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée tirages et sondages n’est disponible à afficher pour le moment."
+    },
+    "products": {
+      "title": "Boutique de produits",
+      "description": "Boutique de produits. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée boutique de produits n’est disponible à afficher pour le moment."
+    },
+    "earnings": {
+      "title": "Gains",
+      "description": "Gains. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée gains n’est disponible à afficher pour le moment."
+    },
+    "analytics": {
+      "title": "Analyse",
+      "description": "Analyse. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée analyse n’est disponible à afficher pour le moment."
+    },
+    "fans": {
+      "title": "Gestion des fans",
+      "description": "Gestion des fans. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée gestion des fans n’est disponible à afficher pour le moment."
+    },
+    "goals": {
+      "title": "Objectifs de gains",
+      "description": "Objectifs de gains. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée objectifs de gains n’est disponible à afficher pour le moment."
+    },
+    "referral": {
+      "title": "Programme de recommandation",
+      "description": "Programme de recommandation. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée programme de recommandation n’est disponible à afficher pour le moment."
+    },
+    "encounters": {
+      "title": "Rencontres",
+      "description": "Rencontres. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée rencontres n’est disponible à afficher pour le moment."
+    },
+    "profile": {
+      "title": "Profil public",
+      "description": "Profil public. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée profil public n’est disponible à afficher pour le moment."
+    },
+    "blocks": {
+      "title": "Blocages et modération",
+      "description": "Blocages et modération. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée blocages et modération n’est disponible à afficher pour le moment."
+    },
+    "emergency": {
+      "title": "Support d’urgence",
+      "description": "Support d’urgence. Cette page présente l’espace créatrice pour cette fonctionnalité.",
+      "empty": "Aucune donnée support d’urgence n’est disponible à afficher pour le moment."
+    }
   }
 }

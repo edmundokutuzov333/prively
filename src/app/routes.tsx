@@ -8,6 +8,7 @@ import { readAgeVerification } from "@/lib/ageGate";
 import { useAuth } from "@/app/session";
 import { ExperienceGuard } from "@/app/ExperienceGuards";
 import { ClientNav } from "@/components/layout/ClientNav";
+import { CreatorNav } from "@/components/layout/CreatorNav";
 
 const BecomeCreator = lazy(() => import("@/features/public/BecomeCreator"));
 const AgeGate = lazy(() => import("@/features/auth/AgeGate"));
@@ -45,6 +46,28 @@ const CustomRequests = lazy(() => import("@/features/client/CustomRequests"));
 const Auctions = lazy(() => import("@/features/client/Auctions"));
 const Products = lazy(() => import("@/features/client/Products"));
 const Raffles = lazy(() => import("@/features/client/Raffles"));
+const Studio = lazy(() => import("@/features/creator/Studio"));
+const Wall = lazy(() => import("@/features/creator/Wall"));
+const CreateChannel = lazy(() => import("@/features/creator/CreateChannel"));
+const Publish = lazy(() => import("@/features/creator/Publish"));
+const Store = lazy(() => import("@/features/creator/Store"));
+const Subscriptions = lazy(() => import("@/features/creator/Subscriptions"));
+const Messages = lazy(() => import("@/features/creator/Messages"));
+const Lives = lazy(() => import("@/features/creator/Lives"));
+const Requests = lazy(() => import("@/features/creator/Requests"));
+const Auctions = lazy(() => import("@/features/creator/Auctions"));
+const Promotions = lazy(() => import("@/features/creator/Promotions"));
+const Raffles = lazy(() => import("@/features/creator/Raffles"));
+const Products = lazy(() => import("@/features/creator/Products"));
+const Earnings = lazy(() => import("@/features/creator/Earnings"));
+const Analytics = lazy(() => import("@/features/creator/Analytics"));
+const Fans = lazy(() => import("@/features/creator/Fans"));
+const Goals = lazy(() => import("@/features/creator/Goals"));
+const Referral = lazy(() => import("@/features/creator/Referral"));
+const Encounters = lazy(() => import("@/features/creator/Encounters"));
+const Profile = lazy(() => import("@/features/creator/Profile"));
+const Blocks = lazy(() => import("@/features/creator/Blocks"));
+const Emergency = lazy(() => import("@/features/creator/Emergency"));
 
 function FeatureSuspense() {
   const { t } = useTranslation();
@@ -64,6 +87,8 @@ function ProtectedAgeGate() {
 }
 
 function ClientLayout() { return <div className="space-y-6"><ClientNav /><Outlet /></div>; }
+
+function CreatorLayout() { return <div className="space-y-6"><CreatorNav /><Outlet /></div>; }
 
 function AuthenticatedFeatureGuard() {
   const { user, loading } = useAuth();
@@ -131,7 +156,38 @@ const CLIENT_ROUTES: RouteObject[] = [{ element: <ExperienceGuard />, children: 
         { path: "/sorteios", element: lazyElement(Raffles) },
 ] }] }];
 
-const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES];
+const CREATOR_ROUTES: RouteObject[] = [{
+  element: <ExperienceGuard />,
+  children: [{
+    element: <CreatorLayout />,
+    children: [
+        { path: "/estudio", element: lazyElement(Studio) },
+        { path: "/estudio/conteudo", element: lazyElement(Wall) },
+        { path: "/estudio/conteudo/criar-canal", element: lazyElement(CreateChannel) },
+        { path: "/estudio/conteudo/novo", element: lazyElement(Publish) },
+        { path: "/estudio/loja", element: lazyElement(Store) },
+        { path: "/estudio/assinaturas", element: lazyElement(Subscriptions) },
+        { path: "/estudio/mensagens", element: lazyElement(Messages) },
+        { path: "/estudio/lives", element: lazyElement(Lives) },
+        { path: "/estudio/pedidos", element: lazyElement(Requests) },
+        { path: "/estudio/leiloes", element: lazyElement(Auctions) },
+        { path: "/estudio/promocoes", element: lazyElement(Promotions) },
+        { path: "/estudio/sorteios", element: lazyElement(Raffles) },
+        { path: "/estudio/produtos", element: lazyElement(Products) },
+        { path: "/estudio/ganhos", element: lazyElement(Earnings) },
+        { path: "/estudio/analise", element: lazyElement(Analytics) },
+        { path: "/estudio/fas", element: lazyElement(Fans) },
+        { path: "/estudio/metas", element: lazyElement(Goals) },
+        { path: "/estudio/referral", element: lazyElement(Referral) },
+        { path: "/estudio/encontros", element: lazyElement(Encounters) },
+        { path: "/estudio/perfil", element: lazyElement(Profile) },
+        { path: "/estudio/bloqueios", element: lazyElement(Blocks) },
+        { path: "/estudio/emergencia", element: lazyElement(Emergency) },
+    ],
+  }],
+}];
+
+const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES];
 
 export function FeatureRouteResolver() {
   return useRoutes(FEATURE_ROUTES) ?? <Navigate to="/404" replace />;

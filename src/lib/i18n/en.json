@@ -194,5 +194,117 @@
       "description": "Raffles. This page provides the real client area for this feature.",
       "empty": "There is no raffles data to display yet."
     }
+  },
+  "creator": {
+    "studio": {
+      "title": "Studio",
+      "description": "Studio. This page provides the creator workspace for this feature.",
+      "empty": "No studio data is available to display yet."
+    },
+    "wall": {
+      "title": "Content",
+      "description": "Content. This page provides the creator workspace for this feature.",
+      "empty": "No content data is available to display yet."
+    },
+    "createChannel": {
+      "title": "Create channel",
+      "description": "Create channel. This page provides the creator workspace for this feature.",
+      "empty": "No create channel data is available to display yet."
+    },
+    "publish": {
+      "title": "Publish",
+      "description": "Publish. This page provides the creator workspace for this feature.",
+      "empty": "No publish data is available to display yet."
+    },
+    "store": {
+      "title": "Content store",
+      "description": "Content store. This page provides the creator workspace for this feature.",
+      "empty": "No content store data is available to display yet."
+    },
+    "subscriptions": {
+      "title": "Subscriptions and tiers",
+      "description": "Subscriptions and tiers. This page provides the creator workspace for this feature.",
+      "empty": "No subscriptions and tiers data is available to display yet."
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Messages. This page provides the creator workspace for this feature.",
+      "empty": "No messages data is available to display yet."
+    },
+    "lives": {
+      "title": "Lives and calls",
+      "description": "Lives and calls. This page provides the creator workspace for this feature.",
+      "empty": "No lives and calls data is available to display yet."
+    },
+    "requests": {
+      "title": "Requests",
+      "description": "Requests. This page provides the creator workspace for this feature.",
+      "empty": "No requests data is available to display yet."
+    },
+    "auctions": {
+      "title": "Auctions",
+      "description": "Auctions. This page provides the creator workspace for this feature.",
+      "empty": "No auctions data is available to display yet."
+    },
+    "promotions": {
+      "title": "Promotions",
+      "description": "Promotions. This page provides the creator workspace for this feature.",
+      "empty": "No promotions data is available to display yet."
+    },
+    "raffles": {
+      "title": "Raffles and polls",
+      "description": "Raffles and polls. This page provides the creator workspace for this feature.",
+      "empty": "No raffles and polls data is available to display yet."
+    },
+    "products": {
+      "title": "Product store",
+      "description": "Product store. This page provides the creator workspace for this feature.",
+      "empty": "No product store data is available to display yet."
+    },
+    "earnings": {
+      "title": "Earnings",
+      "description": "Earnings. This page provides the creator workspace for this feature.",
+      "empty": "No earnings data is available to display yet."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "description": "Analytics. This page provides the creator workspace for this feature.",
+      "empty": "No analytics data is available to display yet."
+    },
+    "fans": {
+      "title": "Fan management",
+      "description": "Fan management. This page provides the creator workspace for this feature.",
+      "empty": "No fan management data is available to display yet."
+    },
+    "goals": {
+      "title": "Earnings goals",
+      "description": "Earnings goals. This page provides the creator workspace for this feature.",
+      "empty": "No earnings goals data is available to display yet."
+    },
+    "referral": {
+      "title": "Referral programme",
+      "description": "Referral programme. This page provides the creator workspace for this feature.",
+      "empty": "No referral programme data is available to display yet."
+    },
+    "encounters": {
+      "title": "Encounters",
+      "description": "Encounters. This page provides the creator workspace for this feature.",
+      "empty": "No encounters data is available to display yet."
+    },
+    "profile": {
+      "title": "Public profile",
+      "description": "Public profile. This page provides the creator workspace for this feature.",
+      "empty": "No public profile data is available to display yet."
+    },
+    "blocks": {
+      "title": "Blocks and moderation",
+      "description": "Blocks and moderation. This page provides the creator workspace for this feature.",
+      "empty": "No blocks and moderation data is available to display yet."
+    },
+    "emergency": {
+      "title": "Emergency support",
+      "description": "Emergency support. This page provides the creator workspace for this feature.",
+      "empty": "No emergency support data is available to display yet."
+    }
   }
 }

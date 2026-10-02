@@ -194,5 +194,117 @@
       "description": "Consulta sorteios e condições de participação disponíveis.",
       "empty": "Sem sorteios activos."
     }
+  },
+  "creator": {
+    "studio": {
+      "title": "Estúdio",
+      "description": "Centraliza a visão operacional da tua actividade como criadora.",
+      "empty": "Não há dados operacionais para apresentar nesta camada."
+    },
+    "wall": {
+      "title": "Conteúdo",
+      "description": "Gere o conteúdo do teu canal e prepara as publicações que disponibilizas.",
+      "empty": "Crie o seu canal."
+    },
+    "createChannel": {
+      "title": "Criar canal",
+      "description": "Prepara a identidade pública do teu canal de criadora.",
+      "empty": "O shell de criação do canal está sem dados para apresentar."
+    },
+    "publish": {
+      "title": "Publicar",
+      "description": "Prepara uma nova publicação respeitando as regras de conteúdo e segurança.",
+      "empty": "Não existem dados de publicação para apresentar."
+    },
+    "store": {
+      "title": "Loja de conteúdo",
+      "description": "Gere packs e conteúdos comerciais disponibilizados no teu espaço.",
+      "empty": "Sem packs."
+    },
+    "subscriptions": {
+      "title": "Assinaturas e níveis",
+      "description": "Define a estrutura de assinaturas disponibilizada às tuas seguidoras.",
+      "empty": "Não existem níveis configurados para apresentar."
+    },
+    "messages": {
+      "title": "Mensagens",
+      "description": "Gere as conversas com as tuas fãs a partir do espaço da criadora.",
+      "empty": "Sem conversas."
+    },
+    "lives": {
+      "title": "Lives e chamadas",
+      "description": "Gere sessões ao vivo e chamadas privadas quando estiverem disponíveis.",
+      "empty": "Sem lives."
+    },
+    "requests": {
+      "title": "Pedidos",
+      "description": "Acompanha pedidos enviados por clientes e organiza a tua resposta.",
+      "empty": "Sem pedidos."
+    },
+    "auctions": {
+      "title": "Leilões",
+      "description": "Gere leilões e acompanha a participação nas tuas ofertas.",
+      "empty": "Sem leilões."
+    },
+    "promotions": {
+      "title": "Promoções",
+      "description": "Gere bundles e campanhas de promoção do teu conteúdo.",
+      "empty": "Sem bundles."
+    },
+    "raffles": {
+      "title": "Sorteios e enquetes",
+      "description": "Gere sorteios e mecanismos de participação da tua comunidade.",
+      "empty": "Sem sorteios."
+    },
+    "products": {
+      "title": "Loja de produtos",
+      "description": "Gere os produtos físicos que disponibilizas através da plataforma.",
+      "empty": "Sem produtos."
+    },
+    "earnings": {
+      "title": "Ganhos",
+      "description": "Consulta o estado dos ganhos e dos levantamentos da tua actividade.",
+      "empty": "Não existem ganhos disponíveis para apresentar."
+    },
+    "analytics": {
+      "title": "Análise",
+      "description": "Consulta dados de desempenho da tua actividade e do teu conteúdo.",
+      "empty": "Sem dados."
+    },
+    "fans": {
+      "title": "Gestão de fãs",
+      "description": "Consulta e gere a relação com as pessoas que acompanham a tua presença.",
+      "empty": "Sem fãs registados."
+    },
+    "goals": {
+      "title": "Metas de ganhos",
+      "description": "Define metas e acompanha o progresso da tua actividade financeira.",
+      "empty": "Não existem metas configuradas para apresentar."
+    },
+    "referral": {
+      "title": "Programa de referral",
+      "description": "Consulta as ferramentas do programa de referral associadas à tua conta.",
+      "empty": "Não existem dados de referral para apresentar."
+    },
+    "encounters": {
+      "title": "Encontros",
+      "description": "Gere a tua agenda de encontros privados e acompanha os pedidos.",
+      "empty": "Agenda vazia."
+    },
+    "profile": {
+      "title": "Perfil público",
+      "description": "Gere os elementos apresentados publicamente no teu perfil de criadora.",
+      "empty": "Não existem dados de perfil para apresentar nesta camada."
+    },
+    "blocks": {
+      "title": "Bloqueios e moderação",
+      "description": "Gere bloqueios e controlos de moderação relacionados com a tua experiência.",
+      "empty": "Sem bloqueados."
+    },
+    "emergency": {
+      "title": "Suporte de emergência",
+      "description": "Acede ao espaço de suporte de emergência da criadora.",
+      "empty": "O suporte de emergência está sem dados para apresentar."
+    }
   }
 }
