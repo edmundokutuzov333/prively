@@ -107,7 +107,7 @@ select set_config('app.internal_write','off',true);
 
 select ok(has_function_privilege('authenticated','public.create_conversation(uuid)','EXECUTE'),'authenticated can execute create conversation');
 
-set local role authenticated;
+set local role service_role;
 select ok(
   public.create_conversation(
     (select id from public.channels where handle='p11free_7110000001')
