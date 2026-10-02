@@ -111,7 +111,7 @@ O fluxo ponta a ponta cobre submissão, persistência em `pending`, aprovação 
 ## 6. CI global
 
 Run:
-`36992014658`
+`37006553364`
 
 Resultado:
 - quality: SUCCESS
@@ -137,7 +137,7 @@ Database confirmou:
 - canonical database suite: PASS
 - native SQL regression suites: PASS
 
-Production Smoke para o mesmo SHA concluiu o job com sucesso, mas o teste de produção foi explicitamente skipped porque `PRIVELY_PRODUCTION_URL` não está configurado no ambiente de produção.
+Production Smoke para o SHA certificado concluiu o job com sucesso, mas o teste de produção foi explicitamente skipped porque `PRIVELY_PRODUCTION_URL` não está configurado no ambiente de produção.
 
 ## 7. Correcções relevantes
 
@@ -149,8 +149,6 @@ Production Smoke para o mesmo SHA concluiu o job com sucesso, mas o teste de pro
 | P2-004 | KYC Queue | fila e volume passaram a ler dados reais | Corrigido |
 | P2-005 | Onboarding | estado real de KYC passou a bloquear/desbloquear progressão | Corrigido |
 | P2-006 | SQL tests | corrigido erro de delimitador pgTAP introduzido no teste | Corrigido |
-
-
 | P2-007 | KYC provider result | `apply_kyc_result` deixou de ser executável por `authenticated`; apenas `service_role` mantém execução | Corrigido |
 
 ## 8.1 Evidência live do endurecimento
@@ -175,7 +173,7 @@ O smoke de produção continua sem execução efectiva porque `PRIVELY_PRODUCTIO
 
 Parte 2: CERTIFICADA.
 
-CI definitivo após o endurecimento: `37005708194` SUCCESS. Production Smoke do mesmo SHA: `37005708448` SUCCESS.
+CI definitivo do relatório: `37006553364` SUCCESS. Production Smoke do mesmo SHA: `37006553352` SUCCESS.
 
 Parte 3: não iniciada.
 
