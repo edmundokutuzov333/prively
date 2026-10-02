@@ -19,7 +19,7 @@ export function PageShell({ title, description, state = "empty", emptyState, chi
         {description ? <p className="mt-3 text-sm leading-6 text-bone-300 md:text-base">{description}</p> : null}
       </header>
       {showEmptyState ? (
-        <section aria-live="polite" data-page-state="empty" className="ficha relative overflow-hidden bg-ink-900/70 p-6 md:p-8">
+        <section aria-live="polite" data-testid="page-shell-empty" data-page-state="empty" className="ficha relative overflow-hidden bg-ink-900/70 p-6 md:p-8">
           <div className="ficha-corner" aria-hidden="true" />
           <p className="max-w-2xl text-sm leading-6 text-bone-300">{emptyState.message}</p>
           {emptyState.action ? <div className="mt-5">{emptyState.action}</div> : null}
