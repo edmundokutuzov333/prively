@@ -86,6 +86,10 @@ const AdminConfig = lazy(() => import("@/features/admin/Config"));
 const AdminSupport = lazy(() => import("@/features/admin/Support"));
 const AdminStorage = lazy(() => import("@/features/admin/Storage"));
 const AdminProductionGate = lazy(() => import("@/features/admin/ProductionGate"));
+const SystemError = lazy(() => import("@/features/system/Error"));
+const SystemNotFound = lazy(() => import("@/features/system/NotFound"));
+const SystemForbidden = lazy(() => import("@/features/system/Forbidden"));
+const SystemOffline = lazy(() => import("@/features/system/Offline"));
 
 function FeatureSuspense() {
   const { t } = useTranslation();
@@ -239,7 +243,13 @@ const ADMIN_ROUTES: RouteObject[] = [{
   }],
 }];
 
-const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES, ...SHARED_ROUTES, ...ADMIN_ROUTES];
+const SYSTEM_ROUTES: RouteObject[] = [
+  { path: ROUTES.FORBIDDEN, element: lazyElement(SystemForbidden) },
+  { path: ROUTES.OFFLINE, element: lazyElement(SystemOffline) },
+  { path: ROUTES.NOT_FOUND, element: lazyElement(SystemNotFound) },
+];
+
+const FEATURE_ROUTES: RouteObject[] = [...PUBLIC_ROUTES, ...AUTH_ROUTES, ...CLIENT_ROUTES, ...CREATOR_ROUTES, ...SHARED_ROUTES, ...ADMIN_ROUTES, ...SYSTEM_ROUTES];
 
 export function FeatureRouteResolver() {
   return useRoutes(FEATURE_ROUTES) ?? <Navigate to="/404" replace />;
