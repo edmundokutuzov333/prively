@@ -18,7 +18,7 @@ type KycStatus = {
   reviewed_at: string | null;
 };
 
-type LoadState = "loading" | "empty" | "error" | "offline" | "forbidden" | "success";
+type LoadState = PageState;
 
 const emptyKyc: KycStatus = {
   status: null,
