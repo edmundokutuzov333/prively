@@ -76,6 +76,11 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: 2.118.0
+      - name: Configure local Edge Function origins
+        run: |
+          set -euo pipefail
+          mkdir -p supabase/functions
+          printf 'APP_ALLOWED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173\\n' > supabase/functions/.env
       - name: Start local Supabase
         run: supabase start
       - name: Rebuild database from zero
