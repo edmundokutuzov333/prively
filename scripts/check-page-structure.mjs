@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
 const root = process.cwd();
 const domains = ["public","auth","client","creator","shared","admin","system"];
 const errors = [];
