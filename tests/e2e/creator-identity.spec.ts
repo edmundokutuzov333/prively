@@ -27,7 +27,7 @@ async function createTestUser(kind: 'no-kyc' | 'approved') {
 
   const { error: profileError } = await admin.from('profiles').upsert({
     id: userId,
-    handle: `phase1${kind === 'no-kyc' ? 'nokyc' : 'approved'}${ts}`,
+    handle: `p1${kind === 'no-kyc' ? 'nokyc' : 'app'}${String(ts).slice(-10)}`,
     display_name: `Phase 1 ${kind}`,
     status: kind === 'approved' ? 'active' : 'pending',
     age_verified_at: kind === 'approved' ? new Date().toISOString() : null,
