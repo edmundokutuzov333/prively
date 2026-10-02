@@ -108,3 +108,12 @@
 **Decisão:** não duplicar `payouts` nem substituir `request_payout()`. A Fase 14 adiciona apenas `get_creator_earnings_summary()` e `get_admin_storage_status()`, além da superfície `/admin/storage`. O estado B2 é apresentado a partir de `media_assets.file_size_bytes` e é explicitamente distinguido de uma medição externa do bucket.
 
 **Consequência:** o caminho financeiro certificado mantém a mesma semântica de segurança e o admin ganha uma leitura real de storage sem inventar dados quando backups externos ainda não estão confirmados.
+
+
+## ADR-STRUCTURE: Feature-based pages coexist with production pages
+
+**Contexto:** o Superprompt 1 exige uma estrutura navegável por feature sem remover nem mover as páginas reais existentes.
+
+**Decisão:** criar as novas páginas em `src/features`, com cinco ficheiros por página, registry lazy em `src/app/routes.tsx` e constantes centralizadas em `src/lib/routes.ts`. O routing legado continua em `src/app/App.tsx`.
+
+**Consequência:** a estrutura nova pode receber a implementação funcional do Superprompt 2 sem uma migração destrutiva das superfícies existentes.
