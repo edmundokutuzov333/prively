@@ -296,10 +296,8 @@ begin
   select
     'release_rows',
     count(*)::text
-  from public.ledger_entries
-  where release_source_id in (
-    select id from public.ledger_entries where txn_id=txn_one and account='creator_pending'
-  );
+  from public.ledger_entries le
+  where le.release_source_id=(select value::bigint from _phase6_meta where key='release_source_id');
 
   update public.platform_settings
   set value='0.20'::jsonb
