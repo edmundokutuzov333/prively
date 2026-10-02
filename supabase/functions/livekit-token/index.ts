@@ -15,18 +15,30 @@ Deno.serve(async (request) => {
     const payload = await request.json() as { sessionId?: unknown };
     const sessionId = requireUuid(payload.sessionId);
     const { data, error } = await client.rpc("issue_live_access_guarded", { _session: sessionId });
-    if (error || !data || typeof data !== "object") return jsonResponse({ code: error?.code ?? "LIVE_ACCESS_DENIED" }, 403);
+    if (error || !data || typeof data !== "object") return jsonResponse({ code: error?.code ?? "LIVE_ACCESS_DENIED" }, 403, request);
 
     const row = data as { room_name?: unknown; role?: unknown; kind?: unknown; mode?: unknown; per_minute_price?: unknown; session_id?: unknown };
-    if (typeof row.room_name !== "string" || typeof row.role !== "string" || typeof row.kind !== "string") return jsonResponse({ code: "LIVE_ACCESS_INVALID" }, 500);
+    if (typeof row.room_name !== "string" || row.room_name.trim() === "" || typeof row.role !== "string" || typeof row.kind !== "string") {
+      return jsonResponse({ code: "LIVE_ACCESS_INVALID" }, 500, request);
+    }
 
-    const token = new AccessToken(env("LIVEKIT_API_KEY"), env("LIVEKIT_API_SECRET"), { identity: user.id, ttl: "5m" });
+    const isCall = row.kind === "call";
+    const isLiveCreator = row.kind === "live" && row.role === "host";
+    const isLiveViewer = row.kind === "live" && row.role === "viewer";
+    const isCallParticipant = isCall && (row.role === "caller" || row.role === "host");
+    if (!isLiveCreator && !isLiveViewer && !isCallParticipant) {
+      return jsonResponse({ code: "LIVE_ACCESS_ROLE_DENIED" }, 403, request);
+    }
+
+    const canPublish = isCallParticipant || isLiveCreator;
+    const canSubscribe = isCallParticipant || isLiveViewer;
+    const token = new AccessToken(env("LIVEKIT_API_KEY"), env("LIVEKIT_API_SECRET"), { identity: user.id, ttl: "2m" });
     token.addGrant(new VideoGrant({
       room: row.room_name,
       roomJoin: true,
-      canPublish: row.role === "host" || row.role === "caller",
-      canSubscribe: true,
-      canPublishData: true,
+      canPublish,
+      canSubscribe,
+      canPublishData: canPublish,
     }));
 
     return new Response(JSON.stringify({
