@@ -65,7 +65,7 @@ export function ExperienceGuard() {
   if (accountState === 'suspended') return <Navigate to="/estado/suspensa" replace />;
   if (selfExcludedUntil && new Date(selfExcludedUntil).getTime() > Date.now()) return <Navigate to="/estado/auto-exclusao" replace />;
 
-  const kycExempt = ['/verificacao', '/definicoes/conta', '/definicoes/seguranca'].some((path) => location.pathname === path || location.pathname.startsWith(path + '/'));
+  const kycExempt = ['/verificacao', '/boas-vindas', '/definicoes/conta', '/definicoes/seguranca'].some((path) => location.pathname === path || location.pathname.startsWith(path + '/'));
   if (!kycExempt && kycStatus !== 'approved') return <Navigate to="/verificacao" replace />;
 
   if (location.pathname.startsWith('/estudio') && !roles.includes('creator')) {
