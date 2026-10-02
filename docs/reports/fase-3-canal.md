@@ -3,7 +3,7 @@
 Data: 2026-10-02
 Branch: main
 Supabase: gaonupelgtpfthouyobh
-Head actual: 6a376a8141f2863277087984a1c81805edd8c541
+Head actual antes da certificação: 9ac1dc4413bfbb49acd65e555dfad3a17f3fefb1
 
 ## 1. Estado
 
@@ -157,7 +157,7 @@ Output E2E final: pendente do CI desta versão final.
 
 ## 8. CI
 
-O código da Parte 3 está integrado na `main` actual. A execução técnica mais recente `37015928852` chegou a `quality=SUCCESS`, `database=SUCCESS` e `Edge Functions contract tests=SUCCESS`, mas ficou presa no job `e2e` durante `Start local Supabase`, antes da execução dos testes. Esta ocorrência não constitui uma falha funcional do Canal.
+O código da Parte 3 está integrado na `main` actual, incluindo as alterações posteriores de routing do workspace. Na `main` actual, a execução `37017879927` confirmou `quality=SUCCESS`, `database=SUCCESS` e `Edge Functions contract tests=SUCCESS`, mas o job `e2e` permaneceu em `Start local Supabase` antes de executar Playwright. Isto é um bloqueio de infraestrutura do runner E2E, não uma falha funcional demonstrada do Canal. A certificação final permanece pendente até existir uma execução completa dos quatro gates.
 
 Foi emitida uma nova execução a partir deste estado documental para obter um gate limpo. A certificação final só será declarada após `quality`, `database`, `Edge Functions` e `e2e` terminarem com `SUCCESS`.
 
@@ -172,6 +172,8 @@ O novo update_creator_channel é SECURITY DEFINER, usa set search_path = '' e ex
 ## 10. Gate
 
 Parte 3: implementação pronta para certificação.
+
+Parte 4: não iniciada.
 
 Parte 4: não iniciada.
 
