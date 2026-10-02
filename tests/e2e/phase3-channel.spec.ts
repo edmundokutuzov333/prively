@@ -173,12 +173,12 @@ test.describe("phase 3 creator channel", () => {
 
       await creator.page.goto("/estudio/perfil");
       await expect(creator.page.getByRole("heading", { name: /perfil da criadora|creator profile|profil de la créatrice/i })).toBeVisible();
-      await creator.page.getByLabel(/handle/i).fill(updatedHandle);
+      await creator.page.locator("#creator-profile-handle").fill(updatedHandle);
       await expect(creator.page.getByText(/este identificador está disponível|this handle is available|ce handle est disponible/i)).toBeVisible({ timeout: 10000 });
-      await creator.page.getByLabel(/nome público|public name/i).fill("Phase 3 Creator Updated");
-      await creator.page.getByLabel(/^bio$/i).fill("Bio pública actualizada da Fase 3");
-      await creator.page.getByLabel(/cidade|city|ville/i).fill("Maputo");
-      await creator.page.getByLabel(/bairro|district|quartier/i).fill("KaMpfumo");
+      await creator.page.locator("#creator-profile-display-name").fill("Phase 3 Creator Updated");
+      await creator.page.locator("#creator-profile-bio").fill("Bio pública actualizada da Fase 3");
+      await creator.page.locator("#creator-profile-city").fill("Maputo");
+      await creator.page.locator("#creator-profile-bairro").fill("KaMpfumo");
       await creator.page.getByRole("button", { name: /guardar alterações|save changes|enregistrer les changements/i }).click();
 
       await expect(creator.page.getByRole("status")).toContainText(/alterações guardadas|changes saved|modifications enregistrées/i);
