@@ -1,4 +1,4 @@
-# KYC BLOCKER — A.3.14
+# KYC BLOCKER, A.3.14
 
 ## 1. Reprodução observada
 
@@ -7,14 +7,14 @@ Job E2E original: 110751591478
 Teste: `tests/e2e/journey-client-a2-a3.spec.ts`
 Falha: `A.3.14 KYC_not_found`
 
-Output relevante observado no job:
+Output real observado:
 
 ```
 A.3.12 UI KYC state=pending
-A.3.12 DB kyc_verifications=[{"id":"6dd82df6-...","user_id":"0fc094e1-...","status":"pending","provider":"manual",...}]
+A.3.12 DB kyc_verifications=[{"id":"e97c74f9-b358-4651-9517-2a521e55d0f1","user_id":"c5472007-3b66-4d3d-a805-47eac88a5282","status":"pending","provider":"manual",...}]
 A.3.12 STORAGE prively-kyc=[2 files]
-A.3.13 AAL1 approve HTTP=403 body={"code":"forbidden"}
-A.3.13 AAL2 approve HTTP=200 body={"ok":true,"status":"approved"}
+A.3.13 AAL1 approve HTTP= 403 body= {"code":"forbidden"}
+A.3.13 AAL2 approve HTTP= 200 body= {"ok":true,"status":"approved"}
 A.3.14 KYC read attempt=1 miss=no_data
 A.3.14 KYC read attempt=2 miss=no_data
 A.3.14 KYC read attempt=3 miss=no_data
@@ -22,11 +22,11 @@ A.3.14 KYC read attempt=4 miss=no_data
 A.3.14 KYC read attempt=5 miss=no_data
 ```
 
-O mesmo padrão ocorreu em tentativas repetidas do teste com utilizadores e KYC IDs diferentes.
+O mesmo padrão foi reproduzido com vários utilizadores e KYC IDs diferentes no mesmo job.
 
-## 2. Queries executadas pelo teste
+## 2. As queries do A.3.14
 
-O teste executa a mesma leitura de readback cinco vezes, através do Supabase client com service-role:
+O readback final é este:
 
 ```sql
 select id, status, reviewed_by, reviewed_at
@@ -37,9 +37,9 @@ order by reviewed_at desc
 limit 1;
 ```
 
-A query é repetida até cinco vezes, com espera incremental de 250 ms entre tentativas.
+A query é repetida cinco vezes, com espera incremental de 250 ms.
 
-Antes desta leitura, o próprio teste confirma que a linha pending existe por:
+Antes da revisão, o teste lê a mesma tabela e confirma que a linha existe:
 
 ```sql
 select id, user_id, status, provider, doc_path, selfie_path
@@ -49,54 +49,106 @@ order by created_at desc
 limit 1;
 ```
 
-## 3. Contratos verificados antes da correcção
+As três verificações de preparação para a revisão também fazem:
+1. POST AAL1 para `/functions/v1/kyc-review`, esperado 403.
+2. POST AAL2 para `/functions/v1/kyc-review`, esperado 200.
+3. Readback da linha aprovada.
 
-### AAL1
-AAL1 recebe 403. Isto é esperado e confirma o guard de segurança.
+## 3. Diagnóstico manual
 
-### AAL2
-AAL2 recebe HTTP 200 através de `/functions/v1/kyc-review`.
+O teste cria inicialmente um único client:
 
-### RPC de aprovação
-A função actualmente instalada é:
-
-```text
-public.approve_kyc(uuid, boolean, text, uuid)
+```ts
+const admin = createClient(url, service, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
 ```
 
-O proprietário da função e da tabela `kyc_verifications` é `postgres`. A tabela tem RLS activo. Não existem overloads adicionais de `approve_kyc` na base Supabase verificada.
+Este client funciona como service-role e lê correctamente a linha KYC `pending`.
 
-O teste SQL nativo `phase1_identity_roles_kyc_test.sql` aprova uma linha KYC através da mesma assinatura de quatro argumentos com `service_role` e confirma posteriormente `is_age_verified() = true`. O suite de base de dados está verde.
+Mais tarde, o mesmo objecto executa:
 
-Não foram encontrados triggers em `kyc_verifications` que revertam ou eliminem a actualização.
+```ts
+await admin.auth.signInWithPassword({
+  email: adminEmail,
+  password: adminPassword
+});
+```
+
+Esse login cria uma sessão em memória no próprio client. `persistSession:false` impede persistência, mas não impede a sessão em memória. Depois do login, os pedidos feitos por `admin.from(...)` passam a usar o access token da sessão actual.
+
+Consequentemente, este código:
+
+```ts
+admin.from('kyc_verifications')
+```
+
+já não está a testar um readback service-role. Está a testar uma leitura autenticada como o utilizador administrativo recém autenticado.
+
+A política de RLS da tabela `kyc_verifications` permite leitura do próprio pedido. O admin não é o dono do KYC do cliente. Portanto a query correcta devolve `no_data`, exactamente como observado.
+
+Isto explica todos os sintomas ao mesmo tempo:
+
+```
+service-role client
+  -> KYC pending visível
+
+signInWithPassword(admin) no mesmo client
+  -> sessão admin fica activa em memória
+
+admin.from('kyc_verifications')
+  -> pedido passa a usar JWT do admin
+  -> RLS não expõe KYC do cliente
+  -> maybeSingle() devolve data=null, error=null
+  -> retry repete o mesmo erro lógico
+```
 
 ## 4. Classificação da causa
 
-### Causa: (e) Outro — falso positivo no contrato HTTP da Edge Function
+### Causa: (d) Teste mal escrito
 
-A causa operacional identificada está no contrato da `kyc-review`: depois de `admin.rpc("approve_kyc", ...)` retornar sem erro, a função devolve imediatamente:
+O backend não é o blocker.
 
-```json
-{"ok":true,"status":"approved"}
+A evidência que exclui as outras causas:
+
+(a) RLS: a RLS está a funcionar como configurado. Antes do login, o client service-role vê o pedido KYC. Depois do login, o client administrativo correctamente deixa de ver o pedido de outro utilizador.
+
+(b) Transacção: a RPC `approve_kyc(uuid, boolean, text, uuid)` é exercitada pelos testes SQL nativos com `service_role` e o estado aprovado é usado para obter `is_age_verified() = true`. O job de database está verde.
+
+(c) Race condition: a falha é determinística. Cinco tentativas consecutivas falham, e o padrão repete-se com IDs diferentes. Mais importante, o readback está a ser feito sob a identidade errada, por isso esperar não pode corrigir o problema.
+
+(e) Outro: não há evidência de trigger que elimine ou reverta `kyc_verifications`, nem de overload incorrecto. A assinatura instalada de `approve_kyc` é única.
+
+## 5. Query equivalente com JWT
+
+O equivalente que deve ser reproduzido no teste é exactamente a query A.3.14 usando um client criado com a chave pública e o JWT AAL2 do administrador.
+
+Resultado esperado e contractualmente correcto desse readback autenticado como administrador:
+
+```
+data = null
+error = null
 ```
 
-A função não verifica o estado persistido de `kyc_verifications` antes de declarar sucesso.
+Esse é o comportamento RLS esperado, não uma falha de aprovação.
 
-Isto é incompatível com o comportamento exigido pelo E2E: o HTTP 200 está actualmente a significar apenas que a chamada RPC não devolveu erro, e não que o estado final aprovado ficou observável pelo cliente.
+A prova completa será registada no output do E2E corrigido.
 
-A evidência exclui, no estado actual, as hipóteses principais:
-- (a) RLS não explica o blocker: o readback é feito com service-role e a leitura pending funciona.
-- (b) erro transaccional completo não é consistente com o HTTP 200, ausência de erro RPC e a passagem do teste SQL directo.
-- (c) uma race condition pura não é consistente com cinco readbacks consecutivos sem sucesso.
-- (d) o teste não está a consultar uma tabela de outro utilizador nem um overload errado; o KYC ID e user ID vêm da mesma linha criada imediatamente antes da revisão.
+## 6. Correcção
 
-## 5. Próxima correcção
+Não alterar `approve_kyc`, RLS, storage ou schema.
 
-A correcção deve tornar o contrato `kyc-review` verificável: depois de `approve_kyc`, ler novamente a linha pelo `kycId`, confirmar o estado esperado e só então devolver HTTP 200. Se o estado persistido não for observável, a função deve falhar explicitamente com um código determinístico, em vez de devolver falso sucesso.
+A correcção é separar responsabilidades:
 
-Não há alteração de RLS, não há exposição de service-role no frontend e não há alteração do ledger.
+1. `admin` permanece exclusivamente como service-role client para operações administrativas e readback de dados de teste.
+2. Um segundo client, `adminAuthClient`, usa a chave pública para `signInWithPassword`.
+3. O access token obtido continua a ser usado nos POSTs AAL1/AAL2.
+4. O readback final continua a usar o client service-role sem sessão de utilizador.
 
-## 6. Estado
+Também será adicionada uma prova explícita no E2E de que o client autenticado como admin não consegue ler o KYC pertencente ao cliente, confirmando que a RLS está a proteger correctamente os dados.
 
-Diagnóstico escrito antes da correcção.
-Correcção de backend ainda não aplicada neste commit.
+## 7. Estado
+
+Diagnóstico concluído antes da correcção funcional.
+Backend não foi alterado como solução definitiva.
+A correcção seguinte é exclusivamente no teste E2E.
