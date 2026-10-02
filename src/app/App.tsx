@@ -196,10 +196,10 @@ export function App() {
         </> : null}
 
         <Route element={<ExperienceGuard />}>
-          <Route element={<WorkspaceLayout variant="client" />}>
+          <Route element={<WorkspaceLayout key="client-workspace" variant="client" />}>
             <Route path="/c/:handle" element={<CreatorProfile />} />
           </Route>
-          <Route element={<WorkspaceLayout variant="creator" />}>
+          <Route element={<WorkspaceLayout key="creator-workspace" variant="creator" />}>
             <Route path="/estudio/conteudo" element={<ContentStudioPage />} />
             <Route path="/estudio/perfil" element={<CreatorProfileEditor />} />
           </Route>
