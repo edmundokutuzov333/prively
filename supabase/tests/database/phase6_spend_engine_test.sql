@@ -52,7 +52,7 @@ select ok(
     from pg_indexes
     where schemaname='public'
       and tablename='ledger_entries'
-      and indexname='ledger_entries_release_source_unique_idx'
+      and indexname='ledger_release_source_unique_account_idx'
   ),
   'release source has a uniqueness guard'
 );
@@ -201,6 +201,8 @@ begin
   from public.balances
   where owner_id=buyer and account='wallet';
 
+  set local role service_role;
+
   select balance into creator_pending_before
   from public.balances
   where owner_id=creator and account='creator_pending';
@@ -209,6 +211,8 @@ begin
   from public.balances
   where owner_id='00000000-0000-0000-0000-000000000000'::uuid
     and account='platform_revenue';
+
+  set local role authenticated;
 
   insert into _phase6_meta(key,value)
   values
@@ -236,17 +240,40 @@ begin
 
   set local role service_role;
 
+  insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id,release_at,metadata)
+  values
+    (
+      '96060000-0000-0000-0000-000000000088'::uuid,
+      'creator_pending',
+      creator,
+      5000,
+      'phase6_release_probe',
+      'phase6_release_probe',
+      ref_id,
+      now(),
+      '{}'::jsonb
+    ),
+    (
+      '96060000-0000-0000-0000-000000000088'::uuid,
+      'external',
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      -5000,
+      'phase6_release_probe',
+      'phase6_release_probe',
+      ref_id,
+      null,
+      '{}'::jsonb
+    );
+
   perform public.release_due_earnings();
 
   insert into _phase6_meta(key,value)
   select
     'release_count',
-    count(*)::text
+    count(distinct release_source_id)::text
   from public.ledger_entries
-  where release_source_id in (
-    select id from public.ledger_entries
-    where txn_id=txn_one and account='creator_pending'
-  );
+  where release_source_id is not null
+    and kind='release';
 
   perform public.release_due_earnings();
 
