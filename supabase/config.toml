@@ -88,3 +88,6 @@ verify_jwt = true
 verify_jwt = true
 [functions.kyc-webhook]
 verify_jwt = false
+
+[functions.become-creator]
+verify_jwt = true
