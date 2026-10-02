@@ -407,7 +407,25 @@
     "kycQueue": {
       "title": "Fila de KYC",
       "description": "Acompanha verificações de identidade pendentes para revisão autorizada.",
-      "empty": "Sem verificações pendentes."
+      "empty": "Não existem pedidos de KYC pendentes.",
+      "volumeEyebrow": "OPERAÇÃO",
+      "volumeTitle": "Volume manual",
+      "volumeDescription": "Pedidos de KYC manual recebidos nas últimas oito semanas.",
+      "volumeEmpty": "Ainda não existem pedidos manuais nas últimas oito semanas.",
+      "week": "Semana",
+      "requests": "Pedidos",
+      "document": "Abrir documento",
+      "selfie": "Abrir selfie",
+      "approve": "Aprovar",
+      "reject": "Recusar",
+      "approveReason": "Aprovado pela equipa autorizada.",
+      "rejectReason": "Recusado pela equipa autorizada.",
+      "states": {
+        "pending": "Pendente",
+        "review": "Em análise",
+        "approved": "Aprovado",
+        "rejected": "Recusado"
+      }
     },
     "moderationQueue": {
       "title": "Moderação",
