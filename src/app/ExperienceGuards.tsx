@@ -37,7 +37,7 @@ export function ExperienceGuard() {
 
       if (isCreatorArea) {
         const [rolesResult, ageResult, creatorTermsResult] = await Promise.all([
-          sb.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'creator').maybeSingle(),
+          sb.from('user_roles').select('role').eq('user_id', user.id),
           sb.rpc('is_age_verified', { _uid: user.id }),
           sb.rpc('get_creator_terms_status'),
         ]);
@@ -45,7 +45,7 @@ export function ExperienceGuard() {
         if (!active) return;
 
         setCreatorArea(true);
-        setRoles(rolesResult.error || !rolesResult.data ? [] : ['creator']);
+        setRoles(rolesResult.error ? [] : (rolesResult.data ?? []).map((item) => item.role));
         setKycStatus(ageResult.error ? null : ageResult.data ? 'approved' : null);
         const creatorTermsStatus = Array.isArray(creatorTermsResult.data) ? creatorTermsResult.data[0] : null;
         setCreatorTermsAccepted(Boolean(!creatorTermsResult.error && creatorTermsStatus?.accepted));
