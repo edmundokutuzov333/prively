@@ -175,7 +175,12 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     );
     if (adminRole.error) throw adminRole.error;
 
-    const aal1Token = signAccessToken(adminUserId, 'aal1', randomUUID());
+    const adminLogin = await admin.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+    if (adminLogin.error || !adminLogin.data.session) throw adminLogin.error ?? new Error('admin_login_failed');
+    const aal1Token = adminLogin.data.session.access_token;
+    const aal1Claims = JSON.parse(Buffer.from(aal1Token.split('.')[1], 'base64url').toString()) as { session_id?: string };
+    const adminSessionId = aal1Claims.session_id;
+    if (!adminSessionId) throw new Error('admin_session_id_missing');
     const aal1Response = await fetch(`${url}/functions/v1/kyc-review`, {
       method: 'POST',
       headers: {
@@ -193,7 +198,7 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.3.13 AAL1 approve HTTP=', aal1Response.status, 'body=', aal1Body);
     expect([401, 403]).toContain(aal1Response.status);
 
-    const aal2Token = signAccessToken(adminUserId, 'aal2', randomUUID());
+    const aal2Token = signAccessToken(adminUserId, 'aal2', adminSessionId);
     const aal2Response = await fetch(`${url}/functions/v1/kyc-review`, {
       method: 'POST',
       headers: {
