@@ -285,7 +285,7 @@ begin
     'release_count',
     count(distinct release_source_id)::text
   from public.ledger_entries
-  where release_source_id=release_source_id
+  where release_source_id=(select value::bigint from _phase6_meta where key='release_source_id')
     and kind='release';
 
   perform public.release_due_earnings();
@@ -377,9 +377,8 @@ select is(
 select ok(
   (select release_at
    from public.ledger_entries
-   where txn_id=(select value::uuid from _phase6_meta where key='txn_one')
-     and account='creator_pending') <= now(),
-  'pending earnings were forced into the due state'
+   where id=(select value::bigint from _phase6_meta where key='release_source_id')) <= now(),
+  'release probe is in the due state'
 );
 
 select is(
