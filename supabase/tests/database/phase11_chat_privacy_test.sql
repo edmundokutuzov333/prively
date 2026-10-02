@@ -107,7 +107,15 @@ select set_config('app.internal_write','off',true);
 
 select ok(has_function_privilege('authenticated','public.create_conversation(uuid)','EXECUTE'),'authenticated can execute create conversation');
 
-set local role service_role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','71100000-0000-0000-0000-000000000001',false);
+select set_config('request.jwt.claim.role','authenticated',false);
+select set_config('request.jwt.claims',json_build_object(
+  'sub','71100000-0000-0000-0000-000000000001',
+  'role','authenticated',
+  'aal','aal1'
+)::text,false);
+
 select ok(
   public.create_conversation(
     (select id from public.channels where handle='p11free_7110000001')
@@ -126,13 +134,13 @@ values(
   'phase11 participant read probe'
 );
 set local role authenticated;
-select set_config('request.jwt.claim.sub','71100000-0000-0000-0000-000000000001',true);
-select set_config('request.jwt.claim.role','authenticated',true);
+select set_config('request.jwt.claim.sub','71100000-0000-0000-0000-000000000001',false);
+select set_config('request.jwt.claim.role','authenticated',false);
 select set_config('request.jwt.claims',json_build_object(
   'sub','71100000-0000-0000-0000-000000000001',
   'role','authenticated',
   'aal','aal1'
-)::text,true);
+)::text,false);
 
 select is((
   select count(*)
