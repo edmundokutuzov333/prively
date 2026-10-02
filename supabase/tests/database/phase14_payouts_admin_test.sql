@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(20);
 
 select ok(to_regclass('public.payouts') is not null, 'payouts exists');
 select ok((select relrowsecurity from pg_class where oid='public.payouts'::regclass), 'payouts RLS enabled');
@@ -62,10 +62,11 @@ values(
   '{"adult":true}'::jsonb
 );
 
-insert into public.balances(owner_id,account,balance)
-values('71400000-0000-0000-0000-000000000001','creator_available',100000)
-on conflict(owner_id,account) do update set balance=excluded.balance;
-
+set local role service_role;
+insert into public.ledger_entries(txn_id,account,owner_id,amount,kind,ref_type,ref_id)
+values
+  ('71400000-0000-0000-0000-000000000099'::uuid,'creator_available','71400000-0000-0000-0000-000000000001'::uuid,100000,'phase14_seed','topup',null),
+  ('71400000-0000-0000-0000-000000000099'::uuid,'external','00000000-0000-0000-0000-000000000000'::uuid,-100000,'phase14_seed','topup',null);
 set local role authenticated;
 select set_config('request.jwt.claim.sub','71400000-0000-0000-0000-000000000001',true);
 select set_config('request.jwt.claim.role','authenticated',true);
