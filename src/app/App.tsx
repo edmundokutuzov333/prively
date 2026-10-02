@@ -173,6 +173,14 @@ function ClientProfileRoutePage() {
   return <ClientProfileCorePage handle={handle} />;
 }
 
+function ClientWorkspaceSurface() {
+  return <WorkspaceLayout variant="client" />;
+}
+
+function CreatorWorkspaceSurface() {
+  return <WorkspaceLayout variant="creator" />;
+}
+
 export function App() {
   return <SessionProvider><BrowserRouter>
     <Header />
@@ -196,12 +204,12 @@ export function App() {
         </> : null}
 
         <Route element={<ExperienceGuard />}>
-          <Route element={<WorkspaceLayout key="client-workspace" variant="client" />}>
-            <Route path="/c/:handle" element={<CreatorProfile />} />
+          <Route path="/c/:handle" element={<ClientWorkspaceSurface />}>
+            <Route index element={<CreatorProfile />} />
           </Route>
-          <Route element={<WorkspaceLayout key="creator-workspace" variant="creator" />}>
-            <Route path="/estudio/conteudo" element={<ContentStudioPage />} />
-            <Route path="/estudio/perfil" element={<CreatorProfileEditor />} />
+          <Route path="/estudio" element={<CreatorWorkspaceSurface />}>
+            <Route path="conteudo" element={<ContentStudioPage />} />
+            <Route path="perfil" element={<CreatorProfileEditor />} />
           </Route>
         </Route>
 
@@ -275,7 +283,6 @@ export function App() {
           </Route>
           <Route element={<WorkspaceLayout variant="creator" />}>
             <Route path="/estudio" element={<CreatorStudioPage />} />
-            <Route path="/estudio/conteudo" element={<ContentStudioPage />} />
             <Route path="/estudio/loja" element={phase9RoutesEnabled ? <Phase9CreatorStorePage /> : phase3RoutesEnabled ? <CreatorStoreAdvancedPage /> : <CreatorStorePage />} />
             <Route path="/estudio/agenda" element={<CreatorAgendaPage />} />
             <Route path="/estudio/fas" element={phase9RoutesEnabled ? <Phase9CreatorFansPage /> : phase3RoutesEnabled ? <CreatorFansAdvancedPage /> : <CreatorFansPage />} />
