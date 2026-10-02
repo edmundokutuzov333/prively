@@ -54,21 +54,21 @@ const CreateChannel = lazy(() => import("@/features/creator/CreateChannel"));
 const Publish = lazy(() => import("@/features/creator/Publish"));
 const Store = lazy(() => import("@/features/creator/Store"));
 const Subscriptions = lazy(() => import("@/features/creator/Subscriptions"));
-const Messages = lazy(() => import("@/features/creator/Messages"));
+const CreatorMessages = lazy(() => import("@/features/creator/Messages"));
 const Lives = lazy(() => import("@/features/creator/Lives"));
 const Requests = lazy(() => import("@/features/creator/Requests"));
-const Auctions = lazy(() => import("@/features/creator/Auctions"));
+const CreatorAuctions = lazy(() => import("@/features/creator/Auctions"));
 const Promotions = lazy(() => import("@/features/creator/Promotions"));
-const Raffles = lazy(() => import("@/features/creator/Raffles"));
-const Products = lazy(() => import("@/features/creator/Products"));
+const CreatorRaffles = lazy(() => import("@/features/creator/Raffles"));
+const CreatorProducts = lazy(() => import("@/features/creator/Products"));
 const Earnings = lazy(() => import("@/features/creator/Earnings"));
 const Analytics = lazy(() => import("@/features/creator/Analytics"));
 const Fans = lazy(() => import("@/features/creator/Fans"));
 const Goals = lazy(() => import("@/features/creator/Goals"));
 const Referral = lazy(() => import("@/features/creator/Referral"));
-const Encounters = lazy(() => import("@/features/creator/Encounters"));
+const CreatorEncounters = lazy(() => import("@/features/creator/Encounters"));
 const Profile = lazy(() => import("@/features/creator/Profile"));
-const Blocks = lazy(() => import("@/features/creator/Blocks"));
+const CreatorBlocks = lazy(() => import("@/features/creator/Blocks"));
 const Emergency = lazy(() => import("@/features/creator/Emergency"));
 const SharedSettings = lazy(() => import("@/features/shared/Settings"));
 const SharedReceipts = lazy(() => import("@/features/shared/Receipts"));
@@ -158,27 +158,27 @@ const AUTH_ROUTES: RouteObject[] = [
 ];
 
 const CLIENT_ROUTES: RouteObject[] = [{ element: <ExperienceGuard />, children: [{ element: <ClientLayout />, children: [
-        { path: "/feed", element: lazyElement(Feed) },
-        { path: "/descobrir", element: lazyElement(Discover) },
+        { path: ROUTES.FEED, element: lazyElement(Feed) },
+        { path: ROUTES.DISCOVER, element: lazyElement(Discover) },
         { path: "/c/:handle", element: lazyElement(CreatorProfile) },
         { path: "/c/:handle/assinar", element: lazyElement(Subscribe) },
         { path: "/c/:handle/p/:postId", element: lazyElement(PpvPurchase) },
-        { path: "/carteira", element: lazyElement(Wallet) },
-        { path: "/compras", element: lazyElement(Purchases) },
-        { path: "/desejos", element: lazyElement(Wishlist) },
-        { path: "/mensagens", element: lazyElement(Messages) },
+        { path: ROUTES.WALLET, element: lazyElement(Wallet) },
+        { path: ROUTES.PURCHASES, element: lazyElement(Purchases) },
+        { path: ROUTES.WISHLIST, element: lazyElement(Wishlist) },
+        { path: ROUTES.MESSAGES, element: lazyElement(Messages) },
         { path: "/mensagens/:id", element: lazyElement(Conversation) },
-        { path: "/notificacoes", element: lazyElement(Notifications) },
-        { path: "/encontros", element: lazyElement(Encounters) },
-        { path: "/definicoes/conta", element: lazyElement(Account) },
-        { path: "/definicoes/seguranca", element: lazyElement(Security) },
-        { path: "/definicoes/bem-estar", element: lazyElement(Wellbeing) },
-        { path: "/definicoes/discreto", element: lazyElement(Discreet) },
-        { path: "/fidelidade", element: lazyElement(Loyalty) },
-        { path: "/pedidos", element: lazyElement(CustomRequests) },
-        { path: "/leiloes", element: lazyElement(Auctions) },
-        { path: "/produtos", element: lazyElement(Products) },
-        { path: "/sorteios", element: lazyElement(Raffles) },
+        { path: ROUTES.NOTIFICATIONS, element: lazyElement(Notifications) },
+        { path: ROUTES.ENCOUNTERS, element: lazyElement(Encounters) },
+        { path: ROUTES.ACCOUNT, element: lazyElement(Account) },
+        { path: ROUTES.CLIENT_SECURITY, element: lazyElement(Security) },
+        { path: ROUTES.CLIENT_WELLBEING, element: lazyElement(Wellbeing) },
+        { path: ROUTES.CLIENT_DISCREET, element: lazyElement(Discreet) },
+        { path: ROUTES.CLIENT_LOYALTY, element: lazyElement(Loyalty) },
+        { path: ROUTES.CLIENT_CUSTOM_REQUESTS, element: lazyElement(CustomRequests) },
+        { path: ROUTES.CLIENT_AUCTIONS, element: lazyElement(Auctions) },
+        { path: ROUTES.CLIENT_PRODUCTS, element: lazyElement(Products) },
+        { path: ROUTES.CLIENT_RAFFLES, element: lazyElement(Raffles) },
 ] }] }];
 
 const CREATOR_ROUTES: RouteObject[] = [{
@@ -186,28 +186,28 @@ const CREATOR_ROUTES: RouteObject[] = [{
   children: [{
     element: <CreatorLayout />,
     children: [
-        { path: "/estudio", element: lazyElement(Studio) },
-        { path: "/estudio/conteudo", element: lazyElement(Wall) },
-        { path: "/estudio/conteudo/criar-canal", element: lazyElement(CreateChannel) },
-        { path: "/estudio/conteudo/novo", element: lazyElement(Publish) },
-        { path: "/estudio/loja", element: lazyElement(Store) },
-        { path: "/estudio/assinaturas", element: lazyElement(Subscriptions) },
-        { path: "/estudio/mensagens", element: lazyElement(Messages) },
-        { path: "/estudio/lives", element: lazyElement(Lives) },
-        { path: "/estudio/pedidos", element: lazyElement(Requests) },
-        { path: "/estudio/leiloes", element: lazyElement(Auctions) },
-        { path: "/estudio/promocoes", element: lazyElement(Promotions) },
-        { path: "/estudio/sorteios", element: lazyElement(Raffles) },
-        { path: "/estudio/produtos", element: lazyElement(Products) },
-        { path: "/estudio/ganhos", element: lazyElement(Earnings) },
-        { path: "/estudio/analise", element: lazyElement(Analytics) },
-        { path: "/estudio/fas", element: lazyElement(Fans) },
-        { path: "/estudio/metas", element: lazyElement(Goals) },
-        { path: "/estudio/referral", element: lazyElement(Referral) },
-        { path: "/estudio/encontros", element: lazyElement(Encounters) },
-        { path: "/estudio/perfil", element: lazyElement(Profile) },
-        { path: "/estudio/bloqueios", element: lazyElement(Blocks) },
-        { path: "/estudio/emergencia", element: lazyElement(Emergency) },
+        { path: ROUTES.CREATOR_STUDIO, element: lazyElement(Studio) },
+        { path: ROUTES.CREATOR_CONTENT, element: lazyElement(Wall) },
+        { path: ROUTES.CREATOR_CREATE_CHANNEL, element: lazyElement(CreateChannel) },
+        { path: ROUTES.CREATOR_PUBLISH, element: lazyElement(Publish) },
+        { path: ROUTES.CREATOR_STORE, element: lazyElement(Store) },
+        { path: ROUTES.CREATOR_SUBSCRIPTIONS, element: lazyElement(Subscriptions) },
+        { path: ROUTES.CREATOR_MESSAGES, element: lazyElement(CreatorMessages) },
+        { path: ROUTES.CREATOR_LIVES, element: lazyElement(Lives) },
+        { path: ROUTES.CREATOR_REQUESTS, element: lazyElement(Requests) },
+        { path: ROUTES.CREATOR_AUCTIONS, element: lazyElement(CreatorAuctions) },
+        { path: ROUTES.CREATOR_PROMOTIONS, element: lazyElement(Promotions) },
+        { path: ROUTES.CREATOR_RAFFLES, element: lazyElement(CreatorRaffles) },
+        { path: ROUTES.CREATOR_PRODUCTS, element: lazyElement(CreatorProducts) },
+        { path: ROUTES.CREATOR_EARNINGS, element: lazyElement(Earnings) },
+        { path: ROUTES.CREATOR_ANALYTICS, element: lazyElement(Analytics) },
+        { path: ROUTES.CREATOR_FANS, element: lazyElement(Fans) },
+        { path: ROUTES.CREATOR_GOALS, element: lazyElement(Goals) },
+        { path: ROUTES.CREATOR_REFERRAL, element: lazyElement(Referral) },
+        { path: ROUTES.CREATOR_ENCOUNTERS, element: lazyElement(CreatorEncounters) },
+        { path: ROUTES.CREATOR_PROFILE, element: lazyElement(Profile) },
+        { path: ROUTES.CREATOR_BLOCKS, element: lazyElement(CreatorBlocks) },
+        { path: ROUTES.CREATOR_EMERGENCY, element: lazyElement(Emergency) },
     ],
   }],
 }];
@@ -215,12 +215,12 @@ const CREATOR_ROUTES: RouteObject[] = [{
 const SHARED_ROUTES: RouteObject[] = [{
   element: <AuthenticatedFeatureGuard />,
   children: [{ element: <SharedLayout />, children: [
-        { path: "/definicoes", element: lazyElement(SharedSettings) },
-        { path: "/recibos", element: lazyElement(SharedReceipts) },
-        { path: "/denunciar", element: lazyElement(SharedReport) },
-        { path: "/bloqueios", element: lazyElement(SharedBlocks) },
-        { path: "/definicoes/dispositivos", element: lazyElement(SharedDevices) },
-        { path: "/notificacoes", element: lazyElement(SharedNotifications) },
+        { path: ROUTES.SETTINGS, element: lazyElement(SharedSettings) },
+        { path: ROUTES.RECEIPTS, element: lazyElement(SharedReceipts) },
+        { path: ROUTES.REPORT, element: lazyElement(SharedReport) },
+        { path: ROUTES.BLOCKS, element: lazyElement(SharedBlocks) },
+        { path: ROUTES.DEVICES, element: lazyElement(SharedDevices) },
+        { path: ROUTES.NOTIFICATIONS, element: lazyElement(SharedNotifications) },
   ] }],
 }];
 
@@ -229,16 +229,16 @@ const ADMIN_ROUTES: RouteObject[] = [{
   children: [{
     element: <AdminFeatureLayout />,
     children: [
-        { path: "/admin", element: lazyElement(AdminDashboard) },
-        { path: "/admin/utilizadores", element: lazyElement(AdminUsers) },
-        { path: "/admin/kyc", element: lazyElement(AdminKycQueue) },
-        { path: "/admin/moderacao", element: lazyElement(AdminModerationQueue) },
-        { path: "/admin/financeiro", element: lazyElement(AdminFinance) },
-        { path: "/admin/conformidade", element: lazyElement(AdminCompliance) },
-        { path: "/admin/configuracao", element: lazyElement(AdminConfig) },
-        { path: "/admin/suporte", element: lazyElement(AdminSupport) },
-        { path: "/admin/storage", element: lazyElement(AdminStorage) },
-        { path: "/admin/producao", element: lazyElement(AdminProductionGate) },
+        { path: ROUTES.ADMIN, element: lazyElement(AdminDashboard) },
+        { path: ROUTES.ADMIN_USERS, element: lazyElement(AdminUsers) },
+        { path: ROUTES.ADMIN_KYC, element: lazyElement(AdminKycQueue) },
+        { path: ROUTES.ADMIN_MODERATION, element: lazyElement(AdminModerationQueue) },
+        { path: ROUTES.ADMIN_FINANCE, element: lazyElement(AdminFinance) },
+        { path: ROUTES.ADMIN_COMPLIANCE, element: lazyElement(AdminCompliance) },
+        { path: ROUTES.ADMIN_CONFIGURATION, element: lazyElement(AdminConfig) },
+        { path: ROUTES.ADMIN_SUPPORT, element: lazyElement(AdminSupport) },
+        { path: ROUTES.ADMIN_STORAGE, element: lazyElement(AdminStorage) },
+        { path: ROUTES.ADMIN_PRODUCTION, element: lazyElement(AdminProductionGate) },
     ],
   }],
 }];
