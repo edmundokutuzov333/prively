@@ -86,7 +86,7 @@ async function signIn(page: Page, email: string, password: string) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/palavra-passe|password/i).fill(password);
   await page.getByRole("button", { name: /entrar|iniciar sessão|sign in/i }).click();
-  await page.waitForURL(//descobrir|/verificacao|/estudio/, { timeout: 15000 });
+  await page.waitForURL(/\/descobrir|\/verificacao|\/estudio/, { timeout: 15000 });
 }
 
 async function provisionAndSignIn(
