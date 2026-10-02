@@ -16,7 +16,16 @@
       "step1": "Create and verify your account.",
       "step2": "Complete your creator presence.",
       "step3": "Prepare your content and rules.",
-      "step4": "Publish and manage your community safely."
+      "step4": "Publish and manage your community safely.",
+      "authRequired": "Sign in to continue.",
+      "checking": "Checking your creator status…",
+      "kycRequired": "Complete identity verification before becoming a creator.",
+      "kycPending": "Your identity verification is still under review. Wait for the decision before continuing.",
+      "grant": "Become a creator",
+      "granted": "The creator role was granted. Opening your onboarding…",
+      "retry": "Try again",
+      "goVerification": "Go to verification",
+      "goLogin": "Sign in"
     },
     "terms": {
       "title": "Terms and Conditions",
