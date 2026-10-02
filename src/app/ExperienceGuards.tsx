@@ -15,15 +15,19 @@ export function ExperienceGuard() {
   const [kycStatus, setKycStatus] = useState<string | null>(null);
   const [creatorTermsAccepted, setCreatorTermsAccepted] = useState(false);
   const [creatorArea, setCreatorArea] = useState(false);
+  const [checkedKey, setCheckedKey] = useState("");
 
   useEffect(() => {
     let active = true;
+    const guardKey = [user?.id ?? "anonymous", location.pathname].join(":");
+
     const load = async () => {
       const isCreatorArea = location.pathname.startsWith('/estudio');
       if (!user) {
         if (active) {
           setCreatorArea(isCreatorArea);
           setRoles([]);
+          setCheckedKey(guardKey);
           setAccountState(null);
           setSelfExcludedUntil(null);
           setKycStatus(null);
@@ -75,15 +79,19 @@ export function ExperienceGuard() {
         setKycStatus(state.kyc_status ?? null);
       }
       setCreatorTermsAccepted(false);
+      setCheckedKey(guardKey);
       setChecking(false);
     };
 
     setChecking(true);
+    setCheckedKey("");
     void load();
     return () => { active = false; };
   }, [location.pathname, user]);
 
-  if (loading || checking) {
+  const guardKey = [user?.id ?? "anonymous", location.pathname].join(":");
+
+  if (loading || checking || checkedKey !== guardKey) {
     return <div className="flex min-h-[50vh] items-center justify-center text-sm text-bone-500">{t('common.loading')}</div>;
   }
 
