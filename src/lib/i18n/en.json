@@ -390,5 +390,27 @@
       "description": "Review checks required for operational readiness.",
       "empty": "No production gate results are available at this layer."
     }
+  },
+  "systemPages": {
+    "error": {
+      "title": "Error",
+      "description": "Displays a generic error state without assuming an unverified cause.",
+      "empty": "There are no error details to display at this layer."
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "Indicates that the requested address does not match a known page.",
+      "empty": "The page you are looking for does not exist."
+    },
+    "forbidden": {
+      "title": "This area is no longer available.",
+      "description": "Displays an access denied state when the account cannot continue.",
+      "empty": "You do not have permission to access this area."
+    },
+    "offline": {
+      "title": "Offline",
+      "description": "Displays a stable surface when the application has no connection.",
+      "empty": "Check your connection and try again."
+    }
   }
 }
