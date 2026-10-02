@@ -407,7 +407,25 @@
     "kycQueue": {
       "title": "KYC queue",
       "description": "Review pending identity verification requests.",
-      "empty": "No pending verification requests."
+      "empty": "There are no pending KYC requests.",
+      "volumeEyebrow": "OPERATIONS",
+      "volumeTitle": "Manual volume",
+      "volumeDescription": "Manual KYC requests received over the last eight weeks.",
+      "volumeEmpty": "There are no manual requests in the last eight weeks.",
+      "week": "Week",
+      "requests": "Requests",
+      "document": "Open document",
+      "selfie": "Open selfie",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveReason": "Approved by the authorised team.",
+      "rejectReason": "Rejected by the authorised team.",
+      "states": {
+        "pending": "Pending",
+        "review": "Under review",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
     },
     "moderationQueue": {
       "title": "Moderation",
