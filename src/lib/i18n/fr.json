@@ -390,5 +390,27 @@
       "description": "Consulte les vérifications nécessaires à la préparation opérationnelle.",
       "empty": "Aucun résultat du gate de production à afficher."
     }
+  },
+  "systemPages": {
+    "error": {
+      "title": "Erreur",
+      "description": "Présente un état d’erreur générique sans supposer une cause non vérifiée.",
+      "empty": "Aucun détail d’erreur n’est disponible à ce niveau."
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "description": "Indique que l’adresse demandée ne correspond pas à une page connue.",
+      "empty": "La page recherchée n’existe pas."
+    },
+    "forbidden": {
+      "title": "Cette zone n’est plus disponible.",
+      "description": "Présente un état d’accès refusé lorsque le compte ne peut pas continuer.",
+      "empty": "Tu n’as pas la permission d’accéder à cette zone."
+    },
+    "offline": {
+      "title": "Hors connexion",
+      "description": "Présente une surface stable lorsque l’application n’a pas de connexion.",
+      "empty": "Vérifie ta connexion et réessaie."
+    }
   }
 }
