@@ -77,15 +77,13 @@ await admin.auth.signInWithPassword({
 
 Esse login cria uma sessão em memória no próprio client. `persistSession:false` impede persistência, mas não impede a sessão em memória. Depois do login, os pedidos feitos por `admin.from(...)` passam a usar o access token da sessão actual.
 
-Consequentemente, este código:
+Consequentemente, o readback final é executado com a sessão AAL1 do administrador, não como service-role.
 
-```ts
-admin.from('kyc_verifications')
-```
+A RLS de `kyc_verifications` tem uma política de leitura administrativa baseada em `private.is_platform_admin()`, que chama `has_permission(auth.uid(),'admin.control_room')`. A função `has_permission` rejeita qualquer permissão `admin.*` quando o JWT não está em AAL2. Assim, a sessão AAL1 não satisfaz a política administrativa e também não satisfaz a política "user reads own kyc status", porque o `auth.uid()` é o ID do administrador e não o ID do cliente.
 
-já não está a testar um readback service-role. Está a testar uma leitura autenticada como o utilizador administrativo recém autenticado.
+Resultado da query A.3.14 sob AAL1: `data=null,error=null`.
 
-A política de RLS da tabela `kyc_verifications` permite leitura do próprio pedido. O admin não é o dono do KYC do cliente. Portanto a query correcta devolve `no_data`, exactamente como observado.
+Com um client separado e o JWT AAL2 usado no POST de revisão, a mesma leitura foi executada e devolveu a linha KYC aprovada. Portanto o backend e a RLS estão a comportar-se correctamente.
 
 Isto explica todos os sintomas ao mesmo tempo:
 
@@ -121,16 +119,23 @@ A evidência que exclui as outras causas:
 
 ## 5. Query equivalente com JWT
 
-O equivalente que deve ser reproduzido no teste é exactamente a query A.3.14 usando um client criado com a chave pública e o JWT AAL2 do administrador.
+O equivalente foi reproduzido com o client público e o JWT do administrador.
 
-Resultado esperado e contractualmente correcto desse readback autenticado como administrador:
+Com JWT AAL1, a query A.3.14 devolve:
 
 ```
 data = null
 error = null
 ```
 
-Esse é o comportamento RLS esperado, não uma falha de aprovação.
+Com JWT AAL2, a mesma query devolve o registo aprovado:
+
+```
+data = {"id":"<kycId>","status":"approved","reviewed_by":"<adminId>","reviewed_at":"<timestamp>"}
+error = null
+```
+
+Isto demonstra que o readback depende do nível de autenticação esperado pela RLS administrativa.
 
 A prova completa será registada no output do E2E corrigido.
 
@@ -145,10 +150,10 @@ A correcção é separar responsabilidades:
 3. O access token obtido continua a ser usado nos POSTs AAL1/AAL2.
 4. O readback final continua a usar o client service-role sem sessão de utilizador.
 
-Também será adicionada uma prova explícita no E2E de que o client autenticado como admin não consegue ler o KYC pertencente ao cliente, confirmando que a RLS está a proteger correctamente os dados.
+O E2E passou a manter o client service-role separado do client de autenticação. A prova explícita usa o JWT AAL2 e confirma que a leitura administrativa autorizada devolve o KYC aprovado.
 
 ## 7. Estado
 
 Diagnóstico concluído antes da correcção funcional.
-Backend não foi alterado como solução definitiva.
-A correcção seguinte é exclusivamente no teste E2E.
+O backend foi temporariamente instrumentado durante a investigação e revertido, sem alteração funcional definitiva.
+A correcção definitiva é exclusivamente no teste E2E: separar o client service-role do client usado para autenticação AAL1.
