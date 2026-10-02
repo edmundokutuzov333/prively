@@ -126,12 +126,26 @@ test.describe("phase 3 creator channel", () => {
       creatorContext = creator.context;
 
       await creator.page.goto("/estudio/conteudo");
-      const creatorDiagnostics = await creator.page.evaluate(async () => {
+      const creatorDiagnostics = await creator.page.evaluate(async ({ supabaseUrl, publishableKey }) => {
         const tokenKey = Object.keys(localStorage).find((key) => key.endsWith("-auth-token"));
         const raw = tokenKey ? localStorage.getItem(tokenKey) : null;
         const parsed = raw ? JSON.parse(raw) : null;
-        return { storageUserId: parsed?.user?.id ?? null, storageRole: parsed?.user?.role ?? null };
-      });
+        const accessToken = parsed?.access_token ?? null;
+        if (!accessToken) return { storageUserId: parsed?.user?.id ?? null, storageRole: parsed?.user?.role ?? null, rpc: "no_access_token" };
+        const headers = { apikey: publishableKey, Authorization: "Bearer " + accessToken, "content-type": "application/json" };
+        const [rolesResponse, hasRoleResponse] = await Promise.all([
+          fetch(supabaseUrl + "/rest/v1/user_roles?select=role&user_id=eq." + encodeURIComponent(parsed.user.id), { headers }),
+          fetch(supabaseUrl + "/rest/v1/rpc/has_role", { method: "POST", headers, body: JSON.stringify({ _uid: parsed.user.id, _role: "creator" }) }),
+        ]);
+        return {
+          storageUserId: parsed?.user?.id ?? null,
+          storageRole: parsed?.user?.role ?? null,
+          rolesStatus: rolesResponse.status,
+          rolesBody: await rolesResponse.text(),
+          hasRoleStatus: hasRoleResponse.status,
+          hasRoleBody: await hasRoleResponse.text(),
+        };
+      }, { supabaseUrl: process.env.VITE_SUPABASE_URL, publishableKey: process.env.VITE_SUPABASE_PUBLISHABLE_KEY });
       console.log("P3_DEBUG creator.diagnostics_storage=", JSON.stringify(creatorDiagnostics));
       console.log("P3_DEBUG creator.url_after_conteudo=", creator.page.url());
       console.log("P3_DEBUG creator.body_after_conteudo=", (await creator.page.locator("body").innerText()).slice(0, 2500));
