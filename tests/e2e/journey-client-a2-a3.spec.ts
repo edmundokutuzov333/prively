@@ -28,6 +28,25 @@ function signAccessToken(userId: string, aal: 'aal1' | 'aal2', sessionId: string
   return signingInput + '.' + signature;
 }
 
+async function readSingleWithRetry<T>(
+  read: () => Promise<{ data: T | null; error: unknown }>,
+  label: string,
+  attempts = 5,
+) {
+  let last: unknown = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const result = await read();
+    if (!result.error && result.data) {
+      console.log(`${label} read attempt=${attempt} ok`);
+      return result.data;
+    }
+    last = result.error;
+    console.log(`${label} read attempt=${attempt} miss=${String(result.error ?? 'no_data')}`);
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+  }
+  throw last instanceof Error ? last : new Error(`${label}_not_found`);
+}
+
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
@@ -216,22 +235,26 @@ test('A.2-A.3 client registration, email confirmation and KYC', async ({ page })
     console.log('A.3.13 AAL2 approve HTTP=', aal2Response.status, 'body=', aal2Body);
     expect(aal2Response.status).toBe(200);
 
-    const finalKyc = await admin.from('kyc_verifications')
-      .select('status,reviewed_by,reviewed_at')
-      .eq('id', kycId)
-      .single();
-    if (finalKyc.error) throw finalKyc.error;
+    const finalKyc = await readSingleWithRetry(
+      () => admin.from('kyc_verifications')
+        .select('status,reviewed_by,reviewed_at')
+        .eq('id', kycId)
+        .maybeSingle(),
+      'A.3.14 KYC',
+    );
 
-    const finalProfile = await admin.from('profiles')
-      .select('status,age_verified_at')
-      .eq('id', created.id)
-      .single();
-    if (finalProfile.error) throw finalProfile.error;
+    const finalProfile = await readSingleWithRetry(
+      () => admin.from('profiles')
+        .select('status,age_verified_at')
+        .eq('id', created.id)
+        .maybeSingle(),
+      'A.3.14 profile',
+    );
 
-    console.log('A.3.14 DB final KYC=', JSON.stringify(finalKyc.data));
-    console.log('A.3.14 DB final profile=', JSON.stringify(finalProfile.data));
-    expect(finalKyc.data.status).toBe('approved');
-    expect(finalProfile.data.age_verified_at).toBeTruthy();
+    console.log('A.3.14 DB final KYC=', JSON.stringify(finalKyc));
+    console.log('A.3.14 DB final profile=', JSON.stringify(finalProfile));
+    expect(finalKyc.status).toBe('approved');
+    expect(finalProfile.age_verified_at).toBeTruthy();
   } finally {
     if (createdUserId) await admin.auth.admin.deleteUser(createdUserId);
     if (adminUserId) await admin.auth.admin.deleteUser(adminUserId);
