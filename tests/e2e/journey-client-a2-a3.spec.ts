@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
